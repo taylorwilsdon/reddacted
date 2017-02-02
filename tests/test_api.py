@@ -29,7 +29,9 @@ class APIPostiveTestCases(unittest.TestCase):
 
         # Valid Response to check against, shares fields requests.Response()
         valid_response = mock.MagicMock(name='mock_response')
-        valid_response.content = "<html> <body> {sentence_a} {sentence_b} </body> </html>".format(sentence_a=sentence_a, sentence_b=sentence_b)
+        valid_response.content = "<html> <body> {sentence_a} {sentence_b} " \
+            "</body> </html>".format(sentence_a=sentence_a,
+                                     sentence_b=sentence_b)
         valid_response.status_code = 200
 
         requests.get = mock.MagicMock(return_value=valid_response)
@@ -39,7 +41,7 @@ class APIPostiveTestCases(unittest.TestCase):
 
     def test_parse_user(self):
         sc = scraper.Scraper()
-        tree = sc.parse_user("bob")
+        tree = sc.parse_user("awkwardferny")
 
         self.assertEqual(self.content, tree)
 
