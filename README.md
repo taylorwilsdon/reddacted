@@ -1,17 +1,17 @@
-# Reddit Sentiment Analyzer #
+# Reddit Sentiment Analyzer
 
 The Reddit Sentiment Analyzer uses [Sentiment Analysis](https://en.wikipedia.org/wiki/Sentiment_analysis)
 to build a score of various Reddit Objects. These objects include:
 
-1. Listings: `/r/<subreddit>/comments/<article>`
-2. Users: `/u/<username>`
+* Listings: `/r/<subreddit>/comments/<article>`
+* Users: `/u/<username>`
 
 The score is generated based on the sentiment of the comments.
 
 ## Installation ##
 
 It is recommended that you first create a python virtual environment to not
-overwrite pip dependancies in your system. See [virtualenvs](http://docs.python-guide.org/en/latest/dev/virtualenvs/)
+overwrite pip dependancies in your system. See [virtualenvs](http://docs.python-guide.org/en/latest/dev/virtualenvs/).
 
 1. `pip install -r requirements.txt` # install requirements
 2. `python -m nltk.downloader vader_lexicon` # installs required nltk packages
@@ -19,11 +19,11 @@ overwrite pip dependancies in your system. See [virtualenvs](http://docs.python-
 
 ## Using the CLI ##
 
-. `reddit-analyze listing <subreddit> <article>` Outputs the sentiment score of a particular Listing.
+* `reddit-analyze listing <subreddit> <article>` Outputs the sentiment score of a particular Listing.
 
-. `reddit-analyze user <name>` Outputs the sentiment score of a particular User.
+* `reddit-analyze user <name>` Outputs the sentiment score of a particular User.
 
-Note: Passing `--output-file` after any of the above will generate a
+Note: Passing `--output-file <your file>` after any of the above will generate a
 file with the sentiment analysis.
 
 ## Testing ##
@@ -38,10 +38,10 @@ run the tests, simply perform the following:
 
 ### too many requests ###
 
-This may happen often if you/others are constantly performing an analysis on reddit.
+This may happen often if you/others are constantly performing an analysis of reddit.
 Simply try again in a few seconds.
 
 ### the page you requested does not exist ###
 
-Simply a 404, which means that the provides username, or subreddit and article
+Simply a 404, which means that the provided username, or subreddit and article
 combination do not point to a valid page.

@@ -32,6 +32,7 @@ class Miner():
         if output_file:
             self._generate_output_file(output_file, self.comments)
         else:
+            # TODO: Move this to common function
             for comment in self.comments:
                 print comment
             print "\n"
@@ -52,6 +53,7 @@ class Miner():
         if output_file:
             self._generate_output_file(output_file, comments)
         else:
+            # TODO: Move this to common function
             for comment in self.comments:
                 print comment
             print "\n"
@@ -62,7 +64,6 @@ class Miner():
         """Obtains the sentiment for a user's comments.
 
         :param comments: comments to perform analysis on.
-
         :return: combined sentiment score of all sentences.
         """
         sentiment_analyzer = SentimentIntensityAnalyzer()
@@ -85,7 +86,6 @@ class Miner():
         """Obtains the sentiment using a sentiment score.
 
         :param score: the sentiment score.
-
         :return: sentiment from score.
         """
         if score == 0:
@@ -108,6 +108,7 @@ class Miner():
             score = self._analyze(comment)
             sentiment = self._get_sentiment(score)
 
+            # TODO: Create a new line if the sentence takes up over 80 chars
             target.write("Sentence: {sentence}\nScore: {score}, Sentiment: "
                          "{sentiment}\n".format(sentence=str(comment),
                                                 score=score,
