@@ -1,11 +1,11 @@
+import sys
+import warnings
+
 from cliff.app import App
 from cliff.commandmanager import CommandManager
 from cliff.command import Command
 
 from miner import Miner
-
-import sys
-import warnings
 
 
 class Listing(Command):
@@ -33,10 +33,6 @@ class Listing(Command):
             print "Listing Contents Outputted to {output_file}".format(
                 output_file=args.output_file)
 
-        print "\n"
-        print 'Sentiment Score: %s' % miner.score
-        print 'Sentiment: %s' % miner.sentiment
-
 
 class User(Command):
 
@@ -59,10 +55,6 @@ class User(Command):
         if args.output_file:
             print "Listing Contents Outputted to {output_file}".format(
                 output_file=args.output_file)
-
-        print "\n"
-        print 'Sentiment Score: %s' % miner.score
-        print 'Sentiment: %s' % miner.sentiment
 
 
 class CLI(App):

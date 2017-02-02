@@ -29,18 +29,14 @@ class Miner():
         self.score = self._analyze(self.comments)
         self.sentiment = self._get_sentiment(self.score)
 
-        # TODO(diazjf): append sentiment calculation to end of each sentence
-        # for more detailed analysis
         if output_file:
-            target = open(output_file, 'w+')
-            for comment in self.comments:
-                target.write(str(comment) + "\n")
-            target.write("\nScore: {score} \n".format(score=self.score))
-            target.write("Sentiment: {sentiment}".format(
-                sentiment=self.sentiment))
+            self._generate_output_file(output_file, self.comments)
         else:
             for comment in self.comments:
                 print comment
+            print "\n"
+            print "Score: {score}".format(score=self.score)
+            print "Sentiment: {sentiment}".format(sentiment=self.sentiment)
 
     def get_listing_sentiment(self, subreddit, article, output_file=None):
         """Obtains the sentiment for a listing's comments.
@@ -53,18 +49,14 @@ class Miner():
         self.score = self._analyze(self.comments)
         self.sentiment = self._get_sentiment(self.score)
 
-        # TODO(diazjf): append sentiment calculation to end of each sentence
-        # for more detailed analysis
         if output_file:
-            target = open(output_file, 'w+')
-            for comment in self.comments:
-                target.write(str(comment) + "\n")
-            target.write("\nScore: {score} \n".format(score=self.score))
-            target.write("Sentiment: {sentiment}".format(
-                sentiment=self.sentiment))
+            self._generate_output_file(output_file, comments)
         else:
             for comment in self.comments:
                 print comment
+            print "\n"
+            print "Score: {score}".format(score=self.score)
+            print "Sentiment: {sentiment}".format(sentiment=self.sentiment)
 
     def _analyze(self, comments):
         """Obtains the sentiment for a user's comments.
@@ -102,3 +94,25 @@ class Miner():
             return "ʘ‿ʘ"
         else:
             return "ಠ_ಠ"
+
+    def _generate_output_file(self, filename, comments):
+        """Outputs a file containing a detailed sentiment analysis per
+        sentence.
+
+        :param: filename: the name of the file to create and edit
+        :param: comments: the parsed contents to analyze.
+        """
+        target = open(filename, 'w+')
+
+        for comment in comments:
+            score = self._analyze(comment)
+            sentiment = self._get_sentiment(score)
+
+            target.write("Sentence: {sentence}\nScore: {score}, Sentiment: "
+                         "{sentiment}\n".format(sentence=str(comment),
+                                                score=score,
+                                                sentiment=sentiment))
+
+        target.write("\nFinal Score: {score} \n".format(score=self.score))
+        target.write("Final Sentiment: {sentiment}".format(
+            sentiment=self.sentiment))
