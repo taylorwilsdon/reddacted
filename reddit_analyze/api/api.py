@@ -12,11 +12,11 @@ class API(object):
     """
 
     @abc.abstractmethod
-    def parse_listing(self, subreddit, article):
+    def parse_listing(self, subreddit, article, **kwargs):
         """Parses a Listing Reddit Object."""
         pass
 
     @abc.abstractmethod
-    def parse_user(self, username):
+    def parse_user(self, username, **kwargs):
         """Parses a User Reddit Object."""
         pass

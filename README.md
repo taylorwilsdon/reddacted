@@ -6,7 +6,7 @@ to build a score of various Reddit Objects. These objects include:
 * Listings: `/r/<subreddit>/comments/<article>`
 * Users: `/u/<username>`
 
-The score is generated based on the sentiment of the comments.
+The score is generated based on the sentiment of the comments. Note: It only analyzes the top comments.
 
 ## Installation ##
 

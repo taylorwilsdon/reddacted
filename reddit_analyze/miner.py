@@ -19,25 +19,22 @@ class Miner():
         self.score = 0
         self.sentiment = "¯\_(ツ)_/¯"
 
+        self.headers = {'User-agent': "Reddit Sentiment Analyzer"}
+
     def get_user_sentiment(self, username, output_file=None):
         """Obtains the sentiment for a user's comments.
 
         :param username: name of user to search
         :param output_file (optional): file to output relevant data.
         """
-        self.comments = self.api.parse_user(username)
-        self.score = self._analyze(self.comments)
+        comments = self.api.parse_user(username, headers=self.headers)
+        self.score = self._analyze(comments)
         self.sentiment = self._get_sentiment(self.score)
 
         if output_file:
-            self._generate_output_file(output_file, self.comments)
+            self._generate_output_file(output_file, comments)
         else:
-            # TODO: Move this to common function
-            for comment in self.comments:
-                print comment
-            print "\n"
-            print "Score: {score}".format(score=self.score)
-            print "Sentiment: {sentiment}".format(sentiment=self.sentiment)
+            self._print_comments(comments)
 
     def get_listing_sentiment(self, subreddit, article, output_file=None):
         """Obtains the sentiment for a listing's comments.
@@ -46,19 +43,16 @@ class Miner():
         :param article: an article associated with the subreddit
         :param output_file (optional): file to output relevant data.
         """
-        self.comments = self.api.parse_listing(subreddit, article)
-        self.score = self._analyze(self.comments)
+        comments = self.api.parse_listing(subreddit,
+                                          article,
+                                          headers=self.headers)
+        self.score = self._analyze(comments)
         self.sentiment = self._get_sentiment(self.score)
 
         if output_file:
             self._generate_output_file(output_file, comments)
         else:
-            # TODO: Move this to common function
-            for comment in self.comments:
-                print comment
-            print "\n"
-            print "Score: {score}".format(score=self.score)
-            print "Sentiment: {sentiment}".format(sentiment=self.sentiment)
+            self._print_comments(comments)
 
     def _analyze(self, comments):
         """Obtains the sentiment for a user's comments.
@@ -117,3 +111,15 @@ class Miner():
         target.write("\nFinal Score: {score} \n".format(score=self.score))
         target.write("Final Sentiment: {sentiment}".format(
             sentiment=self.sentiment))
+
+    def _print_comments(self, comments):
+        """Prints out sentences of user's comments.
+
+        :param: comments: the parsed contents to analyze.
+        """
+        # TODO: Create a new line if the sentence takes up over 80 chars
+        for comment in comments:
+            print comment
+        print "\n"
+        print "Score: {score}".format(score=self.score)
+        print "Sentiment: {sentiment}".format(sentiment=self.sentiment)

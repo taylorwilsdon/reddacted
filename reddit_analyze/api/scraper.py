@@ -12,7 +12,7 @@ class Scraper(API):
     reddit objects. The data is obtained via Web Scrapping.
     """
 
-    def parse_listing(self, subreddit, article):
+    def parse_listing(self, subreddit, article, **kwargs):
         """Parses a listing and extracts the comments from it.
 
        :param subreddit: a subreddit
@@ -22,8 +22,8 @@ class Scraper(API):
         url = "https://www.reddit.com/r/{subreddit}/comments/{article}"
         url = url.format(subreddit=subreddit, article=article)
 
-        # TODO: pass user-agent in header
-        page = requests.get(url)
+        headers = kwargs.get('headers')
+        page = requests.get(url, headers=headers)
 
         soup = BeautifulSoup(page.content, 'html.parser')
         tree = soup.body.find_all('p', class_='', text=True)
@@ -31,7 +31,7 @@ class Scraper(API):
         tree = filter(None, list(tree))
         return tree
 
-    def parse_user(self, username):
+    def parse_user(self, username, **kwargs):
         """Parses a listing and extracts the comments from it.
 
        :param username: a user
@@ -40,8 +40,8 @@ class Scraper(API):
         url = "https://www.reddit.com/user/{username}"
         url = url.format(username=username)
 
-        # TODO: pass user-agent in header
-        page = requests.get(url)
+        headers = kwargs.get('headers')
+        page = requests.get(url, headers=headers)
 
         soup = BeautifulSoup(page.content, 'html.parser')
         tree = soup.body.find_all('p', class_='', text=True)
