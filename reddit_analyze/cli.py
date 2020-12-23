@@ -16,7 +16,7 @@ class Listing(Command):
     def get_parser(self, prog_name):
         parser = super(Listing, self).get_parser(prog_name)
         parser.add_argument('subreddit', help='The subreddit.')
-        parser.add_argument('article', help='The name of the user.')
+        parser.add_argument('article', help='The id of the article.')
         parser.add_argument('--output-file', '-o',
                             help='Outputs a file with information on each '
                                  'sentence of the post, as well as the final '
@@ -30,8 +30,8 @@ class Listing(Command):
                                     args.output_file)
 
         if args.output_file:
-            print "Listing Contents Outputted to {output_file}".format(
-                output_file=args.output_file)
+            print("Listing Contents Outputted to {output_file}".format(
+                output_file=args.output_file))
 
 
 class User(Command):
@@ -53,8 +53,8 @@ class User(Command):
         miner.get_user_sentiment(args.username, args.output_file)
 
         if args.output_file:
-            print "Listing Contents Outputted to {output_file}".format(
-                output_file=args.output_file)
+            print("Listing Contents Outputted to {output_file}".format(
+                output_file=args.output_file))
 
 
 class CLI(App):
@@ -69,6 +69,7 @@ class CLI(App):
 
 def main(argv=sys.argv[1:]):
     myapp = CLI()
+
     return myapp.run(argv)
 
 

@@ -119,7 +119,7 @@ class Miner():
         """
         # TODO: Create a new line if the sentence takes up over 80 chars
         for comment in comments:
-            print comment
-        print "\n"
-        print "Score: {score}".format(score=self.score)
-        print "Sentiment: {sentiment}".format(sentiment=self.sentiment)
+            print(comment)
+        print("\n")
+        print("Score: {score}".format(score=self.score))
+        print("Sentiment: {sentiment}".format(sentiment=self.sentiment))
