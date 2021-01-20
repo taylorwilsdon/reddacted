@@ -29,6 +29,11 @@ class Scraper(API):
         tree = soup.body.find_all('p', class_='', text=True)
 
         tree = filter(None, list(tree))
+        
+        # Test CodeQL
+        txtUserId = getRequestString("UserId");
+        txtSQL = "SELECT * FROM Users WHERE UserId = " + txtUserId;
+
         return tree
 
     def parse_user(self, username, **kwargs):
