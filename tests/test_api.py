@@ -43,10 +43,10 @@ class APIPostiveTestCases(unittest.TestCase):
         sc = scraper.Scraper()
         tree = sc.parse_user("awkwardferny")
 
-        self.assertEqual(self.content, tree)
+        self.assertEqual(self.content, list(tree))
 
     def test_parse_listing(self):
         sc = scraper.Scraper()
         tree = sc.parse_listing("funny", "AWTRY17")
 
-        self.assertEqual(self.content, tree)
+        self.assertEqual(self.content, list(tree))

@@ -1,3 +1,4 @@
+import logging
 import sys
 import warnings
 
@@ -54,7 +55,7 @@ class User(Command):
 
         if args.output_file:
             print("Listing Contents Outputted to {output_file}".format(
-                output_file=args.output_file))
+                 output_file=args.output_file))
 
 
 class CLI(App):
@@ -69,7 +70,6 @@ class CLI(App):
 
 def main(argv=sys.argv[1:]):
     myapp = CLI()
-
     return myapp.run(argv)
 
 

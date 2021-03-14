@@ -31,8 +31,9 @@ file with the sentiment analysis.
 I have included a number of unit tests to validate the application. In order to
 run the tests, simply perform the following:
 
-1. `pip install -r test-requirements.txt` # installs needed test requirements
-2. `nosetests <test directory>` # runs the tests
+1. `pip install pytest`
+2. `pip install -r test-requirements.txt` # installs needed test requirements
+3. `pytest <test directory>` # runs the tests
 
 ## Common Exceptions ##
 

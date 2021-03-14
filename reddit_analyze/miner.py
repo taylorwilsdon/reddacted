@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import logging
 import re
 import warnings
 
 from api.scraper import Scraper
-
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
 class Miner():
@@ -27,6 +25,8 @@ class Miner():
         :param username: name of user to search
         :param output_file (optional): file to output relevant data.
         """
+
+        # TODO: Remove empty comments and <p>
         comments = self.api.parse_user(username, headers=self.headers)
         self.score = self._analyze(comments)
         self.sentiment = self._get_sentiment(self.score)
@@ -34,7 +34,7 @@ class Miner():
         if output_file:
             self._generate_output_file(output_file, comments)
         else:
-            self._print_comments(comments)
+             self._print_comments(comments)
 
     def get_listing_sentiment(self, subreddit, article, output_file=None):
         """Obtains the sentiment for a listing's comments.
@@ -43,6 +43,7 @@ class Miner():
         :param article: an article associated with the subreddit
         :param output_file (optional): file to output relevant data.
         """
+        # TODO: Remove empty comments and <p>
         comments = self.api.parse_listing(subreddit,
                                           article,
                                           headers=self.headers)
@@ -52,7 +53,7 @@ class Miner():
         if output_file:
             self._generate_output_file(output_file, comments)
         else:
-            self._print_comments(comments)
+             self._print_comments(comments)
 
     def _analyze(self, comments):
         """Obtains the sentiment for a user's comments.
@@ -73,8 +74,11 @@ class Miner():
             score = all_scores['compound']
             final_score = final_score + score
 
-        # return the average of score of all comments.
-        return round(final_score/len(comments), 4)
+        try:
+            rounded_final = round(final_score/len(comments), 4)
+            return rounded_final
+        except ZeroDivisionError:
+            logging.error("No comments found")
 
     def _get_sentiment(self, score):
         """Obtains the sentiment using a sentiment score.

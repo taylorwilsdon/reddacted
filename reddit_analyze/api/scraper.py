@@ -1,11 +1,12 @@
+import logging
 import requests
 
 from bs4 import BeautifulSoup
 
-from api import API
+from reddit_analyze.api import api
 
 
-class Scraper(API):
+class Scraper(api.API):
     """Web Scrapper which obtains data to perform sentiment analysis on.
 
     It allows an unauthenticated user to obtain data to analyze various
@@ -26,23 +27,10 @@ class Scraper(API):
         page = requests.get(url, headers=headers)
 
         soup = BeautifulSoup(page.content, 'html.parser')
-        tree = soup.body.find_all('p', class_='', text=True)
-
+        
+        tree = soup.body.find_all('p')
         tree = filter(None, list(tree))
         
-        # Test CodeQL
-        txtUserId = getRequestString("UserId")
-        txtSQL = "SELECT * FROM Users WHERE UserId = " + txtUserId
-        
-        import socket
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(('0.0.0.0', 6080))
-        s.bind(('192.168.0.1', 4040))
-        s.bind(('', 8888))
-        
-        requests.get('https://example.com', verify=False)
-
-
         return tree
 
     def parse_user(self, username, **kwargs):
@@ -56,10 +44,9 @@ class Scraper(API):
 
         headers = kwargs.get('headers')
         page = requests.get(url, headers=headers)
-
         soup = BeautifulSoup(page.content, 'html.parser')
-        tree = soup.body.find_all('p', class_='', text=True)
 
+        tree = soup.body.find_all('p')
         tree = filter(None, list(tree))
 
         return tree
