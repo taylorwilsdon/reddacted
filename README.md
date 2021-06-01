@@ -6,12 +6,15 @@ to build a score of various Reddit Objects. These objects include:
 * Listings: `/r/<subreddit>/comments/<article>`
 * Users: `/u/<username>`
 
-The score is generated based on the sentiment of the comments. Note: It only analyzes the top comments.
+The score is generated based on the sentiment of the comments. 
+
+**Note:** It only analyzes the top comments for now, but I plan to add
+a max comments option.
 
 ## Installation ##
 
 It is recommended that you first create a python virtual environment to not
-overwrite pip dependancies in your system. See [virtualenvs](http://docs.python-guide.org/en/latest/dev/virtualenvs/).
+overwrite pip dependencies in your system. See [virtualenvs](http://docs.python-guide.org/en/latest/dev/virtualenvs/).
 
 1. `pip install -r requirements.txt` # install requirements
 2. `python -m nltk.downloader vader_lexicon` # installs required nltk packages
@@ -23,8 +26,14 @@ overwrite pip dependancies in your system. See [virtualenvs](http://docs.python-
 
 * `reddit-analyze user <name>` Outputs the sentiment score of a particular User.
 
-Note: Passing `--output-file <your file>` after any of the above will generate a
+### Additional Options ###
+
+Passing `--output-file <your file>` after any of the above will generate a
 file with the sentiment analysis.
+
+Passing `--use-scraper True` will use beautifulsoup to scrape python, rather than
+grabbing and parsing the json by reddit. It's purpose is to still be able to
+scan reddit if the API changes.
 
 ## Testing ##
 

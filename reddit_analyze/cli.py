@@ -1,12 +1,10 @@
-import logging
 import sys
-import warnings
 
 from cliff.app import App
 from cliff.commandmanager import CommandManager
 from cliff.command import Command
 
-from miner import Miner
+from reddit_analyze.sentiment import Sentiment
 
 
 class Listing(Command):
@@ -22,13 +20,16 @@ class Listing(Command):
                             help='Outputs a file with information on each '
                                  'sentence of the post, as well as the final '
                                  'score.')
+        parser.add_argument('--use-scraper', '-s', type=bool,
+                            help='Use a scraper rather than the python '
+                            'api.')
         return parser
 
     def take_action(self, args):
-        miner = Miner()
-        miner.get_listing_sentiment(args.subreddit,
-                                    args.article,
-                                    args.output_file)
+        sent = Sentiment(args.use_scraper)
+        sent.get_listing_sentiment(args.subreddit,
+                                   args.article,
+                                   args.output_file)
 
         if args.output_file:
             print("Listing Contents Outputted to {output_file}".format(
@@ -47,11 +48,14 @@ class User(Command):
                             help='Outputs a file with information on each '
                                  'sentence of the post, as well as the final '
                                  'score.')
+        parser.add_argument('--use-scraper', '-s', type=bool,
+                            help='Use a scraper rather than the python '
+                            'api.')
         return parser
 
     def take_action(self, args):
-        miner = Miner()
-        miner.get_user_sentiment(args.username, args.output_file)
+        sent = Sentiment(args.use_scraper)
+        sent.get_user_sentiment(args.username, args.output_file)
 
         if args.output_file:
             print("Listing Contents Outputted to {output_file}".format(
@@ -63,7 +67,7 @@ class CLI(App):
     def __init__(self):
         super(CLI, self).__init__(
             description='Reddit Sentiment Analyzer',
-            version='1.0',
+            version='2.0',
             command_manager=CommandManager('reddit.analyze'),
             deferred_help=True,)
 

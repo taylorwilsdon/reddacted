@@ -5,15 +5,18 @@ import logging
 import re
 import warnings
 
-from api.scraper import Scraper
+from reddit_analyze.api.scraper import Scraper
+from reddit_analyze.api.reddit import Reddit
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
-class Miner():
+class Sentiment():
     """Performs the sentiment analysis on a given set of Reddit Objects."""
 
-    def __init__(self):
-        self.api = Scraper()
+    def __init__(self, scraper):
+        self.api = Reddit()
+        if scraper:
+            self.api = Scraper()
         self.score = 0
         self.sentiment = "¯\_(ツ)_/¯"
 
@@ -25,8 +28,6 @@ class Miner():
         :param username: name of user to search
         :param output_file (optional): file to output relevant data.
         """
-
-        # TODO: Remove empty comments and <p>
         comments = self.api.parse_user(username, headers=self.headers)
         self.score = self._analyze(comments)
         self.sentiment = self._get_sentiment(self.score)
@@ -43,7 +44,6 @@ class Miner():
         :param article: an article associated with the subreddit
         :param output_file (optional): file to output relevant data.
         """
-        # TODO: Remove empty comments and <p>
         comments = self.api.parse_listing(subreddit,
                                           article,
                                           headers=self.headers)
