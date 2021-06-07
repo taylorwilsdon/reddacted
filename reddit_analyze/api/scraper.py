@@ -37,6 +37,9 @@ class Scraper(api.API):
         for branch in tree:
             clean_branch = re.sub(r" ?\<[^>]+\>", "", str(branch))
             clean_tree.append(str(clean_branch))
+
+        clean_tree.remove("Members")
+        clean_tree.remove("Online")
         
         return clean_tree
 
@@ -46,19 +49,22 @@ class Scraper(api.API):
        :param username: a user
        :return: a list of comments from a user.
        """
-        url = f"https://www.reddit.com/user/{username}"
+        url = f"https://www.reddit.com/user/{username}/comments"
 
         headers = kwargs.get('headers')
         page = requests.get(url, headers=headers)
+
         soup = BeautifulSoup(page.content, 'html.parser')
 
         tree = soup.body.find_all('p')
-        tree = filter(None, list(tree))
+        tree = filter(None, list(tree)) 
         tree = list(tree)
 
         clean_tree = []
         for branch in tree:
             clean_branch = re.sub(r" ?\<[^>]+\>", "", str(branch))
             clean_tree.append(str(clean_branch))
+
+        clean_tree = list(filter(None, clean_tree))
         
         return clean_tree
