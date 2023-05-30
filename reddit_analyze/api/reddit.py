@@ -9,7 +9,7 @@ class Reddit(api.API):
     """The Reddit Class obtains data to perform sentiment analysis on
     using the Reddit API.
 
-    It allows an unauthenticated user to obtain data to analyze various
+    It allows an unauthenticated or unauthenticated user to obtain data to analyze various
     reddit objects.
     """
 
@@ -24,8 +24,9 @@ class Reddit(api.API):
         headers = kwargs.get('headers')
         try:
             response = requests.get(url, headers = headers)
-        except:
-            print('An Error Occured')
+        except Exception as e:
+            logging.error("Error obtaining article information: %s" % e)
+            return []
         
         comments = []
         json_resp = response.json()
@@ -36,8 +37,11 @@ class Reddit(api.API):
                 for child in range(0, len(children)):
                     data = children[child]["data"]
                     if "body" in data:
-                        comments.append(data["body"])
-                        # TODO: Also append replies
+                         # remove empty spaces and weird reddit strings
+                        comment = data["body"].rstrip()
+                        comment = " ".join(comment.split())
+                        comment = comment.replace("&amp;#x200B;", "")
+                        comments.append(comment)
         
         return comments
 
@@ -51,8 +55,9 @@ class Reddit(api.API):
         headers = kwargs.get('headers')
         try:
             response = requests.get(url, headers = headers)
-        except:
-            print('An Error Occured')
+        except Exception as e:
+            logging.error("Error obtaining user information: %s" % e)
+            return []
 
         comments = []
         json_resp = response.json()
@@ -62,6 +67,10 @@ class Reddit(api.API):
             for child in range(0, len(children)):
                 data = children[child]["data"]
                 if "body" in data:
-                    comments.append(data["body"])
+                    # remove empty spaces and weird reddit strings
+                    comment = data["body"].rstrip()
+                    comment = " ".join(comment.split())
+                    comment = comment.replace("&amp;#x200B;", "")
+                    comments.append(comment)
         
         return comments

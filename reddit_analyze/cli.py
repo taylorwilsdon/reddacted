@@ -10,7 +10,7 @@ from reddit_analyze.sentiment import Sentiment
 class Listing(Command):
 
     def get_description(self):
-        return 'print the sentiment score of a post.'
+        return 'get the sentiment score of a post.'
 
     def get_parser(self, prog_name):
         parser = super(Listing, self).get_parser(prog_name)
@@ -23,10 +23,17 @@ class Listing(Command):
         parser.add_argument('--use-scraper', '-s', type=bool,
                             help='Use a scraper rather than the python '
                             'api.')
+        parser.add_argument('--use-auth', '-a', type=bool,
+                            help='Enable reddit api authentication by '
+                            'using the environment variables '
+                            'REDDIT_USERNAME '
+                            'REDDIT_PASSWORD '
+                            'REDDIT_CLIENT_ID '
+                            'REDDIT_CLIENT_SECRET')
         return parser
 
     def take_action(self, args):
-        sent = Sentiment(args.use_scraper)
+        sent = Sentiment(args.use_scraper, args.use_auth)
         sent.get_listing_sentiment(args.subreddit,
                                    args.article,
                                    args.output_file)
@@ -39,7 +46,7 @@ class Listing(Command):
 class User(Command):
 
     def get_description(self):
-        return 'print the sentiment score of a user.'
+        return 'get the sentiment score of a user.'
 
     def get_parser(self, prog_name):
         parser = super(User, self).get_parser(prog_name)
@@ -51,10 +58,17 @@ class User(Command):
         parser.add_argument('--use-scraper', '-s', type=bool,
                             help='Use a scraper rather than the python '
                             'api.')
+        parser.add_argument('--use-auth', '-a', type=bool,
+                            help='Enable reddit api authentication by '
+                            'using the environment variables '
+                            'REDDIT_USERNAME '
+                            'REDDIT_PASSWORD '
+                            'REDDIT_CLIENT_ID '
+                            'REDDIT_CLIENT_SECRET')
         return parser
 
     def take_action(self, args):
-        sent = Sentiment(args.use_scraper)
+        sent = Sentiment(args.use_scraper, args.use_auth)
         sent.get_user_sentiment(args.username, args.output_file)
 
         if args.output_file:
@@ -63,18 +77,18 @@ class User(Command):
 
 
 class CLI(App):
-
+    
     def __init__(self):
         super(CLI, self).__init__(
-            description='Reddit Sentiment Analyzer',
-            version='2.0',
+            version=2.0,
+            description="ik",
             command_manager=CommandManager('reddit.analyze'),
             deferred_help=True,)
 
 
 def main(argv=sys.argv[1:]):
-    myapp = CLI()
-    return myapp.run(argv)
+    app = CLI()
+    return app.run(argv)
 
 
 if __name__ == '__main__':

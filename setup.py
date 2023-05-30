@@ -3,8 +3,7 @@
 from setuptools import setup, find_packages
 
 PROJECT = 'reddit-analyze'
-VERSION = '2.0'
-
+VERSION = '2.1'
 
 setup(
     name=PROJECT,
@@ -16,7 +15,7 @@ setup(
     author='Fernando Diaz',
     author_email='awkwardferny@gmail.com',
 
-    url='https://github.com/diazjf/reddit-sentiment-analyzer',
+    url='https://github.com/fishtoadsoft/reddit-sentiment-analyzer',
 
     classifiers=['Development Status :: 3 - Alpha',
                  'License :: OSI Approved :: MIT License',
