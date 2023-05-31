@@ -14,7 +14,7 @@ setup(
     author='Fernando Diaz',
     author_email='awkwardferny@gmail.com',
     url='https://github.com/fishtoadsoft/reddit-sentiment-analyzer',
-    download_url='',
+    download_url='https://github.com/fishtoadsoft/reddit-sentiment-analyzer/archive/refs/tags/v1.0.0.tar.gz',
 
     classifiers=['Development Status :: 4 - Beta',
                  'Intended Audience :: Science/Research',
