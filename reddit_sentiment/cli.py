@@ -20,10 +20,7 @@ class Listing(Command):
                             help='Outputs a file with information on each '
                                  'sentence of the post, as well as the final '
                                  'score.')
-        parser.add_argument('--use-scraper', '-s', type=bool,
-                            help='Use a scraper rather than the python '
-                            'api.')
-        parser.add_argument('--use-auth', '-a', type=bool,
+        parser.add_argument('--enable-auth', '-a', type=bool,
                             help='Enable reddit api authentication by '
                             'using the environment variables '
                             'REDDIT_USERNAME '
@@ -33,7 +30,7 @@ class Listing(Command):
         return parser
 
     def take_action(self, args):
-        sent = Sentiment(args.use_scraper, args.use_auth)
+        sent = Sentiment(args.enable_auth)
         sent.get_listing_sentiment(args.subreddit,
                                    args.article,
                                    args.output_file)
@@ -55,10 +52,7 @@ class User(Command):
                             help='Outputs a file with information on each '
                                  'sentence of the post, as well as the final '
                                  'score.')
-        parser.add_argument('--use-scraper', '-s', type=bool,
-                            help='Use a scraper rather than the python '
-                            'api.')
-        parser.add_argument('--use-auth', '-a', type=bool,
+        parser.add_argument('--enable-auth', '-a', type=bool,
                             help='Enable reddit api authentication by '
                             'using the environment variables '
                             'REDDIT_USERNAME '
@@ -68,7 +62,7 @@ class User(Command):
         return parser
 
     def take_action(self, args):
-        sent = Sentiment(args.use_scraper, args.use_auth)
+        sent = Sentiment(args.enable_auth)
         sent.get_user_sentiment(args.username, args.output_file)
 
         if args.output_file:
@@ -77,11 +71,10 @@ class User(Command):
 
 
 class CLI(App):
-    
     def __init__(self):
         super(CLI, self).__init__(
-            version=2.0,
-            description="ik",
+            version=2.1,
+            description="Obtains Sentiment Score of various reddit objects.",
             command_manager=CommandManager('reddit.analyze'),
             deferred_help=True,)
 

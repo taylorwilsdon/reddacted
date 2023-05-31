@@ -1,6 +1,6 @@
 # Reddit Sentiment Analyzer 😁😐😕
 
-Reddit Sentiment is a [sentiment analysis](https://en.wikipedia.org/wiki/Sentiment_analysis) CLI tool for [Reddit](https://www.reddit.com/). Reddit Sentiment gathers comments and builds a sentiment score for the following reddit abstractions:
+The Reddit Sentiment Analyzer is a [sentiment analysis](https://en.wikipedia.org/wiki/Sentiment_analysis) CLI tool for [Reddit](https://www.reddit.com/). Reddit Sentiment gathers comments and builds a sentiment score for the following reddit abstractions:
 
 - **Listings**: Get the sentiment based on top comments in an article
 - **Users**:  Get the sentiment based on the most recent comments submitted
@@ -15,8 +15,8 @@ $ pip install TODO
 
 The CLI allows the following commands:
 
-- `reddit-analyze listing <subreddit> <article>` Outputs the sentiment score of a particular Listing.
-- `reddit-analyze user <name>` Outputs the sentiment score of a particular User.
+- `reddit-sentiment listing <subreddit> <article>` Outputs the sentiment score of a particular Listing.
+- `reddit-sentiment user <name>` Outputs the sentiment score of a particular User.
 
 ### Additional Options ###
 
@@ -24,13 +24,9 @@ The CLI allows the following commands:
 
 Passing `--output-file file_name.txt` after any of the above will generate a file with detailed sentiment analysis results.
 
-#### Scrapping ####
-
-Passing `--use-scraper True` will use beautifulsoup to scrape python, rather than grabbing and parsing the json by reddit. It's purpose is to still be able to scan reddit even if the API changes
-
 #### Authentication ####
 
-Passing `--use-auth True` will allow the reddit request to be authenticated. It will check if you have valid environment variables configured and use them to authenticate.
+Passing `--enable-auth True` will allow the reddit request to be authenticated, which allows you to grab more/cleaner data. It will check if you have valid environment variables configured and use them to authenticate.
 
 ## Authentication ##
 
@@ -119,7 +115,8 @@ $ python -m nltk.downloader vader_lexicon
 $ pip install -r test-requirements.txt
 ```
 
-7. Run tests
+7. Run Unit tests
+
 ```bash
 $ pytest tests
 ```

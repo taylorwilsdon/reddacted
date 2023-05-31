@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-PROJECT = 'reddit-analyze'
+PROJECT = 'reddit-sentiment'
 VERSION = '2.1'
 
 setup(
@@ -31,7 +31,7 @@ setup(
     scripts=[],
 
     provides=[],
-    install_requires=['cliff'],
+    install_requires=['cliff', 'praw'],
 
     namespace_packages=[],
     packages=find_packages(),
@@ -39,11 +39,11 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'reddit-analyze = reddit_analyze.cli:main'
+            'reddit-sentiment = reddit_sentiment.cli:main'
         ],
-        'reddit.analyze': [
-            'listing = reddit_analyze.cli:Listing',
-            'user = reddit_analyze.cli:User'
+        'reddit.sentiment': [
+            'listing = reddit_sentiment.cli:Listing',
+            'user = reddit_sentiment.cli:User'
         ],
     },
 

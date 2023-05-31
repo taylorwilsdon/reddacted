@@ -3,9 +3,7 @@
 
 import logging
 import re
-import os
 
-import requests
 from reddit_analyze.api.scraper import Scraper
 from reddit_analyze.api.reddit import Reddit
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
@@ -19,57 +17,15 @@ neutral_sentiment = "😐"
 class Sentiment():
     """Performs the sentiment analysis on a given set of Reddit Objects."""
 
-    def __init__(self, scraper, auth):
-        self.api = Reddit()
-        if scraper:
-            self.api = Scraper()
+    def __init__(self, auth_enabled=False):
+        self.api = Scraper()
         self.score = 0
         self.sentiment = neutral_sentiment
         self.headers = {'User-agent': "Reddit Sentiment Analyzer"}
+        self.authEnable = False
 
-        # TODO: This must be tested
-        # Setup authentication
-        if auth:
-            if self.api == Reddit():
-                username = os.environ["REDDIT_USERNAME"]
-                if not username:
-                    logging.error("Request will be un-authenticated, missing the 'REDDIT_USERNAME' environment variable")
-                    return
-                password = os.environ["REDDIT_PASSWORD"]
-                if not password:
-                    logging.error("Request will be un-authenticated, missing the 'REDDIT_PASSWORD' environment variable")
-                    return
-                client_id = os.environ["REDDIT_CLIENT_ID"]
-                if not client_id:
-                    logging.error("Request will be un-authenticated, missing the 'REDDIT_CLIENT_ID' environment variable")
-                    return
-                client_secret = os.environ["REDDIT_CLIENT_SECRET"]
-                if not client_secret:
-                    logging.error("Request will be un-authenticated, missing the 'REDDIT_CLIENT_SECRET' environment variable")
-                    return
-
-                # Setup credentials for request
-                access_token = None
-                post_data = {"grant_type": "password", "username": username, "password": password}
-                client_auth = requests.auth.HTTPBasicAuth(client_id, client_secret)
-            
-                try:
-                    response = requests.post("https://www.reddit.com/api/v1/access_token",
-                                            auth=client_auth, data=post_data, headers=self.headers)
-                    access_token = response.json()["access_token"]
-                except requests.exceptions.RequestException as e:
-                    logging.error("Error requesting reddit access token: %s", e)
-                    return
-                
-                if not access_token:
-                    logging.error("Error setting access token")
-                    return
-                    
-                self.headers = {'User-agent': 'Reddit Sentiment Analyzer %s' % (username),
-                                'Authorization': 'bearer %s' % access_token}
-                logging.info("Authentication Successful: Using '%s' credentials" % username)
-            else:
-                logging.error("Error: Authentication cannot be used in scrape mode")
+        if auth_enabled:
+            self.api = Reddit()
 
     def get_user_sentiment(self, username, output_file=None):
         """Obtains the sentiment for a user's comments.

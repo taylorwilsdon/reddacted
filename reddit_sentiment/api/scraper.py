@@ -5,11 +5,11 @@ import requests
 from reddit_analyze.api import api
 
 
-class Reddit(api.API):
-    """The Reddit Class obtains data to perform sentiment analysis on
-    using the Reddit API.
+class Scraper(api.API):
+    """The Reddit Class obtains data to perform sentiment analysis by
+    scraping the Reddit json endpoint.
 
-    It allows an unauthenticated or unauthenticated user to obtain data to analyze various
+    It allows an unauthenticated user to obtain data to analyze various
     reddit objects.
     """
 
@@ -22,6 +22,7 @@ class Reddit(api.API):
        """
         url = f"https://www.reddit.com/r/{subreddit}/{article}.json"
         headers = kwargs.get('headers')
+        
         try:
             response = requests.get(url, headers = headers)
         except Exception as e:
@@ -41,8 +42,10 @@ class Reddit(api.API):
                         comment = data["body"].rstrip()
                         comment = " ".join(comment.split())
                         comment = comment.replace("&amp;#x200B;", "")
-                        comments.append(comment)
-        
+                        
+                        if comment != "":
+                            comments.append(comment)
+
         return comments
 
     def parse_user(self, username, **kwargs):
@@ -61,7 +64,7 @@ class Reddit(api.API):
 
         comments = []
         json_resp = response.json()
-        
+
         if json_resp["data"]["children"]:
             children = json_resp["data"]["children"]
             for child in range(0, len(children)):
@@ -71,6 +74,8 @@ class Reddit(api.API):
                     comment = data["body"].rstrip()
                     comment = " ".join(comment.split())
                     comment = comment.replace("&amp;#x200B;", "")
-                    comments.append(comment)
+
+                    if comment != "":
+                        comments.append(comment)
         
         return comments
