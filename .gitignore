@@ -92,3 +92,4 @@ ENV/
 .DS_Store
 .vscode
 reddit_analyze.egg-info/
+reddit_sentiment.egg-info/

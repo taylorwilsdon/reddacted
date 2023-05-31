@@ -4,8 +4,8 @@
 import logging
 import re
 
-from reddit_analyze.api.scraper import Scraper
-from reddit_analyze.api.reddit import Reddit
+from reddit_sentiment.api.scraper import Scraper
+from reddit_sentiment.api.reddit import Reddit
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 

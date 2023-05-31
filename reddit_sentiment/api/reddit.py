@@ -4,7 +4,7 @@ from types import BuiltinMethodType
 import os
 import praw
 
-from reddit_analyze.api import api
+from reddit_sentiment.api import api
 
 
 class Reddit(api.API):

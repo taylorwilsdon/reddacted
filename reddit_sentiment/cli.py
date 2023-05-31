@@ -4,7 +4,7 @@ from cliff.app import App
 from cliff.commandmanager import CommandManager
 from cliff.command import Command
 
-from reddit_analyze.sentiment import Sentiment
+from reddit_sentiment.sentiment import Sentiment
 
 
 class Listing(Command):
