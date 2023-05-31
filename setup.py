@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='reddit-sentiment',
-    version='2.1',
+    version='1.0',
     license='MIT',
 
     description='Reddit Sentiment Analyzer',
@@ -14,6 +14,7 @@ setup(
     author='Fernando Diaz',
     author_email='awkwardferny@gmail.com',
     url='https://github.com/fishtoadsoft/reddit-sentiment-analyzer',
+    download_url='',
 
     classifiers=['Development Status :: 4 - Beta',
                  'Intended Audience :: Science/Research',
@@ -28,7 +29,7 @@ setup(
 
     scripts=[],
     provides=[],
-    install_requires=['cliff', 'praw', 'nltk', 'requests'],
+    install_requires=['cliff', 'praw', 'nltk', 'requests', 'six'],
     namespace_packages=[],
     packages=find_packages(),
     include_package_data=True,
@@ -42,6 +43,4 @@ setup(
             'user = reddit_sentiment.cli:User'
         ],
     },
-
-    zip_safe=False,
 )

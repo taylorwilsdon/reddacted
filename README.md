@@ -8,7 +8,7 @@ The Reddit Sentiment Analyzer is a [sentiment analysis](https://en.wikipedia.org
 ## Installation ##
 
 ```bash
-$ pip install TODO
+$ pip install reddit-sentiment
 ```
 
 ## Using the CLI ##

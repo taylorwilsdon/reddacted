@@ -73,9 +73,9 @@ class User(Command):
 class CLI(App):
     def __init__(self):
         super(CLI, self).__init__(
-            version=2.1,
+            version=1.0,
             description="Obtains Sentiment Score of various reddit objects.",
-            command_manager=CommandManager('reddit.analyze'),
+            command_manager=CommandManager('reddit.sentiment'),
             deferred_help=True,)
 
 
