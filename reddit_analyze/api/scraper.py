@@ -15,6 +15,9 @@ class Scraper(api.API):
     API
     """
 
+    # TODO: The way reddit renders a listing has changed
+    # I need to parse the javascript functions
+    # https://www.zenrows.com/blog/scraping-javascript-rendered-web-pages#why-is-scraping-javascript-rendered-web-pages-difficult
     def parse_listing(self, subreddit, article, **kwargs):
         """Parses a listing and extracts the comments from it.
 
@@ -25,7 +28,7 @@ class Scraper(api.API):
         url = f"https://www.reddit.com/r/{subreddit}/comments/{article}"
 
         headers = kwargs.get('headers')
-        page = requests.get(url, headers=headers)
+        page = requests.get(url, headers=headers, allow_redirects=True)
 
         soup = BeautifulSoup(page.content, 'html.parser')
         
@@ -37,9 +40,6 @@ class Scraper(api.API):
         for branch in tree:
             clean_branch = re.sub(r" ?\<[^>]+\>", "", str(branch))
             clean_tree.append(str(clean_branch))
-
-        clean_tree.remove("Members")
-        clean_tree.remove("Online")
         
         return clean_tree
 
@@ -52,7 +52,7 @@ class Scraper(api.API):
         url = f"https://www.reddit.com/user/{username}/comments"
 
         headers = kwargs.get('headers')
-        page = requests.get(url, headers=headers)
+        page = requests.get(url, headers=headers, allow_redirects=True)
 
         soup = BeautifulSoup(page.content, 'html.parser')
 
