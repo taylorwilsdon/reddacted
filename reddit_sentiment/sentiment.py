@@ -319,10 +319,13 @@ class Sentiment():
                     print(f"  - Type: {pii.type}")
                     print(f"    Confidence: {pii.confidence:.2f}")
             
-            if result.llm_findings and result.llm_findings.get('has_pii'):
+            if result.llm_findings:
                 print("\nLLM Privacy Analysis:")
                 print(f"  Risk Score: {result.llm_risk_score:.2f}")
-                print("  PII Detected: Yes")
+                print(f"  PII Detected: {'Yes' if result.llm_findings.get('has_pii') else 'No'}")
+                
+                if result.llm_findings.get('confidence'):
+                    print(f"  Confidence: {result.llm_findings['confidence']:.2f}")
                     
                 if result.llm_findings.get('details'):
                     print("  Findings:")
@@ -331,14 +334,22 @@ class Sentiment():
                             print(f"    - {detail['type']}: {detail['example']}")
                         else:
                             print(f"    - {detail}")
-                    
+                
                 if result.llm_findings.get('reasoning'):
-                    print(f"  Reason: {result.llm_findings['reasoning'].replace('\n', ' ')}")
-                    
+                    print("\n  Reasoning:")
+                    # Preserve line breaks in reasoning
+                    for line in result.llm_findings['reasoning'].split('\n'):
+                        print(f"    {line.strip()}")
+                
                 if result.llm_findings.get('risk_factors'):
-                    print("  Risk Factors:")
+                    print("\n  Risk Factors:")
                     for factor in result.llm_findings['risk_factors']:
                         print(f"    - {factor}")
+                        
+                if result.llm_findings.get('recommendations'):
+                    print("\n  Recommendations:")
+                    for rec in result.llm_findings['recommendations']:
+                        print(f"    - {rec}")
             print()
   
     def _print_config(self, auth_enabled, pii_enabled, llm_config):
