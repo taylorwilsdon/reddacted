@@ -348,15 +348,23 @@ class Sentiment():
         for i, result in enumerate(filtered_results, 1):
             # Basic info panel
             basic_info = Group(
-                Text(f"Text: {result.text}", style="white"),
+                Text("━" * 50, style="dim"),  # Separator line
+                Text.assemble(("📝 ", "yellow"), ("Comment Text:", "bold cyan"), style=""),
+                Text(f"{result.text}", style="white"),
+                Text("━" * 50, style="dim"),  # Separator line
                 Text.assemble(
-                    ("Sentiment Score: ", "dim"),
-                    (f"{result.sentiment_score:.2f} ", "cyan"),
+                    ("🎭 ", "yellow"),
+                    ("Sentiment Analysis:", "bold cyan"),
+                    ("\n   Score: ", "dim"),
+                    (f"{result.sentiment_score:.2f}", "cyan bold"),
+                    ("  ", ""),
                     (f"{result.sentiment_emoji}", "bold yellow")
                 ),
                 Text.assemble(
-                    ("PII Risk Score: ", "dim"),
-                    (f"{result.pii_risk_score:.2f}", "red" if result.pii_risk_score > 0.5 else "green")
+                    ("🔒 ", "yellow"),
+                    ("Privacy Risk:", "bold cyan"),
+                    ("\n   Score: ", "dim"),
+                    (f"{result.pii_risk_score:.2f}", "red bold" if result.pii_risk_score > 0.5 else "green bold")
                 )
             )
             
