@@ -306,17 +306,22 @@ class Sentiment():
             task = progress.add_task("", total=1, visible=False)
             progress.console.print("\n[bold cyan]Active Configuration[/]")
             
+            def format_status(enabled, true_text="Enabled", false_text="Disabled"):
+                return Text.assemble(
+                    (true_text if enabled else false_text, "green" if enabled else "red")
+                )
+
             config_table = [
-                ("Authentication", "[green]Enabled[/]" if auth_enabled else "[red]Disabled[/]"),
-                ("PII Detection", "[green]Enabled[/]" if pii_enabled else "[red]Disabled[/]"),
-                ("LLM Analysis", f"[green]{llm_config['model']}[/]" if llm_config else "[red]Disabled[/]"),
-                ("PII-Only Filter", "[green]Active[/]" if self.pii_only else "[red]Inactive[/]")
+                ("Authentication", format_status(auth_enabled)),
+                ("PII Detection", format_status(pii_enabled)),
+                ("LLM Analysis", format_status(llm_config is not None, llm_config['model'] if llm_config else "Disabled")),
+                ("PII-Only Filter", format_status(self.pii_only, "Active", "Inactive"))
             ]
             
             panels = []
             panels.append(
                 Panel.fit(
-                    Group(*[Text(f"{k}: {v}") for k, v in config_table]),
+                    Group(*[Text.assemble(f"{k}: ", Text("")) + v for k, v in config_table]),
                     title="[bold]Features[/]",
                     border_style="blue"
                 )
