@@ -137,17 +137,17 @@ class Sentiment():
                         llm_risk_score, llm_findings = self.llm_detector.analyze_text(clean_comment, progress)
                         progress.update(llm_task, visible=False)
                 
+                results.append(AnalysisResult(
+                    sentiment_score=score,
+                    sentiment_emoji=self._get_sentiment(score),
+                    pii_risk_score=max(pii_risk_score, llm_risk_score),  # Use highest risk score
+                    pii_matches=pii_matches,
+                    text=clean_comment,
+                    llm_risk_score=llm_risk_score,
+                    llm_findings=llm_findings
+                ))
+                
                 progress.update(main_task, advance=1)
-            
-            results.append(AnalysisResult(
-                sentiment_score=score,
-                sentiment_emoji=self._get_sentiment(score),
-                pii_risk_score=max(pii_risk_score, llm_risk_score),  # Use highest risk score
-                pii_matches=pii_matches,
-                text=clean_comment,
-                llm_risk_score=llm_risk_score,
-                llm_findings=llm_findings
-            ))
 
         try:
             rounded_final = round(final_score/len(comments), 4)
@@ -183,10 +183,9 @@ class Sentiment():
             target.write(f"Overall Sentiment: {self.sentiment}\n\n")
 
             def should_show_result(result):
-                print(self.pii_only)
                 if not hasattr(self, 'pii_only') or not self.pii_only:
                     return True
-                return result.pii_risk_score >= 1.0
+                return 0.0 < result.pii_risk_score < 1.0
 
             comment_count = 1
             for comment in comments:
