@@ -130,8 +130,8 @@ class Sentiment():
         )
         with progress:
             main_task = progress.add_task(f"💭 Processing comments...", total=total_comments)
-            pii_task = progress.add_task("🔍 PII Analysis", visible=False)
-            llm_task = progress.add_task("🤖 LLM Analysis", visible=False)
+            pii_task = progress.add_task("🔍 PII Analysis", visible=False, total=1)
+            llm_task = progress.add_task("🤖 LLM Analysis", visible=False, total=1)
             
             for i, comment in enumerate(comments, 1):
                 clean_comment = re.sub(cleanup_regex, '', str(comment))
@@ -176,7 +176,6 @@ class Sentiment():
                     if len(self._llm_batch) >= 3 or i == total_comments:
                         logging.debug(f"\nProcessing LLM batch of {len(self._llm_batch)} items")
                         progress.update(llm_task, visible=True)
-                        progress.update(llm_task, description="🤖 Running LLM analysis")
                         progress.update(llm_task, description="🤖 Starting LLM analysis")
                         batch_results = asyncio.run(self.llm_detector.analyze_batch(self._llm_batch))
                         progress.update(llm_task, description="✅ LLM analysis complete")
@@ -186,15 +185,9 @@ class Sentiment():
                         # Update pending results with batch results
                         for batch_idx, (risk_score, findings) in zip(self._llm_batch_indices, batch_results):
                             result = self._pending_results[batch_idx]
-                            logging.debug(f"Processing result {batch_idx}:")
-                            logging.debug(f"risk_score={risk_score}")
-                            logging.debug(f"findings={findings}")
-                            
                             # Always set LLM results regardless of PII detection
                             result.llm_risk_score = risk_score
                             result.llm_findings = findings
-                            logging.debug(f"Set result.llm_risk_score={result.llm_risk_score}")
-                            logging.debug(f"Set result.llm_findings={result.llm_findings}")
                             
                             # Update PII risk score if LLM found PII
                             if findings and findings.get('has_pii'):

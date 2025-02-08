@@ -3,7 +3,6 @@ import asyncio
 import logging
 from typing import Tuple, Dict, Any, List
 import openai
-from reddit_sentiment.progress import create_progress
 
 class LLMDetector:
     """Uses LLM to detect potential PII and personal information in text"""
@@ -53,8 +52,6 @@ class LLMDetector:
                     )
                     tasks.append(task)
                 
-                logging.debug(f"Processing batch {i//batch_size + 1}")
-                
                 batch_responses = await asyncio.gather(*tasks)
                 
                 for response in batch_responses:
@@ -96,7 +93,6 @@ class LLMDetector:
                     except Exception as e:
                         results.append((0.0, {"error": str(e)}))
                 
-            logging.debug("AI analysis complete")
             return results
             
         except Exception as e:
