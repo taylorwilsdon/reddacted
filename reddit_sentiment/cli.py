@@ -60,36 +60,42 @@ class Listing(Command):
                 # Check model availability
                 import requests
                 try:
-                    models_url = f"{base_url}/v1/models"
+                    # First check if Ollama is running
+                    response = requests.get(base_url)
+                    if response.status_code != 200:
+                        console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
+                        return 1
+
+                    # Get available models
+                    models_url = f"{base_url}/api/tags"  # Ollama's actual model list endpoint
                     response = requests.get(models_url)
                     if response.status_code == 200:
-                        models = response.json()
-                        available_models = [m['id'] for m in models.get('data', [])]
-                        if args.openai_model not in available_models:
-                            console.print(f"[yellow]Warning: Model '{args.openai_model}' not found in available models:[/]")
-                            console.print("[cyan]Available models:[/]")
-                            for model in available_models:
-                                console.print(f"  • {model}")
-                    else:
-                        console.print(f"[yellow]Warning: Could not fetch available models: {response.status_code}[/]")
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Error checking model availability: {str(e)}[/]")
-                
-                # For local LLMs, ensure model name is properly formatted
-                model_name = args.openai_model
-                if model_name in available_models:
-                    console.print(f"[green]Using model: {model_name}[/]")
-                else:
-                    # Try with ollama/ prefix
-                    ollama_model = f"ollama/{model_name}"
-                    if ollama_model in available_models:
-                        model_name = ollama_model
-                        console.print(f"[green]Using model: {model_name}[/]")
-                    else:
-                        console.print(f"[red]Error: Model '{args.openai_model}' not found. Available models:[/]")
+                        models_data = response.json()
+                        available_models = [m['name'] for m in models_data.get('models', [])]
+                        
+                        console.print("\n[cyan]Available models:[/]")
                         for model in available_models:
                             console.print(f"  • {model}")
+                        
+                        # For local LLMs, ensure model name is properly formatted
+                        model_name = args.openai_model
+                        if model_name in available_models:
+                            console.print(f"\n[green]Using model: {model_name}[/]")
+                        else:
+                            # Try without any prefix/suffix
+                            base_model = model_name.split(':')[0].split('/')[-1]
+                            if base_model in available_models:
+                                model_name = base_model
+                                console.print(f"\n[green]Using model: {model_name}[/]")
+                            else:
+                                console.print(f"\n[red]Error: Model '{args.openai_model}' not found in available models.[/]")
+                                return 1
+                    else:
+                        console.print(f"[red]Error: Could not fetch available models: {response.status_code}[/]")
                         return 1
+                except Exception as e:
+                    console.print(f"[red]Error checking model availability: {str(e)}[/]")
+                    return 1
 
                 llm_config = {
                     'api_key': 'sk-not-needed',
@@ -167,36 +173,42 @@ class User(Command):
                 # Check model availability
                 import requests
                 try:
-                    models_url = f"{base_url}/v1/models"
+                    # First check if Ollama is running
+                    response = requests.get(base_url)
+                    if response.status_code != 200:
+                        console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
+                        return 1
+
+                    # Get available models
+                    models_url = f"{base_url}/api/tags"  # Ollama's actual model list endpoint
                     response = requests.get(models_url)
                     if response.status_code == 200:
-                        models = response.json()
-                        available_models = [m['id'] for m in models.get('data', [])]
-                        if args.openai_model not in available_models:
-                            console.print(f"[yellow]Warning: Model '{args.openai_model}' not found in available models:[/]")
-                            console.print("[cyan]Available models:[/]")
-                            for model in available_models:
-                                console.print(f"  • {model}")
-                    else:
-                        console.print(f"[yellow]Warning: Could not fetch available models: {response.status_code}[/]")
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Error checking model availability: {str(e)}[/]")
-                
-                # For local LLMs, ensure model name is properly formatted
-                model_name = args.openai_model
-                if model_name in available_models:
-                    console.print(f"[green]Using model: {model_name}[/]")
-                else:
-                    # Try with ollama/ prefix
-                    ollama_model = f"ollama/{model_name}"
-                    if ollama_model in available_models:
-                        model_name = ollama_model
-                        console.print(f"[green]Using model: {model_name}[/]")
-                    else:
-                        console.print(f"[red]Error: Model '{args.openai_model}' not found. Available models:[/]")
+                        models_data = response.json()
+                        available_models = [m['name'] for m in models_data.get('models', [])]
+                        
+                        console.print("\n[cyan]Available models:[/]")
                         for model in available_models:
                             console.print(f"  • {model}")
+                        
+                        # For local LLMs, ensure model name is properly formatted
+                        model_name = args.openai_model
+                        if model_name in available_models:
+                            console.print(f"\n[green]Using model: {model_name}[/]")
+                        else:
+                            # Try without any prefix/suffix
+                            base_model = model_name.split(':')[0].split('/')[-1]
+                            if base_model in available_models:
+                                model_name = base_model
+                                console.print(f"\n[green]Using model: {model_name}[/]")
+                            else:
+                                console.print(f"\n[red]Error: Model '{args.openai_model}' not found in available models.[/]")
+                                return 1
+                    else:
+                        console.print(f"[red]Error: Could not fetch available models: {response.status_code}[/]")
                         return 1
+                except Exception as e:
+                    console.print(f"[red]Error checking model availability: {str(e)}[/]")
+                    return 1
 
                 llm_config = {
                     'api_key': 'sk-not-needed',
