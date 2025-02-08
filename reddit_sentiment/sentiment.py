@@ -31,7 +31,7 @@ neutral_sentiment = "😐"
 class Sentiment():
     """Performs the sentiment analysis on a given set of Reddit Objects."""
 
-    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None):
+    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False):
         self.api = Scraper()
         self.score = 0
         self.sentiment = neutral_sentiment
@@ -164,10 +164,20 @@ class Sentiment():
             target.write(f"Overall Sentiment Score: {self.score}\n")
             target.write(f"Overall Sentiment: {self.sentiment}\n\n")
 
+            def should_show_result(result):
+                if not hasattr(self, 'pii_only') or not self.pii_only:
+                    return True
+                return result.pii_risk_score >= 1.0
+
             comment_count = 1
             for comment in comments:
                 score, results = self._analyze([comment])
-                for result in results:
+                filtered_results = [r for r in results if should_show_result(r)]
+                
+                if not filtered_results and hasattr(self, 'pii_only') and self.pii_only:
+                    continue
+                    
+                for result in filtered_results:
                     target.write(f"Comment {comment_count}:\n")
                     target.write(f"Text: {result.text}\n")
                     target.write(f"Sentiment Score: {result.sentiment_score}\n")
@@ -211,11 +221,22 @@ class Sentiment():
         :param: comments: the parsed contents to analyze.
         :param: url: the url being parsed.
         """
+        def should_show_result(result):
+            if not hasattr(self, 'pii_only') or not self.pii_only:
+                return True
+            return result.pii_risk_score >= 1.0
         print(f"Analysis for '{url}'")
         print(f"Overall Sentiment Score: {self.score}")
         print(f"Overall Sentiment: {self.sentiment}\n")
 
-        for i, result in enumerate(self.results, 1):
+        # Filter results if pii_only is enabled
+        filtered_results = [r for r in self.results if should_show_result(r)]
+        
+        if hasattr(self, 'pii_only') and self.pii_only and not filtered_results:
+            print("No comments with high PII risk found.")
+            return
+
+        for i, result in enumerate(filtered_results, 1):
             print(f"Comment {i}:")
             print(f"Text: {result.text}")
             print(f"Sentiment Score: {result.sentiment_score}")

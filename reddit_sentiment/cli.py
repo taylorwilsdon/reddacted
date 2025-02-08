@@ -36,6 +36,8 @@ class Listing(Command):
         parser.add_argument('--openai-model', type=str,
                             default='gpt-3.5-turbo',
                             help='OpenAI model to use (default: gpt-3.5-turbo)')
+        parser.add_argument('--pii-only', action='store_true',
+                            help='Only show comments that have high PII risk (score >= 1.0)')
         return parser
 
     def take_action(self, args):
@@ -50,7 +52,8 @@ class Listing(Command):
         sent = Sentiment(
             auth_enabled=args.enable_auth,
             pii_enabled=not args.disable_pii,
-            llm_config=llm_config
+            llm_config=llm_config,
+            pii_only=args.pii_only
         )
         sent.get_listing_sentiment(args.subreddit,
                                    args.article,
