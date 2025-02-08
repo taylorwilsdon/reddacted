@@ -160,17 +160,25 @@ class Sentiment():
                     
                     # Process batch when full or at end
                     if len(self._llm_batch) >= 3 or i == total_comments:
+                        print(f"\n[DEBUG] Processing LLM batch of {len(self._llm_batch)} items")
                         progress.update(llm_task, visible=True)
                         progress.update(llm_task, description="🤖 Running LLM analysis")
                         batch_results = asyncio.run(self.llm_detector.analyze_batch(self._llm_batch, progress))
+                        print(f"[DEBUG] LLM batch_results: {batch_results}")
                         progress.update(llm_task, visible=False)
                         
                         # Update pending results with batch results
                         for batch_idx, (risk_score, findings) in zip(self._llm_batch_indices, batch_results):
                             result = self._pending_results[batch_idx]
+                            print(f"[DEBUG] Processing result {batch_idx}:")
+                            print(f"[DEBUG] risk_score={risk_score}")
+                            print(f"[DEBUG] findings={findings}")
+                            
                             # Always set LLM results regardless of PII detection
                             result.llm_risk_score = risk_score
                             result.llm_findings = findings
+                            print(f"[DEBUG] Set result.llm_risk_score={result.llm_risk_score}")
+                            print(f"[DEBUG] Set result.llm_findings={result.llm_findings}")
                             
                             # Update PII risk score if LLM found PII
                             if findings and findings.get('has_pii'):
@@ -178,6 +186,7 @@ class Sentiment():
                             
                             # Add this result to final results immediately
                             results.append(result)
+                            print(f"[DEBUG] Added result to final results")
                         
                         # Clear batch
                         self._llm_batch = []
