@@ -4,6 +4,10 @@ import logging
 from typing import Tuple, Dict, Any, List
 import openai
 
+httpx_logger = logging.getLogger("httpx")
+httpx_logger.setLevel(logging.WARNING)
+
+
 class LLMDetector:
     """Uses LLM to detect potential PII and personal information in text"""
 
