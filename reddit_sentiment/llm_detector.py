@@ -28,7 +28,7 @@ class LLMDetector:
         if api_base:
             openai.api_base = api_base
 
-    async def analyze_batch(self, texts: List[str], progress=None) -> List[Tuple[float, Dict[str, Any]]]:
+    async def analyze_batch(self, texts: List[str]) -> List[Tuple[float, Dict[str, Any]]]:
         """
         Analyze a batch of texts using LLM for potential personal information.
         Returns list of tuples (risk_score, details).
@@ -53,10 +53,7 @@ class LLMDetector:
                     )
                     tasks.append(task)
                 
-                if progress and i == 0:  # Only show start status
-                    progress.update(progress.task_ids[2], description="🤖 Starting LLM analysis")
-                elif progress:
-                    logging.debug(f"Processing batch {i//batch_size + 1}")
+                logging.debug(f"Processing batch {i//batch_size + 1}")
                 
                 batch_responses = await asyncio.gather(*tasks)
                 
@@ -99,23 +96,21 @@ class LLMDetector:
                     except Exception as e:
                         results.append((0.0, {"error": str(e)}))
                 
-            if progress:
-                progress.update(progress.task_ids[2], description="✅ AI analysis complete")
+            logging.debug("AI analysis complete")
             return results
             
         except Exception as e:
-            if progress:
-                progress.update(progress.task_ids[2], description="❌ AI analysis failed")
+            logging.error("AI analysis failed")
             print(f"Batch LLM analysis failed: {str(e)}")
             return [(0.0, {"error": str(e)})] * len(texts)
 
-    def analyze_text(self, text: str, progress=None) -> Tuple[float, Dict[str, Any]]:
+    def analyze_text(self, text: str) -> Tuple[float, Dict[str, Any]]:
         """
         Analyze a single text using LLM for potential personal information.
         Returns tuple of (risk_score, details).
         """
         try:
-            results = asyncio.run(self.analyze_batch([text], progress))
+            results = asyncio.run(self.analyze_batch([text]))
             return results[0]
         except Exception as e:
             print(f"LLM analysis failed: {str(e)}")

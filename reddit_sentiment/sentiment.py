@@ -15,7 +15,7 @@ from rich.text import Text
 from reddit_sentiment.api.scraper import Scraper
 from reddit_sentiment.api.reddit import Reddit
 from reddit_sentiment.pii_detector import PIIDetector
-from reddit_sentiment.progress import create_progress
+from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
@@ -122,7 +122,13 @@ class Sentiment():
         total_comments = len(comments)
         print(f"\n📊 Retrieved {total_comments} comments to analyze")
         
-        with create_progress() as progress:
+        progress = Progress(
+            SpinnerColumn(spinner_name="dots"),
+            TextColumn("[bold blue]{task.description}"),
+            TimeElapsedColumn(),
+            transient=True
+        )
+        with progress:
             main_task = progress.add_task(f"💭 Processing comments...", total=total_comments)
             pii_task = progress.add_task("🔍 PII Analysis", visible=False)
             llm_task = progress.add_task("🤖 LLM Analysis", visible=False)
@@ -142,7 +148,7 @@ class Sentiment():
                 if self.pii_enabled:
                     progress.update(pii_task, visible=True)
                     progress.update(pii_task, description=f"🔍 Scanning comment {i} for PII")
-                    pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment, progress)
+                    pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment)
                     progress.update(pii_task, visible=False)
                     
                     # Store comment for batch processing
@@ -171,7 +177,9 @@ class Sentiment():
                         logging.debug(f"\nProcessing LLM batch of {len(self._llm_batch)} items")
                         progress.update(llm_task, visible=True)
                         progress.update(llm_task, description="🤖 Running LLM analysis")
-                        batch_results = asyncio.run(self.llm_detector.analyze_batch(self._llm_batch, progress))
+                        progress.update(llm_task, description="🤖 Starting LLM analysis")
+                        batch_results = asyncio.run(self.llm_detector.analyze_batch(self._llm_batch))
+                        progress.update(llm_task, description="✅ LLM analysis complete")
                         logging.debug(f"LLM batch_results: {batch_results}")
                         progress.update(llm_task, visible=False)
                         
