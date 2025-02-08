@@ -12,8 +12,10 @@ class LLMDetector:
     Respond in JSON format with these fields:
     - has_pii: boolean
     - confidence: float (0-1)
-    - details: list of findings
-    - reasoning: brief explanation
+    - details: list of findings with specific examples from the text
+    - reasoning: detailed explanation of why this content might identify the author
+    - risk_factors: list of specific elements that contribute to the risk score
+    - recommendations: list of suggestions to reduce identifiability
     
     Text to analyze: {text}
     """

@@ -181,15 +181,25 @@ class Sentiment():
                             target.write(f"    Confidence: {pii.confidence:.2f}\n")
                     
                     if result.llm_findings:
-                        target.write("\nLLM Analysis:\n")
+                        target.write("\nAI Privacy Analysis:\n")
                         target.write(f"  Risk Score: {result.llm_risk_score:.2f}\n")
                         if isinstance(result.llm_findings, dict):
+                            if result.llm_findings.get('has_pii'):
+                                target.write("  PII Detected: Yes\n")
                             if result.llm_findings.get('details'):
                                 target.write("  Findings:\n")
                                 for detail in result.llm_findings['details']:
                                     target.write(f"    - {detail}\n")
                             if result.llm_findings.get('reasoning'):
-                                target.write(f"  Reasoning: {result.llm_findings['reasoning']}\n")
+                                target.write(f"\n  Reasoning:\n    {result.llm_findings['reasoning']}\n")
+                            if result.llm_findings.get('risk_factors'):
+                                target.write("\n  Risk Factors:\n")
+                                for factor in result.llm_findings['risk_factors']:
+                                    target.write(f"    - {factor}\n")
+                            if result.llm_findings.get('recommendations'):
+                                target.write("\n  Recommendations:\n")
+                                for rec in result.llm_findings['recommendations']:
+                                    target.write(f"    - {rec}\n")
                     target.write("\n")
                     
                 comment_count += 1
