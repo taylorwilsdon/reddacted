@@ -130,7 +130,6 @@ class Sentiment():
 
                 # PII analysis
                 pii_risk_score, pii_matches = 0.0, []
-                llm_risk_score, llm_findings = 0.0, None
                 
                 if self.pii_enabled:
                     progress.update(pii_task, visible=True)
