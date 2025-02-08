@@ -36,6 +36,8 @@ class Listing(Command):
                             help='Disable PII detection in the analysis')
         parser.add_argument('--openai-key', type=str,
                             help='OpenAI API key for LLM-based analysis')
+        parser.add_argument('--local-llm', type=str,
+                            help='URL for local LLM endpoint (OpenAI compatible)')
         parser.add_argument('--openai-base', type=str,
                             help='Optional OpenAI API base URL')
         parser.add_argument('--openai-model', type=str,
@@ -48,13 +50,20 @@ class Listing(Command):
     def take_action(self, args):
         llm_config = None
         
-        # If OpenAI key not provided, prompt for it
-        if not args.openai_key and not args.disable_pii:
-            console.print("[yellow]No OpenAI API key provided.[/]")
-            if Prompt.ask("Would you like to enable LLM-based PII analysis?", choices=["y", "n"], default="y") == "y":
-                args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
+        # Handle LLM configuration
+        if not args.disable_pii:
+            if args.local_llm:
+                llm_config = {
+                    'api_key': 'not-needed',
+                    'api_base': args.local_llm,
+                    'model': args.openai_model
+                }
+            elif not args.openai_key:
+                console.print("[yellow]No OpenAI API key provided.[/]")
+                if Prompt.ask("Would you like to enable LLM-based PII analysis?", choices=["y", "n"], default="y") == "y":
+                    args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
         
-        if args.openai_key:
+        if args.openai_key and not args.local_llm:
             llm_config = {
                 'api_key': args.openai_key,
                 'api_base': args.openai_base,
@@ -95,6 +104,8 @@ class User(Command):
                             help='Disable PII detection in the analysis')
         parser.add_argument('--openai-key', type=str,
                             help='OpenAI API key for LLM-based analysis')
+        parser.add_argument('--local-llm', type=str,
+                            help='URL for local LLM endpoint (OpenAI compatible)')
         parser.add_argument('--openai-base', type=str,
                             help='Optional OpenAI API base URL')
         parser.add_argument('--openai-model', type=str,
@@ -107,13 +118,20 @@ class User(Command):
     def take_action(self, args):
         llm_config = None
         
-        # If OpenAI key not provided, prompt for it
-        if not args.openai_key and not args.disable_pii:
-            console.print("[yellow]No OpenAI API key provided.[/]")
-            if Prompt.ask("Would you like to enable LLM-based PII analysis?", choices=["y", "n"], default="y") == "y":
-                args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
+        # Handle LLM configuration
+        if not args.disable_pii:
+            if args.local_llm:
+                llm_config = {
+                    'api_key': 'not-needed',
+                    'api_base': args.local_llm,
+                    'model': args.openai_model
+                }
+            elif not args.openai_key:
+                console.print("[yellow]No OpenAI API key provided.[/]")
+                if Prompt.ask("Would you like to enable LLM-based PII analysis?", choices=["y", "n"], default="y") == "y":
+                    args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
         
-        if args.openai_key:
+        if args.openai_key and not args.local_llm:
             llm_config = {
                 'api_key': args.openai_key,
                 'api_base': args.openai_base,
