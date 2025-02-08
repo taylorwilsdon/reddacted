@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any
 from rich.panel import Panel
 from rich.columns import Columns
-from rich.group import Group
+from rich.console import Group
 from rich.text import Text
 
 from reddit_sentiment.api.scraper import Scraper
