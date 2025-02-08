@@ -288,10 +288,6 @@ class Sentiment():
                                 target.write("\n  Risk Factors:\n")
                                 for factor in result.llm_findings['risk_factors']:
                                     target.write(f"    - {factor}\n")
-                            if result.llm_findings.get('recommendations'):
-                                target.write("\n  Recommendations:\n")
-                                for rec in result.llm_findings['recommendations']:
-                                    target.write(f"    - {rec}\n")
                     target.write("\n")
                     
                 comment_count += 1
@@ -367,10 +363,6 @@ class Sentiment():
                     for factor in result.llm_findings['risk_factors']:
                         print(f"    - {factor}")
                         
-                if result.llm_findings.get('recommendations'):
-                    print("\n  Recommendations:")
-                    for rec in result.llm_findings['recommendations']:
-                        print(f"    - {rec}")
             print()
   
     def _print_config(self, auth_enabled, pii_enabled, llm_config):
