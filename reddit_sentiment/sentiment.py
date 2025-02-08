@@ -184,9 +184,19 @@ class Sentiment():
 
             def should_show_result(result):
                 if not hasattr(self, 'pii_only') or not self.pii_only:
+                    logging.debug(f"PII-only filtering disabled, showing all results")
                     return True
+                
+                # Debug log the scores
+                logging.debug(f"Checking comment with PII score: {result.pii_risk_score:.2f}, LLM score: {result.llm_risk_score:.2f}")
+                
                 # Show results with any PII risk (score > 0.0) but not perfect scores (1.0)
-                return 0.0 < result.pii_risk_score < 1.0 or 0.0 < result.llm_risk_score < 1.0
+                has_pii_risk = 0.0 < result.pii_risk_score < 1.0
+                has_llm_risk = 0.0 < result.llm_risk_score < 1.0
+                
+                logging.debug(f"PII risk: {has_pii_risk}, LLM risk: {has_llm_risk}")
+                
+                return has_pii_risk or has_llm_risk
 
             comment_count = 1
             for comment in comments:
@@ -242,9 +252,19 @@ class Sentiment():
         """
         def should_show_result(result):
             if not hasattr(self, 'pii_only') or not self.pii_only:
+                logging.debug(f"PII-only filtering disabled, showing all results")
                 return True
+                
+            # Debug log the scores
+            logging.debug(f"Checking comment with PII score: {result.pii_risk_score:.2f}, LLM score: {result.llm_risk_score:.2f}")
+            
             # Show results with any PII risk (score > 0.0) but not perfect scores (1.0)
-            return 0.0 < result.pii_risk_score < 1.0 or 0.0 < result.llm_risk_score < 1.0
+            has_pii_risk = 0.0 < result.pii_risk_score < 1.0
+            has_llm_risk = 0.0 < result.llm_risk_score < 1.0
+            
+            logging.debug(f"PII risk: {has_pii_risk}, LLM risk: {has_llm_risk}")
+            
+            return has_pii_risk or has_llm_risk
 
         total_comments = len(comments)
         print(f"Analysis for '{url}'")
