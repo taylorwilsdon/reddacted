@@ -168,14 +168,16 @@ class Sentiment():
                         # Update pending results with batch results
                         for batch_idx, (risk_score, findings) in zip(self._llm_batch_indices, batch_results):
                             result = self._pending_results[batch_idx]
+                            # Always set LLM results regardless of PII detection
                             result.llm_risk_score = risk_score
                             result.llm_findings = findings
-                            # Use LLM risk score if it found PII
+                            
+                            # Update PII risk score if LLM found PII
                             if findings and findings.get('has_pii'):
                                 result.pii_risk_score = max(result.pii_risk_score, risk_score)
-                        
-                        # Add completed results to final results list
-                        results.extend(self._pending_results)
+                            
+                            # Add this result to final results immediately
+                            results.append(result)
                         
                         # Clear batch
                         self._llm_batch = []
