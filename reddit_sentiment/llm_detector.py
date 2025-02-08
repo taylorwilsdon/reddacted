@@ -63,10 +63,8 @@ class LLMDetector:
                         import json
                         raw_response = response.choices[0].message.content.strip()
                         logging.debug(f"\n🤖 Raw LLM Response:\n{raw_response}\n")
-                        
-                        # Try to clean up the response if it's not proper JSON
                         try:
-                            # First attempt direct parse
+                            # First attempt direct parse, sometimes stupid LLM messes up formatting
                             analysis = json.loads(raw_response)
                         except json.JSONDecodeError:
                             # If that fails, try to extract JSON from markdown blocks
