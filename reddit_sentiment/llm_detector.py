@@ -62,10 +62,13 @@ class LLMDetector:
                     try:
                         import json
                         analysis = json.loads(response.choices[0].message.content)
-                        results.append((
-                            float(analysis.get('confidence', 0.0)),
-                            analysis
-                        ))
+                        # Use has_pii to determine if there's a risk
+                        risk_score = float(analysis.get('confidence', 0.0))
+                        if analysis.get('has_pii', False):
+                            risk_score = 1.0 - risk_score  # Invert score - higher risk = lower score
+                        else:
+                            risk_score = 1.0  # No PII = no risk
+                        results.append((risk_score, analysis))
                     except Exception as e:
                         results.append((0.0, {"error": str(e)}))
                 

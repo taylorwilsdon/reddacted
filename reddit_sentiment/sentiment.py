@@ -168,8 +168,9 @@ class Sentiment():
                             result = self._pending_results[batch_idx]
                             result.llm_risk_score = risk_score
                             result.llm_findings = findings
-                            # Update PII risk score to be the maximum of pattern-based and LLM scores
-                            result.pii_risk_score = max(result.pii_risk_score, risk_score)
+                            # Update PII risk score to be the minimum (worst) of pattern-based and LLM scores
+                            # Lower scores indicate higher risk
+                            result.pii_risk_score = min(result.pii_risk_score, risk_score)
                         
                         # Add completed results to final results list
                         results.extend(self._pending_results)
