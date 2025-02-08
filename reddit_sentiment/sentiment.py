@@ -185,7 +185,8 @@ class Sentiment():
             def should_show_result(result):
                 if not hasattr(self, 'pii_only') or not self.pii_only:
                     return True
-                return 0.0 < result.pii_risk_score < 1.0
+                # Show results with any PII risk (score > 0.0) but not perfect scores (1.0)
+                return 0.0 < result.pii_risk_score < 1.0 or 0.0 < result.llm_risk_score < 1.0
 
             comment_count = 1
             for comment in comments:
@@ -242,7 +243,8 @@ class Sentiment():
         def should_show_result(result):
             if not hasattr(self, 'pii_only') or not self.pii_only:
                 return True
-            return 0.0 < result.pii_risk_score < 1.0
+            # Show results with any PII risk (score > 0.0) but not perfect scores (1.0)
+            return 0.0 < result.pii_risk_score < 1.0 or 0.0 < result.llm_risk_score < 1.0
 
         total_comments = len(comments)
         print(f"Analysis for '{url}'")
