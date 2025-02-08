@@ -383,7 +383,13 @@ class Sentiment():
   
     def _print_config(self, auth_enabled, pii_enabled, llm_config):
         from os import environ
-        with create_progress() as progress:
+        progress = Progress(
+            SpinnerColumn(spinner_name="dots"),
+            TextColumn("[bold blue]{task.description}"),
+            TimeElapsedColumn(),
+            transient=True
+        )
+        with progress:
             task = progress.add_task("", total=1, visible=False)
             progress.console.print("\n[bold cyan]Active Configuration[/]")
             
