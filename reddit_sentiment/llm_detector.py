@@ -69,11 +69,15 @@ class LLMDetector:
                         has_pii = analysis.get('has_pii', False)
                         
                         if has_pii:
-                            # Higher confidence = higher risk when PII is found
+                            # For PII content, use confidence as risk score (0.0-1.0)
                             risk_score = confidence
                         else:
                             # No PII = no risk
                             risk_score = 0.0
+                            # Clear findings for no-risk content
+                            analysis['details'] = []
+                            analysis['risk_factors'] = []
+                            analysis['reasoning'] = ""
                             
                         results.append((risk_score, analysis))
                     except Exception as e:

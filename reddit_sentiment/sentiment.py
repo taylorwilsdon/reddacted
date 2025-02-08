@@ -317,21 +317,26 @@ class Sentiment():
                     print(f"  - Type: {pii.type}")
                     print(f"    Confidence: {pii.confidence:.2f}")
             
-            if result.llm_findings:
+            if result.llm_findings and result.llm_findings.get('has_pii'):
                 print("\nLLM Privacy Analysis:")
                 print(f"  Risk Score: {result.llm_risk_score:.2f}")
-                if result.llm_findings.get('has_pii'):
-                    print("  PII Detected: Yes")
-                    if result.llm_findings.get('details'):
-                        print("  Findings:")
-                        for detail in result.llm_findings['details']:
+                print("  PII Detected: Yes")
+                    
+                if result.llm_findings.get('details'):
+                    print("  Findings:")
+                    for detail in result.llm_findings['details']:
+                        if isinstance(detail, dict):
+                            print(f"    - {detail['type']}: {detail['example']}")
+                        else:
                             print(f"    - {detail}")
-                    if result.llm_findings.get('reasoning'):
-                        print(f"  Reason: {result.llm_findings['reasoning']}")
-                    if result.llm_findings.get('risk_factors'):
-                        print("  Risk Factors:")
-                        for factor in result.llm_findings['risk_factors']:
-                            print(f"    - {factor}")
+                    
+                if result.llm_findings.get('reasoning'):
+                    print(f"  Reason: {result.llm_findings['reasoning'].replace('\n', ' ')}")
+                    
+                if result.llm_findings.get('risk_factors'):
+                    print("  Risk Factors:")
+                    for factor in result.llm_findings['risk_factors']:
+                        print(f"    - {factor}")
             print()
   
     def _print_config(self, auth_enabled, pii_enabled, llm_config):
