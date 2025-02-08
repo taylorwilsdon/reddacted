@@ -93,11 +93,18 @@ class Listing(Command):
                                 border_style="green",
                                 padding=(1, 2)
                             )
+                            # Display models and status side by side
+                            console.print(Columns([models_panel, status_panel]))
                         else:
                             # Try without any prefix/suffix
                             base_model = model_name.split(':')[0].split('/')[-1]
                             if base_model in available_models:
                                 model_name = base_model
+                                status_panel = Panel(
+                                    f"[green]Active Model:[/]\n[white]{model_name}[/]",
+                                    border_style="green",
+                                    padding=(1, 2)
+                                )
                                 # Display models and status side by side
                                 console.print(Columns([models_panel, status_panel]))
                             else:
@@ -221,11 +228,18 @@ class User(Command):
                                 border_style="green",
                                 padding=(1, 2)
                             )
+                            # Display models and status side by side
+                            console.print(Columns([models_panel, status_panel]))
                         else:
                             # Try without any prefix/suffix
                             base_model = model_name.split(':')[0].split('/')[-1]
                             if base_model in available_models:
                                 model_name = base_model
+                                status_panel = Panel(
+                                    f"[green]Active Model:[/]\n[white]{model_name}[/]",
+                                    border_style="green",
+                                    padding=(1, 2)
+                                )
                                 # Display models and status side by side
                                 console.print(Columns([models_panel, status_panel]))
                             else:
