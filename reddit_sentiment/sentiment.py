@@ -103,12 +103,17 @@ class Sentiment():
 
         cleanup_regex = re.compile('<.*?>')
 
+        total_comments = len(comments)
+        print(f"\n📊 Retrieved {total_comments} comments to analyze")
+        
         with create_progress() as progress:
-            total_comments = len(comments)
-            task = progress.add_task(f"💭 Processing {total_comments} comments...", total=total_comments)
+            main_task = progress.add_task(f"💭 Processing comments...", total=total_comments)
+            pii_task = progress.add_task("🔍 PII Analysis", visible=False)
+            llm_task = progress.add_task("🤖 AI Analysis", visible=False)
             
             for i, comment in enumerate(comments, 1):
                 clean_comment = re.sub(cleanup_regex, '', str(comment))
+                progress.update(main_task, description=f"💭 Processing comment {i}/{total_comments}")
                 
                 # Sentiment analysis
                 all_scores = sentiment_analyzer.polarity_scores(clean_comment)
@@ -120,14 +125,19 @@ class Sentiment():
                 llm_risk_score, llm_findings = 0.0, None
                 
                 if self.pii_enabled:
-                    pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment)
+                    progress.update(pii_task, visible=True)
+                    progress.update(pii_task, description=f"🔍 Scanning comment {i} for PII")
+                    pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment, progress)
+                    progress.update(pii_task, visible=False)
                     
                     # LLM analysis if enabled
                     if self.llm_detector:
-                        progress.update(task, description=f"🤖 AI analyzing comment {i}/{total_comments}...")
-                        llm_risk_score, llm_findings = self.llm_detector.analyze_text(clean_comment)
+                        progress.update(llm_task, visible=True)
+                        progress.update(llm_task, description=f"🤖 AI analyzing comment {i}/{total_comments}")
+                        llm_risk_score, llm_findings = self.llm_detector.analyze_text(clean_comment, progress)
+                        progress.update(llm_task, visible=False)
                 
-                progress.update(task, advance=1)
+                progress.update(main_task, advance=1)
             
             results.append(AnalysisResult(
                 sentiment_score=score,

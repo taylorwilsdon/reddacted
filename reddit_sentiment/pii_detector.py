@@ -60,15 +60,12 @@ class PIIDetector:
 
         return matches
 
-    def get_pii_risk_score(self, text: str) -> Tuple[float, List[PIIMatch]]:
+    def get_pii_risk_score(self, text: str, progress=None) -> Tuple[float, List[PIIMatch]]:
         """
         Calculate overall PII risk score for a text and return matches.
         Returns a tuple of (risk_score, matches).
         """
-        with create_progress() as progress:
-            task = progress.add_task("🔍 Scanning for pattern-based PII...", total=None)
-            matches = self.analyze_text(text)
-            progress.update(task, description="✨ Calculating risk score...")
+        matches = self.analyze_text(text)
         if not matches:
             return 0.0, []
             

@@ -27,31 +27,28 @@ class LLMDetector:
         if api_base:
             openai.api_base = api_base
 
-    def analyze_text(self, text: str) -> Tuple[float, Dict[str, Any]]:
+    def analyze_text(self, text: str, progress=None) -> Tuple[float, Dict[str, Any]]:
         """
         Analyze text using LLM for potential personal information.
         Returns tuple of (risk_score, details).
         """
         try:
-            with create_progress() as progress:
-                task = progress.add_task("🔍 Analyzing text for personal information...", total=None)
-                
-                client = openai.OpenAI()
-                try:
-                    response = client.chat.completions.create(
-                        model=self.model,
-                        messages=[
-                            {"role": "system", "content": "You are a privacy analysis assistant."},
-                            {"role": "user", "content": self.DEFAULT_PROMPT.format(text=text)}
-                        ],
-                        temperature=0.1
-                    )
-                    progress.update(task, description="✅ AI analysis complete")
-                except openai.APIError as e:
-                    progress.update(task, description="❌ AI analysis failed")
-                    raise e
-                
-                progress.update(task, description="✨ Processing results...")
+            client = openai.OpenAI()
+            try:
+                response = client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": "You are a privacy analysis assistant."},
+                        {"role": "user", "content": self.DEFAULT_PROMPT.format(text=text)}
+                    ],
+                    temperature=0.1
+                )
+                if progress:
+                    progress.update(progress.task_ids[2], description="✅ AI analysis complete")
+            except openai.APIError as e:
+                if progress:
+                    progress.update(progress.task_ids[2], description="❌ AI analysis failed")
+                raise e
             
             result = response.choices[0].message.content
             # Note: In production, add proper JSON parsing with error handling
