@@ -47,10 +47,10 @@ class Sentiment():
         :param output_file (optional): file to output relevant data.
         """
         comments = self.api.parse_user(username, headers=self.headers)
-        self.score = self._analyze(comments)
+        self.score, self.results = self._analyze(comments)
         self.sentiment = self._get_sentiment(self.score)
 
-        user_id = "/user/{username}".format(username=username)
+        user_id = f"/user/{username}"
 
         if output_file:
             self._generate_output_file(output_file, comments, user_id)
@@ -67,11 +67,10 @@ class Sentiment():
         comments = self.api.parse_listing(subreddit,
                                           article,
                                           headers=self.headers)
-        self.score = self._analyze(comments)
+        self.score, self.results = self._analyze(comments)
         self.sentiment = self._get_sentiment(self.score)
 
-        article_id = "/r/{subreddit}/comments/{article}".format(subreddit=subreddit,
-                                                                article=article)
+        article_id = f"/r/{subreddit}/comments/{article}"
 
         if output_file:
             self._generate_output_file(output_file, comments, article_id)
@@ -172,22 +171,17 @@ class Sentiment():
         print(f"Overall Sentiment Score: {self.score}")
         print(f"Overall Sentiment: {self.sentiment}\n")
 
-        comment_count = 1
-        for comment in comments:
-            score, results = self._analyze([comment])
-            for result in results:
-                print(f"Comment {comment_count}:")
-                print(f"Text: {result.text}")
-                print(f"Sentiment Score: {result.sentiment_score}")
-                print(f"Sentiment: {result.sentiment_emoji}")
-                print(f"PII Risk Score: {result.pii_risk_score:.2f}")
-                
-                if result.pii_matches:
-                    print("PII Detected:")
-                    for pii in result.pii_matches:
-                        print(f"  - Type: {pii.type}")
-                        print(f"    Confidence: {pii.confidence:.2f}")
-                print()
-                
-            comment_count += 1
+        for i, result in enumerate(self.results, 1):
+            print(f"Comment {i}:")
+            print(f"Text: {result.text}")
+            print(f"Sentiment Score: {result.sentiment_score}")
+            print(f"Sentiment: {result.sentiment_emoji}")
+            print(f"PII Risk Score: {result.pii_risk_score:.2f}")
+            
+            if result.pii_matches:
+                print("PII Detected:")
+                for pii in result.pii_matches:
+                    print(f"  - Type: {pii.type}")
+                    print(f"    Confidence: {pii.confidence:.2f}")
+            print()
   
