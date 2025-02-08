@@ -209,7 +209,7 @@ class Sentiment():
                             target.write(f"    Confidence: {pii.confidence:.2f}\n")
                     
                     if result.llm_findings:
-                        target.write("\LLM Privacy Analysis:\n")
+                        target.write("\nLLM Privacy Analysis:\n")
                         target.write(f"  Risk Score: {result.llm_risk_score:.2f}\n")
                         if isinstance(result.llm_findings, dict):
                             if result.llm_findings.get('has_pii'):
@@ -271,7 +271,7 @@ class Sentiment():
                     print(f"    Confidence: {pii.confidence:.2f}")
             
             if result.llm_findings:
-                print("\LLM Privacy Analysis:")
+                print("\nLLM Privacy Analysis:")
                 print(f"  Risk Score: {result.llm_risk_score:.2f}")
                 if result.llm_findings.get('has_pii'):
                     print("  PII Detected: Yes")
