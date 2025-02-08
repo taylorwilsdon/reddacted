@@ -75,10 +75,27 @@ class Listing(Command):
                 except Exception as e:
                     console.print(f"[yellow]Warning: Error checking model availability: {str(e)}[/]")
                 
+                # For local LLMs, ensure model name is properly formatted
+                model_name = args.openai_model
+                if model_name in available_models:
+                    console.print(f"[green]Using model: {model_name}[/]")
+                else:
+                    # Try with ollama/ prefix
+                    ollama_model = f"ollama/{model_name}"
+                    if ollama_model in available_models:
+                        model_name = ollama_model
+                        console.print(f"[green]Using model: {model_name}[/]")
+                    else:
+                        console.print(f"[red]Error: Model '{args.openai_model}' not found. Available models:[/]")
+                        for model in available_models:
+                            console.print(f"  • {model}")
+                        return 1
+
                 llm_config = {
-                    'api_key': 'not-needed',
+                    'api_key': 'sk-not-needed',
                     'api_base': base_url,
-                    'model': args.openai_model
+                    'model': model_name,
+                    'default_headers': {'User-Agent': 'Reddit-Sentiment-Analyzer'}
                 }
             elif not args.openai_key:
                 console.print("[yellow]No OpenAI API key provided.[/]")
@@ -165,10 +182,27 @@ class User(Command):
                 except Exception as e:
                     console.print(f"[yellow]Warning: Error checking model availability: {str(e)}[/]")
                 
+                # For local LLMs, ensure model name is properly formatted
+                model_name = args.openai_model
+                if model_name in available_models:
+                    console.print(f"[green]Using model: {model_name}[/]")
+                else:
+                    # Try with ollama/ prefix
+                    ollama_model = f"ollama/{model_name}"
+                    if ollama_model in available_models:
+                        model_name = ollama_model
+                        console.print(f"[green]Using model: {model_name}[/]")
+                    else:
+                        console.print(f"[red]Error: Model '{args.openai_model}' not found. Available models:[/]")
+                        for model in available_models:
+                            console.print(f"  • {model}")
+                        return 1
+
                 llm_config = {
-                    'api_key': 'not-needed',
+                    'api_key': 'sk-not-needed',
                     'api_base': base_url,
-                    'model': args.openai_model
+                    'model': model_name,
+                    'default_headers': {'User-Agent': 'Reddit-Sentiment-Analyzer'}
                 }
             elif not args.openai_key:
                 console.print("[yellow]No OpenAI API key provided.[/]")
