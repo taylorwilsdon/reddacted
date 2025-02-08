@@ -91,13 +91,12 @@ class Listing(Command):
                             base_model = model_name.split(':')[0].split('/')[-1]
                             if base_model in available_models:
                                 model_name = base_model
-                                status_panel = Panel(
-                                    f"[green]Active Model:[/]\n[white]{model_name}[/]",
-                                    border_style="green",
-                                    padding=(1, 2)
-                                )
-                                # Display models and status side by side
-                                console.print(Columns([models_panel, status_panel]))
+                                console.print("\n[dim]Available models:[/]")
+                                for model in available_models:
+                                    if model == model_name:
+                                        console.print(f"  • [green]{model}[/] [dim](active)[/]")
+                                    else:
+                                        console.print(f"  • {model}")
                             else:
                                 console.print(f"\n[red]Error: Model '{args.openai_model}' not found in available models.[/]")
                                 return 1
@@ -217,13 +216,12 @@ class User(Command):
                             base_model = model_name.split(':')[0].split('/')[-1]
                             if base_model in available_models:
                                 model_name = base_model
-                                status_panel = Panel(
-                                    f"[green]Active Model:[/]\n[white]{model_name}[/]",
-                                    border_style="green",
-                                    padding=(1, 2)
-                                )
-                                # Display models and status side by side
-                                console.print(Columns([models_panel, status_panel]))
+                                console.print("\n[dim]Available models:[/]")
+                                for model in available_models:
+                                    if model == model_name:
+                                        console.print(f"  • [green]{model}[/] [dim](active)[/]")
+                                    else:
+                                        console.print(f"  • {model}")
                             else:
                                 console.print(f"\n[red]Error: Model '{args.openai_model}' not found in available models.[/]")
                                 return 1
