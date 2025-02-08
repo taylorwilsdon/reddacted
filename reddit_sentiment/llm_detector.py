@@ -61,7 +61,9 @@ class LLMDetector:
                 for response in batch_responses:
                     try:
                         import json
-                        analysis = json.loads(response.choices[0].message.content)
+                        raw_response = response.choices[0].message.content
+                        print(f"\n🤖 Raw LLM Response:\n{raw_response}\n")
+                        analysis = json.loads(raw_response)
                         # Calculate risk score based on confidence and PII presence
                         confidence = float(analysis.get('confidence', 0.0))
                         has_pii = analysis.get('has_pii', False)
