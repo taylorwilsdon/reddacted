@@ -91,6 +91,8 @@ class User(Command):
         parser.add_argument('--openai-model', type=str,
                             default='gpt-3.5-turbo',
                             help='OpenAI model to use (default: gpt-3.5-turbo)')
+        parser.add_argument('--pii-only', action='store_true',
+                            help='Only show comments that contain PII (0 < score < 1.0)')
         return parser
 
     def take_action(self, args):
@@ -105,7 +107,8 @@ class User(Command):
         sent = Sentiment(
             auth_enabled=args.enable_auth,
             pii_enabled=not args.disable_pii,
-            llm_config=llm_config
+            llm_config=llm_config,
+            pii_only=args.pii_only
         )
         sent.get_user_sentiment(args.username, args.output_file)
 
