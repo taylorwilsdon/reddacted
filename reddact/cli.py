@@ -80,12 +80,18 @@ class Listing(Command):
                         # For local LLMs, ensure model name is properly formatted
                         model_name = args.openai_model
                         if model_name in available_models:
-                            console.print("\n[dim]Available models:[/]")
-                            for model in available_models:
-                                if model == model_name:
-                                    console.print(f"  • [green]{model}[/] [dim](active)[/]")
-                                else:
-                                    console.print(f"  • {model}")
+                            # Create a subtle panel for available models
+                            model_list = "\n".join(
+                                f"• [green]{model}[/] [dim](active)[/]" if model == model_name else f"• {model}"
+                                for model in available_models
+                            )
+                            models_panel = Panel(
+                                model_list,
+                                title="[dim]Available models[/]",
+                                border_style="dim",
+                                padding=(0, 1)
+                            )
+                            console.print(models_panel)
                         else:
                             # Try without any prefix/suffix
                             base_model = model_name.split(':')[0].split('/')[-1]
@@ -205,12 +211,18 @@ class User(Command):
                         # For local LLMs, ensure model name is properly formatted
                         model_name = args.openai_model
                         if model_name in available_models:
-                            console.print("\n[dim]Available models:[/]")
-                            for model in available_models:
-                                if model == model_name:
-                                    console.print(f"  • [green]{model}[/] [dim](active)[/]")
-                                else:
-                                    console.print(f"  • {model}")
+                            # Create a subtle panel for available models
+                            model_list = "\n".join(
+                                f"• [green]{model}[/] [dim](active)[/]" if model == model_name else f"• {model}"
+                                for model in available_models
+                            )
+                            models_panel = Panel(
+                                model_list,
+                                title="[dim]Available models[/]",
+                                border_style="dim",
+                                padding=(0, 1)
+                            )
+                            console.print(models_panel)
                         else:
                             # Try without any prefix/suffix
                             base_model = model_name.split(':')[0].split('/')[-1]
