@@ -61,26 +61,38 @@ class LLMDetector:
                 for response in batch_responses:
                     try:
                         import json
-                        raw_response = response.choices[0].message.content
+                        raw_response = response.choices[0].message.content.strip()
                         print(f"\n🤖 Raw LLM Response:\n{raw_response}\n")
-                        analysis = json.loads(raw_response)
+                        
+                        # Try to clean up the response if it's not proper JSON
+                        try:
+                            # First attempt direct parse
+                            analysis = json.loads(raw_response)
+                        except json.JSONDecodeError:
+                            # If that fails, try to extract JSON from markdown blocks
+                            if "```json" in raw_response:
+                                json_content = raw_response.split("```json")[1].split("```")[0].strip()
+                                analysis = json.loads(json_content)
+                            else:
+                                raise
+                        
                         # Calculate risk score based on confidence and PII presence
                         confidence = float(analysis.get('confidence', 0.0))
-                        print(confidence)
                         has_pii = analysis.get('has_pii', False)
-                        print(has_pii)
+                        
+                        print(f"Parsed confidence: {confidence}")
+                        print(f"Parsed has_pii: {has_pii}")
+                        
                         if has_pii:
-                            # For PII content, higher confidence means higher risk
                             risk_score = confidence
                         else:
-                            # No PII = no risk
                             risk_score = 0.0
                             analysis = {
                                 'has_pii': False,
                                 'confidence': 0.0,
                                 'details': [],
                                 'risk_factors': [],
-                                'reasoning': ""
+                                'reasoning': "No PII detected"
                             }
                             
                         results.append((risk_score, analysis))
