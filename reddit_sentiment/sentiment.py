@@ -5,6 +5,10 @@ import logging
 import re
 from dataclasses import dataclass
 from typing import List, Dict, Any
+from rich.panel import Panel
+from rich.columns import Columns
+from rich.group import Group
+from rich.text import Text
 
 from reddit_sentiment.api.scraper import Scraper
 from reddit_sentiment.api.reddit import Reddit
@@ -40,6 +44,7 @@ class Sentiment():
         self.authEnable = False
         self.pii_enabled = pii_enabled
         self.pii_detector = PIIDetector() if pii_enabled else None
+        self.pii_only = pii_only
         
         # Initialize LLM detector if config provided
         self.llm_detector = None
@@ -53,6 +58,8 @@ class Sentiment():
         
         if auth_enabled:
             self.api = Reddit()
+            
+        self._print_config(auth_enabled, pii_enabled, llm_config)
 
     def get_user_sentiment(self, username, output_file=None):
         """Obtains the sentiment for a user's comments.
@@ -183,20 +190,10 @@ class Sentiment():
             target.write(f"Overall Sentiment: {self.sentiment}\n\n")
 
             def should_show_result(result):
-                if not hasattr(self, 'pii_only') or not self.pii_only:
-                    logging.debug(f"PII-only filtering disabled, showing all results")
+                if not self.pii_only:
                     return True
-                
-                # Debug log the scores
-                logging.debug(f"Checking comment with PII score: {result.pii_risk_score:.2f}, LLM score: {result.llm_risk_score:.2f}")
-                
-                # Show results with any PII risk (score > 0.0) but not perfect scores (1.0)
-                has_pii_risk = 0.0 < result.pii_risk_score < 1.0
-                has_llm_risk = 0.0 < result.llm_risk_score < 1.0
-                
-                logging.debug(f"PII risk: {has_pii_risk}, LLM risk: {has_llm_risk}")
-                
-                return has_pii_risk or has_llm_risk
+                # Show results where either detection found something (score < 1.0)
+                return result.pii_risk_score < 1.0
 
             comment_count = 1
             for comment in comments:
@@ -251,20 +248,10 @@ class Sentiment():
         :param: url: the url being parsed.
         """
         def should_show_result(result):
-            if not hasattr(self, 'pii_only') or not self.pii_only:
-                logging.debug(f"PII-only filtering disabled, showing all results")
+            if not self.pii_only:
                 return True
-                
-            # Debug log the scores
-            logging.debug(f"Checking comment with PII score: {result.pii_risk_score:.2f}, LLM score: {result.llm_risk_score:.2f}")
-            
-            # Show results with any PII risk (score > 0.0) but not perfect scores (1.0)
-            has_pii_risk = 0.0 < result.pii_risk_score < 1.0
-            has_llm_risk = 0.0 < result.llm_risk_score < 1.0
-            
-            logging.debug(f"PII risk: {has_pii_risk}, LLM risk: {has_llm_risk}")
-            
-            return has_pii_risk or has_llm_risk
+            # Show results where either detection found something (score < 1.0)
+            return result.pii_risk_score < 1.0
 
         total_comments = len(comments)
         print(f"Analysis for '{url}'")
@@ -313,3 +300,40 @@ class Sentiment():
                         print(f"    - {rec}")
             print()
   
+    def _print_config(self, auth_enabled, pii_enabled, llm_config):
+        from os import environ
+        with create_progress() as progress:
+            task = progress.add_task("", total=1, visible=False)
+            progress.console.print("\n[bold cyan]Active Configuration[/]")
+            
+            config_table = [
+                ("Authentication", "[green]Enabled[/]" if auth_enabled else "[red]Disabled[/]"),
+                ("PII Detection", "[green]Enabled[/]" if pii_enabled else "[red]Disabled[/]"),
+                ("LLM Analysis", f"[green]{llm_config['model']}[/]" if llm_config else "[red]Disabled[/]"),
+                ("PII-Only Filter", "[green]Active[/]" if self.pii_only else "[red]Inactive[/]")
+            ]
+            
+            panels = []
+            panels.append(
+                Panel.fit(
+                    Group(*[Text(f"{k}: {v}") for k, v in config_table]),
+                    title="[bold]Features[/]",
+                    border_style="blue"
+                )
+            )
+            
+            if auth_enabled:
+                auth_table = [
+                    ("REDDIT_USERNAME", environ.get("REDDIT_USERNAME", "[red]Not Set[/]")),
+                    ("REDDIT_CLIENT_ID", environ.get("REDDIT_CLIENT_ID", "[red]Not Set[/]"))
+                ]
+                panels.append(
+                    Panel.fit(
+                        Group(*[Text(f"{k}: {v}") for k, v in auth_table]),
+                        title="[bold]Auth Environment[/]",
+                        border_style="yellow"
+                    )
+                )
+            
+            progress.console.print(Columns(panels))
+            progress.update(task, advance=1)

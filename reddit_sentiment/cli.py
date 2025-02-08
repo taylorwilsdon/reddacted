@@ -59,9 +59,6 @@ class Listing(Command):
                                    args.article,
                                    args.output_file)
 
-        if args.output_file:
-            print(f"Listing Contents Outputted to {args.output_file}")
-
 
 class User(Command):
 
@@ -111,9 +108,6 @@ class User(Command):
             pii_only=args.pii_only
         )
         sent.get_user_sentiment(args.username, args.output_file)
-
-        if args.output_file:
-            print(f"Listing Contents Outputted to {args.output_file}")
 
 
 class CLI(App):
