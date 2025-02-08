@@ -37,7 +37,7 @@ class Listing(Command):
                             default='gpt-3.5-turbo',
                             help='OpenAI model to use (default: gpt-3.5-turbo)')
         parser.add_argument('--pii-only', action='store_true',
-                            help='Only show comments that have high PII risk (score >= 1.0)')
+                            help='Only show comments that contain PII (0 < score < 1.0)')
         return parser
 
     def take_action(self, args):

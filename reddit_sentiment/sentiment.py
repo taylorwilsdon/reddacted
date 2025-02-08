@@ -224,7 +224,7 @@ class Sentiment():
         def should_show_result(result):
             if not hasattr(self, 'pii_only') or not self.pii_only:
                 return True
-            return result.pii_risk_score >= 1.0
+            return 0.0 < result.pii_risk_score < 1.0
         print(f"Analysis for '{url}'")
         print(f"Overall Sentiment Score: {self.score}")
         print(f"Overall Sentiment: {self.sentiment}\n")
