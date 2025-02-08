@@ -4,27 +4,27 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='reddit-sentiment',
+    name='reddact',
     version='1.0',
     license='MIT',
 
-    description='Reddit Sentiment Analyzer',
+    description='reddact',
     long_description='Obtains Sentiment Score of various reddit objects.',
 
-    author='Fernando Diaz',
-    author_email='awkwardferny@gmail.com',
-    url='https://github.com/fishtoadsoft/reddit-sentiment-analyzer',
-    download_url='https://github.com/fishtoadsoft/reddit-sentiment-analyzer/archive/refs/tags/v1.0.0.tar.gz',
+    author='Taylor Wilsdon',
+    author_email='taylorwilsdon@gmail.com',
+    url='https://github.com/taylorwilsdon/reddact',
+    download_url='https://github.com/taylorwilsdon/reddact/archive/refs/heads/master.zip',
 
-    classifiers=['Development Status :: 4 - Beta',
+    classifiers=['Development Status :: 1 - Alpha',
                  'Intended Audience :: Science/Research',
                  'License :: OSI Approved :: MIT License',
                  'Topic :: Software Development :: Build Tools',
                  'Programming Language :: Python :: 3',
-                 'Programming Language :: Python :: 3.10',
+                 'Programming Language :: Python :: 3.11',
                  'Environment :: Console',
                  ],
-    keywords = ['reddit', 'sentiment', 'analysis', 'nlp'],
+    keywords = ['reddact', 'reddit', 'llm', 'pii', 'sentiment', 'analysis', 'nlp'],
     platforms=['Any'],
 
     scripts=[],
@@ -36,11 +36,11 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'reddit-sentiment = reddit_sentiment.cli:main'
+            'reddact = reddact.cli:main'
         ],
         'reddit.sentiment': [
-            'listing = reddit_sentiment.cli:Listing',
-            'user = reddit_sentiment.cli:User'
+            'listing = reddact.cli:Listing',
+            'user = reddact.cli:User'
         ],
     },
 )

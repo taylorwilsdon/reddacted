@@ -4,7 +4,7 @@ import json
 
 from unittest.mock import MagicMock
 
-from reddit_sentiment.api import scraper
+from reddact.api import scraper
 
 
 class ScraperPostiveTestCases(unittest.TestCase):
