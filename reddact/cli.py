@@ -77,24 +77,15 @@ class Listing(Command):
                         from rich.panel import Panel
                         from rich.columns import Columns
                         
-                        model_list = "\n".join(f"• {model}" for model in available_models)
-                        models_panel = Panel(
-                            model_list,
-                            title="[cyan]Available Models[/]",
-                            border_style="blue",
-                            padding=(1, 2)
-                        )
-                        
                         # For local LLMs, ensure model name is properly formatted
                         model_name = args.openai_model
                         if model_name in available_models:
-                            status_panel = Panel(
-                                f"[green]Active Model:[/]\n[white]{model_name}[/]",
-                                border_style="green",
-                                padding=(1, 2)
-                            )
-                            # Display models and status side by side
-                            console.print(Columns([models_panel, status_panel]))
+                            console.print("\n[dim]Available models:[/]")
+                            for model in available_models:
+                                if model == model_name:
+                                    console.print(f"  • [green]{model}[/] [dim](active)[/]")
+                                else:
+                                    console.print(f"  • {model}")
                         else:
                             # Try without any prefix/suffix
                             base_model = model_name.split(':')[0].split('/')[-1]
@@ -212,24 +203,15 @@ class User(Command):
                         from rich.panel import Panel
                         from rich.columns import Columns
                         
-                        model_list = "\n".join(f"• {model}" for model in available_models)
-                        models_panel = Panel(
-                            model_list,
-                            title="[cyan]Available Models[/]",
-                            border_style="blue",
-                            padding=(1, 2)
-                        )
-                        
                         # For local LLMs, ensure model name is properly formatted
                         model_name = args.openai_model
                         if model_name in available_models:
-                            status_panel = Panel(
-                                f"[green]Active Model:[/]\n[white]{model_name}[/]",
-                                border_style="green",
-                                padding=(1, 2)
-                            )
-                            # Display models and status side by side
-                            console.print(Columns([models_panel, status_panel]))
+                            console.print("\n[dim]Available models:[/]")
+                            for model in available_models:
+                                if model == model_name:
+                                    console.print(f"  • [green]{model}[/] [dim](active)[/]")
+                                else:
+                                    console.print(f"  • {model}")
                         else:
                             # Try without any prefix/suffix
                             base_model = model_name.split(':')[0].split('/')[-1]
