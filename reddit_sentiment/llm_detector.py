@@ -1,5 +1,6 @@
 import os
 import asyncio
+import logging
 from typing import Tuple, Dict, Any, List
 import openai
 from reddit_sentiment.progress import create_progress
