@@ -223,9 +223,29 @@ class Sentiment():
             print(f"PII Risk Score: {result.pii_risk_score:.2f}")
             
             if result.pii_matches:
-                print("PII Detected:")
+                print("\nPattern-based PII Detected:")
                 for pii in result.pii_matches:
                     print(f"  - Type: {pii.type}")
                     print(f"    Confidence: {pii.confidence:.2f}")
+            
+            if result.llm_findings:
+                print("\nAI Privacy Analysis:")
+                print(f"  Risk Score: {result.llm_risk_score:.2f}")
+                if result.llm_findings.get('has_pii'):
+                    print("  PII Detected: Yes")
+                if result.llm_findings.get('details'):
+                    print("  Findings:")
+                    for detail in result.llm_findings['details']:
+                        print(f"    - {detail}")
+                if result.llm_findings.get('reasoning'):
+                    print(f"\n  Reasoning:\n    {result.llm_findings['reasoning']}")
+                if result.llm_findings.get('risk_factors'):
+                    print("\n  Risk Factors:")
+                    for factor in result.llm_findings['risk_factors']:
+                        print(f"    - {factor}")
+                if result.llm_findings.get('recommendations'):
+                    print("\n  Recommendations:")
+                    for rec in result.llm_findings['recommendations']:
+                        print(f"    - {rec}")
             print()
   
