@@ -1,6 +1,7 @@
 import re
 from dataclasses import dataclass
 from typing import List, Tuple
+from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 @dataclass
 class PIIMatch:
