@@ -1,10 +1,15 @@
 import sys
+import getpass
 
 from cliff.app import App
 from cliff.commandmanager import CommandManager
 from cliff.command import Command
+from rich.console import Console
+from rich.prompt import Prompt
 
 from reddit_sentiment.sentiment import Sentiment
+
+console = Console()
 
 
 class Listing(Command):
@@ -42,6 +47,13 @@ class Listing(Command):
 
     def take_action(self, args):
         llm_config = None
+        
+        # If OpenAI key not provided, prompt for it
+        if not args.openai_key and not args.disable_pii:
+            console.print("[yellow]No OpenAI API key provided.[/]")
+            if Prompt.ask("Would you like to enable LLM-based PII analysis?", choices=["y", "n"], default="y") == "y":
+                args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
+        
         if args.openai_key:
             llm_config = {
                 'api_key': args.openai_key,
@@ -94,6 +106,13 @@ class User(Command):
 
     def take_action(self, args):
         llm_config = None
+        
+        # If OpenAI key not provided, prompt for it
+        if not args.openai_key and not args.disable_pii:
+            console.print("[yellow]No OpenAI API key provided.[/]")
+            if Prompt.ask("Would you like to enable LLM-based PII analysis?", choices=["y", "n"], default="y") == "y":
+                args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
+        
         if args.openai_key:
             llm_config = {
                 'api_key': args.openai_key,
