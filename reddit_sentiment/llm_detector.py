@@ -53,8 +53,10 @@ class LLMDetector:
                     )
                     tasks.append(task)
                 
-                if progress:
-                    progress.update(progress.task_ids[2], description=f"🤖 Processing batch {i//batch_size + 1}")
+                if progress and i == 0:  # Only show start status
+                    progress.update(progress.task_ids[2], description="🤖 Starting LLM analysis")
+                elif progress:
+                    logging.debug(f"Processing batch {i//batch_size + 1}")
                 
                 batch_responses = await asyncio.gather(*tasks)
                 
