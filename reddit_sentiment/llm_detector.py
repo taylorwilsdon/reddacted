@@ -27,16 +27,18 @@ class LLMDetector:
 
     def __init__(self, api_key: str, api_base: str = None, model: str = "gpt-3.5-turbo"):
         self.model = model
-        openai.api_key = api_key
+        self.client_config = {
+            'api_key': api_key,
+        }
         if api_base:
-            openai.api_base = api_base
+            self.client_config['base_url'] = api_base
 
     async def analyze_batch(self, texts: List[str]) -> List[Tuple[float, Dict[str, Any]]]:
         """
         Analyze a batch of texts using LLM for potential personal information.
         Returns list of tuples (risk_score, details).
         """
-        client = openai.AsyncOpenAI()
+        client = openai.AsyncOpenAI(**self.client_config)
         batch_size = 3
         results = []
         
@@ -46,10 +48,6 @@ class LLMDetector:
                 tasks = []
                 
                 for text in batch:
-                    # Configure client for each request to handle Ollama endpoint
-                    if 'v1' not in openai.api_base:
-                        client.base_url = f"{openai.api_base}/v1"
-                    
                     task = client.chat.completions.create(
                         model=self.model,
                         messages=[
