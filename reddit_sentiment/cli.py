@@ -53,9 +53,31 @@ class Listing(Command):
         # Handle LLM configuration
         if not args.disable_pii:
             if args.local_llm:
+                # Remove trailing /v1 if present
+                base_url = args.local_llm.rstrip('/v1')
+                console.print(f"[blue]Using local LLM endpoint: {base_url}[/]")
+                
+                # Check model availability
+                import requests
+                try:
+                    models_url = f"{base_url}/v1/models"
+                    response = requests.get(models_url)
+                    if response.status_code == 200:
+                        models = response.json()
+                        available_models = [m['id'] for m in models.get('data', [])]
+                        if args.openai_model not in available_models:
+                            console.print(f"[yellow]Warning: Model '{args.openai_model}' not found in available models:[/]")
+                            console.print("[cyan]Available models:[/]")
+                            for model in available_models:
+                                console.print(f"  • {model}")
+                    else:
+                        console.print(f"[yellow]Warning: Could not fetch available models: {response.status_code}[/]")
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Error checking model availability: {str(e)}[/]")
+                
                 llm_config = {
                     'api_key': 'not-needed',
-                    'api_base': args.local_llm,
+                    'api_base': base_url,
                     'model': args.openai_model
                 }
             elif not args.openai_key:
@@ -121,9 +143,31 @@ class User(Command):
         # Handle LLM configuration
         if not args.disable_pii:
             if args.local_llm:
+                # Remove trailing /v1 if present
+                base_url = args.local_llm.rstrip('/v1')
+                console.print(f"[blue]Using local LLM endpoint: {base_url}[/]")
+                
+                # Check model availability
+                import requests
+                try:
+                    models_url = f"{base_url}/v1/models"
+                    response = requests.get(models_url)
+                    if response.status_code == 200:
+                        models = response.json()
+                        available_models = [m['id'] for m in models.get('data', [])]
+                        if args.openai_model not in available_models:
+                            console.print(f"[yellow]Warning: Model '{args.openai_model}' not found in available models:[/]")
+                            console.print("[cyan]Available models:[/]")
+                            for model in available_models:
+                                console.print(f"  • {model}")
+                    else:
+                        console.print(f"[yellow]Warning: Could not fetch available models: {response.status_code}[/]")
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Error checking model availability: {str(e)}[/]")
+                
                 llm_config = {
                     'api_key': 'not-needed',
-                    'api_base': args.local_llm,
+                    'api_base': base_url,
                     'model': args.openai_model
                 }
             elif not args.openai_key:
