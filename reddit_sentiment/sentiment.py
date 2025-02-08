@@ -161,18 +161,19 @@ class Sentiment():
                     
                     # Process batch when full or at end
                     if len(self._llm_batch) >= 3 or i == total_comments:
+                        progress.update(llm_task, visible=True)
+                        progress.update(llm_task, description="🤖 Running LLM analysis")
                         batch_results = asyncio.run(self.llm_detector.analyze_batch(self._llm_batch, progress))
+                        progress.update(llm_task, visible=False)
                         
                         # Update pending results with batch results
                         for batch_idx, (risk_score, findings) in zip(self._llm_batch_indices, batch_results):
                             result = self._pending_results[batch_idx]
                             result.llm_risk_score = risk_score
                             result.llm_findings = findings
-                            # Update scores
-                            result.llm_risk_score = risk_score
-                            # Use LLM risk score if it found PII, otherwise use pattern-based score
-                            if findings.get('has_pii', False):
-                                result.pii_risk_score = risk_score
+                            # Use LLM risk score if it found PII
+                            if findings and findings.get('has_pii'):
+                                result.pii_risk_score = max(result.pii_risk_score, risk_score)
                         
                         # Add completed results to final results list
                         results.extend(self._pending_results)
