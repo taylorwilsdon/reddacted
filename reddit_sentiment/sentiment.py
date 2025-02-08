@@ -3,6 +3,7 @@
 
 import logging
 import re
+import asyncio
 from dataclasses import dataclass
 from typing import List, Dict, Any
 from rich.panel import Panel
@@ -137,22 +138,58 @@ class Sentiment():
                     pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment, progress)
                     progress.update(pii_task, visible=False)
                     
-                    # LLM analysis if enabled
-                    if self.llm_detector:
-                        progress.update(llm_task, visible=True)
-                        progress.update(llm_task, description=f"🤖 LLM is analyzing comment {i}/{total_comments}")
-                        llm_risk_score, llm_findings = self.llm_detector.analyze_text(clean_comment, progress)
-                        progress.update(llm_task, visible=False)
+                    # Store comment for batch processing
+                    if not hasattr(self, '_llm_batch'):
+                        self._llm_batch = []
+                        self._llm_batch_indices = []
+                        self._pending_results = []
+                    
+                    self._llm_batch.append(clean_comment)
+                    self._llm_batch_indices.append(len(self._pending_results))
+                    
+                    # Create result with combined risk score
+                    result = AnalysisResult(
+                        sentiment_score=score,
+                        sentiment_emoji=self._get_sentiment(score),
+                        pii_risk_score=pii_risk_score,  # Initial PII score
+                        pii_matches=pii_matches,
+                        text=clean_comment,
+                        llm_risk_score=0.0,
+                        llm_findings=None
+                    )
+                    self._pending_results.append(result)
+                    
+                    # Process batch when full or at end
+                    if len(self._llm_batch) >= 3 or i == total_comments:
+                        batch_results = asyncio.run(self.llm_detector.analyze_batch(self._llm_batch, progress))
+                        
+                        # Update pending results with batch results
+                        for batch_idx, (risk_score, findings) in zip(self._llm_batch_indices, batch_results):
+                            result = self._pending_results[batch_idx]
+                            result.llm_risk_score = risk_score
+                            result.llm_findings = findings
+                            # Update PII risk score to be the maximum of pattern-based and LLM scores
+                            result.pii_risk_score = max(result.pii_risk_score, risk_score)
+                        
+                        # Add completed results to final results list
+                        results.extend(self._pending_results)
+                        
+                        # Clear batch
+                        self._llm_batch = []
+                        self._llm_batch_indices = []
+                        self._pending_results = []
                 
-                results.append(AnalysisResult(
-                    sentiment_score=score,
-                    sentiment_emoji=self._get_sentiment(score),
-                    pii_risk_score=max(pii_risk_score, llm_risk_score),  # Use highest risk score
-                    pii_matches=pii_matches,
-                    text=clean_comment,
-                    llm_risk_score=llm_risk_score,
-                    llm_findings=llm_findings
-                ))
+                # Only append results directly if not using LLM
+                if not self.llm_detector:
+                    results.append(AnalysisResult(
+                        sentiment_score=score,
+                        sentiment_emoji=self._get_sentiment(score),
+                        pii_risk_score=pii_risk_score,
+                        pii_matches=pii_matches,
+                        text=clean_comment,
+                        llm_risk_score=0.0,
+                        llm_findings=None
+                    ))
                 
                 progress.update(main_task, advance=1)
 

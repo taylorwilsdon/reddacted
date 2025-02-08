@@ -1,5 +1,6 @@
 import os
-from typing import Tuple, Dict, Any
+import asyncio
+from typing import Tuple, Dict, Any, List
 import openai
 from reddit_sentiment.progress import create_progress
 
@@ -27,39 +28,65 @@ class LLMDetector:
         if api_base:
             openai.api_base = api_base
 
+    async def analyze_batch(self, texts: List[str], progress=None) -> List[Tuple[float, Dict[str, Any]]]:
+        """
+        Analyze a batch of texts using LLM for potential personal information.
+        Returns list of tuples (risk_score, details).
+        """
+        client = openai.AsyncOpenAI()
+        batch_size = 3
+        results = []
+        
+        try:
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i:i + batch_size]
+                tasks = []
+                
+                for text in batch:
+                    task = client.chat.completions.create(
+                        model=self.model,
+                        messages=[
+                            {"role": "system", "content": "You are a privacy analysis assistant."},
+                            {"role": "user", "content": self.DEFAULT_PROMPT.format(text=text)}
+                        ],
+                        temperature=0.1
+                    )
+                    tasks.append(task)
+                
+                if progress:
+                    progress.update(progress.task_ids[2], description=f"🤖 Processing batch {i//batch_size + 1}")
+                
+                batch_responses = await asyncio.gather(*tasks)
+                
+                for response in batch_responses:
+                    try:
+                        import json
+                        analysis = json.loads(response.choices[0].message.content)
+                        results.append((
+                            float(analysis.get('confidence', 0.0)),
+                            analysis
+                        ))
+                    except Exception as e:
+                        results.append((0.0, {"error": str(e)}))
+                
+            if progress:
+                progress.update(progress.task_ids[2], description="✅ AI analysis complete")
+            return results
+            
+        except Exception as e:
+            if progress:
+                progress.update(progress.task_ids[2], description="❌ AI analysis failed")
+            print(f"Batch LLM analysis failed: {str(e)}")
+            return [(0.0, {"error": str(e)})] * len(texts)
+
     def analyze_text(self, text: str, progress=None) -> Tuple[float, Dict[str, Any]]:
         """
-        Analyze text using LLM for potential personal information.
+        Analyze a single text using LLM for potential personal information.
         Returns tuple of (risk_score, details).
         """
         try:
-            client = openai.OpenAI()
-            try:
-                response = client.chat.completions.create(
-                    model=self.model,
-                    messages=[
-                        {"role": "system", "content": "You are a privacy analysis assistant."},
-                        {"role": "user", "content": self.DEFAULT_PROMPT.format(text=text)}
-                    ],
-                    temperature=0.1
-                )
-                if progress:
-                    progress.update(progress.task_ids[2], description="✅ AI analysis complete")
-            except openai.APIError as e:
-                if progress:
-                    progress.update(progress.task_ids[2], description="❌ AI analysis failed")
-                raise e
-            
-            result = response.choices[0].message.content
-            # Note: In production, add proper JSON parsing with error handling
-            import json
-            analysis = json.loads(result)
-            
-            return (
-                float(analysis.get('confidence', 0.0)),
-                analysis
-            )
-            
+            results = asyncio.run(self.analyze_batch([text], progress))
+            return results[0]
         except Exception as e:
             print(f"LLM analysis failed: {str(e)}")
             return 0.0, {"error": str(e)}
