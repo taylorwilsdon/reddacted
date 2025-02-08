@@ -66,8 +66,9 @@ class LLMDetector:
                         analysis = json.loads(raw_response)
                         # Calculate risk score based on confidence and PII presence
                         confidence = float(analysis.get('confidence', 0.0))
+                        print(confidence)
                         has_pii = analysis.get('has_pii', False)
-                        
+                        print(has_pii)
                         if has_pii:
                             # For PII content, higher confidence means higher risk
                             risk_score = confidence
