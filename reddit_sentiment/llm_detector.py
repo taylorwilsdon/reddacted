@@ -62,12 +62,17 @@ class LLMDetector:
                     try:
                         import json
                         analysis = json.loads(response.choices[0].message.content)
-                        # Use has_pii to determine if there's a risk
-                        risk_score = float(analysis.get('confidence', 0.0))
-                        if analysis.get('has_pii', False):
-                            risk_score = 1.0 - risk_score  # Invert score - higher risk = lower score
+                        # Calculate risk score based on confidence and PII presence
+                        confidence = float(analysis.get('confidence', 0.0))
+                        has_pii = analysis.get('has_pii', False)
+                        
+                        if has_pii:
+                            # Higher confidence = higher risk when PII is found
+                            risk_score = confidence
                         else:
-                            risk_score = 1.0  # No PII = no risk
+                            # No PII = no risk
+                            risk_score = 0.0
+                            
                         results.append((risk_score, analysis))
                     except Exception as e:
                         results.append((0.0, {"error": str(e)}))

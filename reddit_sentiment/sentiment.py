@@ -168,9 +168,9 @@ class Sentiment():
                             result = self._pending_results[batch_idx]
                             result.llm_risk_score = risk_score
                             result.llm_findings = findings
-                            # Update PII risk score to be the minimum (worst) of pattern-based and LLM scores
-                            # Lower scores indicate higher risk
-                            result.pii_risk_score = min(result.pii_risk_score, risk_score)
+                            # Update PII risk score to be the maximum of pattern-based and LLM scores
+                            # Higher scores indicate higher risk
+                            result.pii_risk_score = max(result.pii_risk_score, risk_score)
                         
                         # Add completed results to final results list
                         results.extend(self._pending_results)
@@ -322,20 +322,16 @@ class Sentiment():
                 print(f"  Risk Score: {result.llm_risk_score:.2f}")
                 if result.llm_findings.get('has_pii'):
                     print("  PII Detected: Yes")
-                if result.llm_findings.get('details'):
-                    print("  Findings:")
-                    for detail in result.llm_findings['details']:
-                        print(f"    - {detail}")
-                if result.llm_findings.get('reasoning'):
-                    print(f"\n  Reasoning:\n    {result.llm_findings['reasoning']}")
-                if result.llm_findings.get('risk_factors'):
-                    print("\n  Risk Factors:")
-                    for factor in result.llm_findings['risk_factors']:
-                        print(f"    - {factor}")
-                if result.llm_findings.get('recommendations'):
-                    print("\n  Recommendations:")
-                    for rec in result.llm_findings['recommendations']:
-                        print(f"    - {rec}")
+                    if result.llm_findings.get('details'):
+                        print("  Findings:")
+                        for detail in result.llm_findings['details']:
+                            print(f"    - {detail}")
+                    if result.llm_findings.get('reasoning'):
+                        print(f"  Reason: {result.llm_findings['reasoning']}")
+                    if result.llm_findings.get('risk_factors'):
+                        print("  Risk Factors:")
+                        for factor in result.llm_findings['risk_factors']:
+                            print(f"    - {factor}")
             print()
   
     def _print_config(self, auth_enabled, pii_enabled, llm_config):
