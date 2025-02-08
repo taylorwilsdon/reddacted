@@ -332,47 +332,94 @@ class Sentiment():
             print("No comments with high PII risk found.")
             return
 
+        panels = []
         for i, result in enumerate(filtered_results, 1):
-            print(f"Comment {i}:")
-            print(f"Text: {result.text}")
-            print(f"Sentiment Score: {result.sentiment_score}")
-            print(f"Sentiment: {result.sentiment_emoji}")
-            print(f"PII Risk Score: {result.pii_risk_score:.2f}")
+            # Basic info panel
+            basic_info = Group(
+                Text(f"Text: {result.text}", style="white"),
+                Text.assemble(
+                    ("Sentiment Score: ", "dim"),
+                    (f"{result.sentiment_score:.2f} ", "cyan"),
+                    (f"{result.sentiment_emoji}", "bold yellow")
+                ),
+                Text.assemble(
+                    ("PII Risk Score: ", "dim"),
+                    (f"{result.pii_risk_score:.2f}", "red" if result.pii_risk_score > 0.5 else "green")
+                )
+            )
             
+            # PII Matches panel
+            pii_content = []
             if result.pii_matches:
-                print("\nPattern-based PII Detected:")
                 for pii in result.pii_matches:
-                    print(f"  - Type: {pii.type}")
-                    print(f"    Confidence: {pii.confidence:.2f}")
+                    pii_content.append(Text.assemble(
+                        ("• ", "yellow"),
+                        (f"{pii.type}: ", "bold"),
+                        (f"({pii.confidence:.2f})", "dim")
+                    ))
             
+            # LLM Findings panel
+            llm_content = []
             if result.llm_findings:
-                print("\nLLM Privacy Analysis:")
-                print(f"  Risk Score: {result.llm_risk_score:.2f}")
-                print(f"  PII Detected: {'Yes' if result.llm_findings.get('has_pii') else 'No'}")
+                llm_content.extend([
+                    Text.assemble(
+                        ("Risk Score: ", "dim"),
+                        (f"{result.llm_risk_score:.2f}", "red" if result.llm_risk_score > 0.5 else "green")
+                    ),
+                    Text.assemble(
+                        ("PII Detected: ", "dim"),
+                        ("Yes" if result.llm_findings.get('has_pii') else "No", 
+                         "red" if result.llm_findings.get('has_pii') else "green")
+                    )
+                ])
                 
-                if result.llm_findings.get('confidence'):
-                    print(f"  Confidence: {result.llm_findings['confidence']:.2f}")
-                    
                 if result.llm_findings.get('details'):
-                    print("  Findings:")
+                    llm_content.append(Text("Findings:", style="bold"))
                     for detail in result.llm_findings['details']:
                         if isinstance(detail, dict):
-                            print(f"    - {detail['type']}: {detail['example']}")
+                            llm_content.append(Text(f"  • {detail['type']}: {detail['example']}", style="cyan"))
                         else:
-                            print(f"    - {detail}")
-                
-                if result.llm_findings.get('reasoning'):
-                    print("\n  Reasoning:")
-                    # Preserve line breaks in reasoning
-                    for line in result.llm_findings['reasoning'].split('\n'):
-                        print(f"    {line.strip()}")
+                            llm_content.append(Text(f"  • {detail}", style="cyan"))
                 
                 if result.llm_findings.get('risk_factors'):
-                    print("\n  Risk Factors:")
+                    llm_content.append(Text("\nRisk Factors:", style="bold"))
                     for factor in result.llm_findings['risk_factors']:
-                        print(f"    - {factor}")
-                        
-            print()
+                        llm_content.append(Text(f"  • {factor}", style="yellow"))
+
+            # Create sub-panels
+            sub_panels = [Panel(basic_info, title="[bold]Basic Info[/]", border_style="blue")]
+            
+            if pii_content:
+                sub_panels.append(Panel(
+                    Group(*pii_content),
+                    title="[bold]Pattern PII[/]",
+                    border_style="yellow"
+                ))
+            
+            if llm_content:
+                sub_panels.append(Panel(
+                    Group(*llm_content),
+                    title="[bold]LLM Analysis[/]",
+                    border_style="magenta"
+                ))
+
+            # Combine sub-panels into a main panel for this comment
+            panels.append(Panel(
+                Columns(sub_panels),
+                title=f"[bold]Comment {i}[/]",
+                border_style="cyan"
+            ))
+
+        # Print all panels
+        with Progress(
+            SpinnerColumn(spinner_name="dots"),
+            TextColumn("[bold blue]{task.description}"),
+            TimeElapsedColumn(),
+            transient=True
+        ) as progress:
+            task = progress.add_task("", total=1, visible=False)
+            progress.console.print(Group(*panels))
+            progress.update(task, advance=1)
   
     def _print_config(self, auth_enabled, pii_enabled, llm_config):
         from os import environ
