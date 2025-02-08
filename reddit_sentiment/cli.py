@@ -29,10 +29,29 @@ class Listing(Command):
                             'REDDIT_CLIENT_SECRET')
         parser.add_argument('--disable-pii', '-p', action='store_true',
                             help='Disable PII detection in the analysis')
+        parser.add_argument('--openai-key', type=str,
+                            help='OpenAI API key for LLM-based analysis')
+        parser.add_argument('--openai-base', type=str,
+                            help='Optional OpenAI API base URL')
+        parser.add_argument('--openai-model', type=str,
+                            default='gpt-3.5-turbo',
+                            help='OpenAI model to use (default: gpt-3.5-turbo)')
         return parser
 
     def take_action(self, args):
-        sent = Sentiment(auth_enabled=args.enable_auth, pii_enabled=not args.disable_pii)
+        llm_config = None
+        if args.openai_key:
+            llm_config = {
+                'api_key': args.openai_key,
+                'api_base': args.openai_base,
+                'model': args.openai_model
+            }
+        
+        sent = Sentiment(
+            auth_enabled=args.enable_auth,
+            pii_enabled=not args.disable_pii,
+            llm_config=llm_config
+        )
         sent.get_listing_sentiment(args.subreddit,
                                    args.article,
                                    args.output_file)

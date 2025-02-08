@@ -20,6 +20,8 @@ class AnalysisResult:
     pii_risk_score: float
     pii_matches: List[Any]
     text: str
+    llm_risk_score: float = 0.0
+    llm_findings: Dict[str, Any] = None
 
 happy_sentiment = "😁"
 sad_sentiment = "😕"
@@ -29,7 +31,7 @@ neutral_sentiment = "😐"
 class Sentiment():
     """Performs the sentiment analysis on a given set of Reddit Objects."""
 
-    def __init__(self, auth_enabled=False, pii_enabled=True):
+    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None):
         self.api = Scraper()
         self.score = 0
         self.sentiment = neutral_sentiment
@@ -37,6 +39,16 @@ class Sentiment():
         self.authEnable = False
         self.pii_enabled = pii_enabled
         self.pii_detector = PIIDetector() if pii_enabled else None
+        
+        # Initialize LLM detector if config provided
+        self.llm_detector = None
+        if llm_config and pii_enabled:
+            from reddit_sentiment.llm_detector import LLMDetector
+            self.llm_detector = LLMDetector(
+                api_key=llm_config.get('api_key'),
+                api_base=llm_config.get('api_base'),
+                model=llm_config.get('model', 'gpt-3.5-turbo')
+            )
         
         if auth_enabled:
             self.api = Reddit()
@@ -99,17 +111,24 @@ class Sentiment():
             final_score += score
 
             # PII analysis
+            pii_risk_score, pii_matches = 0.0, []
+            llm_risk_score, llm_findings = 0.0, None
+            
             if self.pii_enabled:
                 pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment)
-            else:
-                pii_risk_score, pii_matches = 0.0, []
                 
+                # LLM analysis if enabled
+                if self.llm_detector:
+                    llm_risk_score, llm_findings = self.llm_detector.analyze_text(clean_comment)
+            
             results.append(AnalysisResult(
                 sentiment_score=score,
                 sentiment_emoji=self._get_sentiment(score),
-                pii_risk_score=pii_risk_score,
+                pii_risk_score=max(pii_risk_score, llm_risk_score),  # Use highest risk score
                 pii_matches=pii_matches,
-                text=clean_comment
+                text=clean_comment,
+                llm_risk_score=llm_risk_score,
+                llm_findings=llm_findings
             ))
 
         try:
@@ -156,10 +175,21 @@ class Sentiment():
                     target.write(f"PII Risk Score: {result.pii_risk_score:.2f}\n")
                     
                     if result.pii_matches:
-                        target.write("PII Detected:\n")
+                        target.write("Pattern-based PII Detected:\n")
                         for pii in result.pii_matches:
                             target.write(f"  - Type: {pii.type}\n")
                             target.write(f"    Confidence: {pii.confidence:.2f}\n")
+                    
+                    if result.llm_findings:
+                        target.write("\nLLM Analysis:\n")
+                        target.write(f"  Risk Score: {result.llm_risk_score:.2f}\n")
+                        if isinstance(result.llm_findings, dict):
+                            if result.llm_findings.get('details'):
+                                target.write("  Findings:\n")
+                                for detail in result.llm_findings['details']:
+                                    target.write(f"    - {detail}\n")
+                            if result.llm_findings.get('reasoning'):
+                                target.write(f"  Reasoning: {result.llm_findings['reasoning']}\n")
                     target.write("\n")
                     
                 comment_count += 1
