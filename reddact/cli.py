@@ -73,20 +73,33 @@ class Listing(Command):
                         models_data = response.json()
                         available_models = [m['name'] for m in models_data.get('models', [])]
                         
-                        console.print("\n[cyan]Available models:[/]")
-                        for model in available_models:
-                            console.print(f"  • {model}")
+                        # Create a panel with available models
+                        from rich.panel import Panel
+                        from rich.columns import Columns
+                        
+                        model_list = "\n".join(f"• {model}" for model in available_models)
+                        models_panel = Panel(
+                            model_list,
+                            title="[cyan]Available Models[/]",
+                            border_style="blue",
+                            padding=(1, 2)
+                        )
                         
                         # For local LLMs, ensure model name is properly formatted
                         model_name = args.openai_model
                         if model_name in available_models:
-                            console.print(f"\n[green]Using model: {model_name}[/]")
+                            status_panel = Panel(
+                                f"[green]Active Model:[/]\n[white]{model_name}[/]",
+                                border_style="green",
+                                padding=(1, 2)
+                            )
                         else:
                             # Try without any prefix/suffix
                             base_model = model_name.split(':')[0].split('/')[-1]
                             if base_model in available_models:
                                 model_name = base_model
-                                console.print(f"\n[green]Using model: {model_name}[/]")
+                                # Display models and status side by side
+                                console.print(Columns([models_panel, status_panel]))
                             else:
                                 console.print(f"\n[red]Error: Model '{args.openai_model}' not found in available models.[/]")
                                 return 1
@@ -188,20 +201,33 @@ class User(Command):
                         models_data = response.json()
                         available_models = [m['name'] for m in models_data.get('models', [])]
                         
-                        console.print("\n[cyan]Available models:[/]")
-                        for model in available_models:
-                            console.print(f"  • {model}")
+                        # Create a panel with available models
+                        from rich.panel import Panel
+                        from rich.columns import Columns
+                        
+                        model_list = "\n".join(f"• {model}" for model in available_models)
+                        models_panel = Panel(
+                            model_list,
+                            title="[cyan]Available Models[/]",
+                            border_style="blue",
+                            padding=(1, 2)
+                        )
                         
                         # For local LLMs, ensure model name is properly formatted
                         model_name = args.openai_model
                         if model_name in available_models:
-                            console.print(f"\n[green]Using model: {model_name}[/]")
+                            status_panel = Panel(
+                                f"[green]Active Model:[/]\n[white]{model_name}[/]",
+                                border_style="green",
+                                padding=(1, 2)
+                            )
                         else:
                             # Try without any prefix/suffix
                             base_model = model_name.split(':')[0].split('/')[-1]
                             if base_model in available_models:
                                 model_name = base_model
-                                console.print(f"\n[green]Using model: {model_name}[/]")
+                                # Display models and status side by side
+                                console.print(Columns([models_panel, status_panel]))
                             else:
                                 console.print(f"\n[red]Error: Model '{args.openai_model}' not found in available models.[/]")
                                 return 1
