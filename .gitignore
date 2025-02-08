@@ -93,3 +93,4 @@ ENV/
 .vscode
 reddit_analyze.egg-info/
 reddit_sentiment.egg-info/
+.aider*
