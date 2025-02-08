@@ -1,7 +1,6 @@
 import re
 from dataclasses import dataclass
 from typing import List, Tuple
-from reddit_sentiment.progress import create_progress
 
 @dataclass
 class PIIMatch:
