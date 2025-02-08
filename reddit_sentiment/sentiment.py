@@ -320,10 +320,34 @@ class Sentiment():
             return has_pattern_pii or has_llm_pii
 
         total_comments = len(comments)
-        print(f"Analysis for '{url}'")
-        print(f"📊 Retrieved {total_comments} comments to analyze")
-        print(f"Overall Sentiment Score: {self.score}")
-        print(f"Overall Sentiment: {self.sentiment}\n")
+        
+        # Create overall stats panel
+        stats_panel = Panel(
+            Group(
+                Text.assemble(("Analysis for: ", "dim"), (f"{url}", "cyan")),
+                Text.assemble(("📊 Comments analyzed: ", "dim"), (f"{total_comments}", "cyan")),
+                Text.assemble(
+                    ("Overall Sentiment Score: ", "dim"),
+                    (f"{self.score:.4f}", "cyan bold"),
+                    (" ", ""),
+                    (f"{self.sentiment}", "yellow")
+                )
+            ),
+            title="[bold]Analysis Summary[/]",
+            border_style="blue"
+        )
+        
+        # Print the stats panel
+        with Progress(
+            SpinnerColumn(spinner_name="dots"),
+            TextColumn("[bold blue]{task.description}"),
+            TimeElapsedColumn(),
+            transient=True
+        ) as progress:
+            task = progress.add_task("", total=1, visible=False)
+            progress.console.print(stats_panel)
+            progress.update(task, advance=1)
+            progress.console.print()  # Add a blank line for spacing
 
         # Filter results if pii_only is enabled
         filtered_results = [r for r in self.results if should_show_result(r)]
