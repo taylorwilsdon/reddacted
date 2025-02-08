@@ -333,21 +333,9 @@ class Sentiment():
                     (f"{self.sentiment}", "yellow")
                 )
             ),
-            title="[bold]Analysis Summary[/]",
+            title="[bold]Sentiment Analysis Summary[/]",
             border_style="blue"
         )
-        
-        # Print the stats panel
-        with Progress(
-            SpinnerColumn(spinner_name="dots"),
-            TextColumn("[bold blue]{task.description}"),
-            TimeElapsedColumn(),
-            transient=True
-        ) as progress:
-            task = progress.add_task("", total=1, visible=False)
-            progress.console.print(stats_panel)
-            progress.update(task, advance=1)
-            progress.console.print()  # Add a blank line for spacing
 
         # Filter results if pii_only is enabled
         filtered_results = [r for r in self.results if should_show_result(r)]
@@ -426,6 +414,10 @@ class Sentiment():
                     title="[bold]LLM Analysis[/]",
                     border_style="magenta"
                 ))
+                
+            # Add sentiment analysis summary panel
+            if i == 1:  # Only add to first comment
+                sub_panels.append(stats_panel)
 
             # Combine sub-panels into a main panel for this comment
             panels.append(Panel(
