@@ -37,16 +37,21 @@ class LLMDetector:
                 task = progress.add_task("🔍 Analyzing text for personal information...", total=None)
                 
                 client = openai.OpenAI()
-                response = client.chat.completions.create(
-                    model=self.model,
-                    messages=[
-                        {"role": "system", "content": "You are a privacy analysis assistant."},
-                        {"role": "user", "content": self.DEFAULT_PROMPT.format(text=text)}
-                    ],
-                    temperature=0.1
-                )
+                try:
+                    response = client.chat.completions.create(
+                        model=self.model,
+                        messages=[
+                            {"role": "system", "content": "You are a privacy analysis assistant."},
+                            {"role": "user", "content": self.DEFAULT_PROMPT.format(text=text)}
+                        ],
+                        temperature=0.1
+                    )
+                    progress.update(task, description="✅ AI analysis complete")
+                except openai.APIError as e:
+                    progress.update(task, description="❌ AI analysis failed")
+                    raise e
                 
-                progress.update(task, description="✨ Processing AI response...")
+                progress.update(task, description="✨ Processing results...")
             
             result = response.choices[0].message.content
             # Note: In production, add proper JSON parsing with error handling

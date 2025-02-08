@@ -9,6 +9,7 @@ from typing import List, Dict, Any
 from reddit_sentiment.api.scraper import Scraper
 from reddit_sentiment.api.reddit import Reddit
 from reddit_sentiment.pii_detector import PIIDetector
+from reddit_sentiment.progress import create_progress
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
@@ -102,24 +103,31 @@ class Sentiment():
 
         cleanup_regex = re.compile('<.*?>')
 
-        for comment in comments:
-            clean_comment = re.sub(cleanup_regex, '', str(comment))
+        with create_progress() as progress:
+            total_comments = len(comments)
+            task = progress.add_task(f"💭 Processing {total_comments} comments...", total=total_comments)
             
-            # Sentiment analysis
-            all_scores = sentiment_analyzer.polarity_scores(clean_comment)
-            score = all_scores['compound']
-            final_score += score
-
-            # PII analysis
-            pii_risk_score, pii_matches = 0.0, []
-            llm_risk_score, llm_findings = 0.0, None
-            
-            if self.pii_enabled:
-                pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment)
+            for i, comment in enumerate(comments, 1):
+                clean_comment = re.sub(cleanup_regex, '', str(comment))
                 
-                # LLM analysis if enabled
-                if self.llm_detector:
-                    llm_risk_score, llm_findings = self.llm_detector.analyze_text(clean_comment)
+                # Sentiment analysis
+                all_scores = sentiment_analyzer.polarity_scores(clean_comment)
+                score = all_scores['compound']
+                final_score += score
+
+                # PII analysis
+                pii_risk_score, pii_matches = 0.0, []
+                llm_risk_score, llm_findings = 0.0, None
+                
+                if self.pii_enabled:
+                    pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment)
+                    
+                    # LLM analysis if enabled
+                    if self.llm_detector:
+                        progress.update(task, description=f"🤖 AI analyzing comment {i}/{total_comments}...")
+                        llm_risk_score, llm_findings = self.llm_detector.analyze_text(clean_comment)
+                
+                progress.update(task, advance=1)
             
             results.append(AnalysisResult(
                 sentiment_score=score,
@@ -225,7 +233,10 @@ class Sentiment():
             if not hasattr(self, 'pii_only') or not self.pii_only:
                 return True
             return 0.0 < result.pii_risk_score < 1.0
+
+        total_comments = len(comments)
         print(f"Analysis for '{url}'")
+        print(f"📊 Retrieved {total_comments} comments to analyze")
         print(f"Overall Sentiment Score: {self.score}")
         print(f"Overall Sentiment: {self.sentiment}\n")
 
