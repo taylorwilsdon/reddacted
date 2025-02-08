@@ -30,7 +30,8 @@ class LLMDetector:
         Returns tuple of (risk_score, details).
         """
         try:
-            response = openai.ChatCompletion.create(
+            client = openai.OpenAI()
+            response = client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a privacy analysis assistant."},
