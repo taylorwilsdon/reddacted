@@ -1,6 +1,7 @@
 import re
 from dataclasses import dataclass
 from typing import List, Tuple
+from reddit_sentiment.progress import create_progress
 
 @dataclass
 class PIIMatch:
@@ -64,7 +65,10 @@ class PIIDetector:
         Calculate overall PII risk score for a text and return matches.
         Returns a tuple of (risk_score, matches).
         """
-        matches = self.analyze_text(text)
+        with create_progress() as progress:
+            task = progress.add_task("🔍 Scanning for pattern-based PII...", total=None)
+            matches = self.analyze_text(text)
+            progress.update(task, description="✨ Calculating risk score...")
         if not matches:
             return 0.0, []
             
