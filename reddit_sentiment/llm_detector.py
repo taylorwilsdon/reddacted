@@ -46,6 +46,10 @@ class LLMDetector:
                 tasks = []
                 
                 for text in batch:
+                    # Configure client for each request to handle Ollama endpoint
+                    if 'v1' not in openai.api_base:
+                        client.base_url = f"{openai.api_base}/v1"
+                    
                     task = client.chat.completions.create(
                         model=self.model,
                         messages=[
@@ -54,6 +58,8 @@ class LLMDetector:
                         ],
                         temperature=0.1
                     )
+                    logging.debug(f"Using API base: {client.base_url}")
+                    logging.debug(f"Using model: {self.model}")
                     tasks.append(task)
                 
                 batch_responses = await asyncio.gather(*tasks)
