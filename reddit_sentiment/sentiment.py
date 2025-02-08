@@ -29,13 +29,14 @@ neutral_sentiment = "😐"
 class Sentiment():
     """Performs the sentiment analysis on a given set of Reddit Objects."""
 
-    def __init__(self, auth_enabled=False):
+    def __init__(self, auth_enabled=False, pii_enabled=True):
         self.api = Scraper()
         self.score = 0
         self.sentiment = neutral_sentiment
         self.headers = {'User-agent': "Reddit Sentiment Analyzer"}
         self.authEnable = False
-        self.pii_detector = PIIDetector()
+        self.pii_enabled = pii_enabled
+        self.pii_detector = PIIDetector() if pii_enabled else None
         
         if auth_enabled:
             self.api = Reddit()
@@ -98,8 +99,11 @@ class Sentiment():
             final_score += score
 
             # PII analysis
-            pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment)
-            
+            if self.pii_enabled:
+                pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment)
+            else:
+                pii_risk_score, pii_matches = 0.0, []
+                
             results.append(AnalysisResult(
                 sentiment_score=score,
                 sentiment_emoji=self._get_sentiment(score),

@@ -20,24 +20,25 @@ class Listing(Command):
                             help='Outputs a file with information on each '
                                  'sentence of the post, as well as the final '
                                  'score.')
-        parser.add_argument('--enable-auth', '-a', type=bool,
+        parser.add_argument('--enable-auth', '-a', action='store_true',
                             help='Enable reddit api authentication by '
                             'using the environment variables '
                             'REDDIT_USERNAME '
                             'REDDIT_PASSWORD '
                             'REDDIT_CLIENT_ID '
                             'REDDIT_CLIENT_SECRET')
+        parser.add_argument('--disable-pii', '-p', action='store_true',
+                            help='Disable PII detection in the analysis')
         return parser
 
     def take_action(self, args):
-        sent = Sentiment(args.enable_auth)
+        sent = Sentiment(auth_enabled=args.enable_auth, pii_enabled=not args.disable_pii)
         sent.get_listing_sentiment(args.subreddit,
                                    args.article,
                                    args.output_file)
 
         if args.output_file:
-            print("Listing Contents Outputted to {output_file}".format(
-                output_file=args.output_file))
+            print(f"Listing Contents Outputted to {args.output_file}")
 
 
 class User(Command):
@@ -52,22 +53,23 @@ class User(Command):
                             help='Outputs a file with information on each '
                                  'sentence of the post, as well as the final '
                                  'score.')
-        parser.add_argument('--enable-auth', '-a', type=bool,
+        parser.add_argument('--enable-auth', '-a', action='store_true',
                             help='Enable reddit api authentication by '
                             'using the environment variables '
                             'REDDIT_USERNAME '
                             'REDDIT_PASSWORD '
                             'REDDIT_CLIENT_ID '
                             'REDDIT_CLIENT_SECRET')
+        parser.add_argument('--disable-pii', '-p', action='store_true',
+                            help='Disable PII detection in the analysis')
         return parser
 
     def take_action(self, args):
-        sent = Sentiment(args.enable_auth)
+        sent = Sentiment(auth_enabled=args.enable_auth, pii_enabled=not args.disable_pii)
         sent.get_user_sentiment(args.username, args.output_file)
 
         if args.output_file:
-            print("Listing Contents Outputted to {output_file}".format(
-                 output_file=args.output_file))
+            print(f"Listing Contents Outputted to {args.output_file}")
 
 
 class CLI(App):
