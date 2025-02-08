@@ -109,7 +109,7 @@ class Sentiment():
         with create_progress() as progress:
             main_task = progress.add_task(f"💭 Processing comments...", total=total_comments)
             pii_task = progress.add_task("🔍 PII Analysis", visible=False)
-            llm_task = progress.add_task("🤖 AI Analysis", visible=False)
+            llm_task = progress.add_task("🤖 LLM Analysis", visible=False)
             
             for i, comment in enumerate(comments, 1):
                 clean_comment = re.sub(cleanup_regex, '', str(comment))
@@ -133,7 +133,7 @@ class Sentiment():
                     # LLM analysis if enabled
                     if self.llm_detector:
                         progress.update(llm_task, visible=True)
-                        progress.update(llm_task, description=f"🤖 AI analyzing comment {i}/{total_comments}")
+                        progress.update(llm_task, description=f"🤖 LLM is analyzing comment {i}/{total_comments}")
                         llm_risk_score, llm_findings = self.llm_detector.analyze_text(clean_comment, progress)
                         progress.update(llm_task, visible=False)
                 
@@ -183,6 +183,7 @@ class Sentiment():
             target.write(f"Overall Sentiment: {self.sentiment}\n\n")
 
             def should_show_result(result):
+                print(self.pii_only)
                 if not hasattr(self, 'pii_only') or not self.pii_only:
                     return True
                 return result.pii_risk_score >= 1.0
@@ -209,7 +210,7 @@ class Sentiment():
                             target.write(f"    Confidence: {pii.confidence:.2f}\n")
                     
                     if result.llm_findings:
-                        target.write("\nAI Privacy Analysis:\n")
+                        target.write("\LLM Privacy Analysis:\n")
                         target.write(f"  Risk Score: {result.llm_risk_score:.2f}\n")
                         if isinstance(result.llm_findings, dict):
                             if result.llm_findings.get('has_pii'):
@@ -271,7 +272,7 @@ class Sentiment():
                     print(f"    Confidence: {pii.confidence:.2f}")
             
             if result.llm_findings:
-                print("\nAI Privacy Analysis:")
+                print("\LLM Privacy Analysis:")
                 print(f"  Risk Score: {result.llm_risk_score:.2f}")
                 if result.llm_findings.get('has_pii'):
                     print("  PII Detected: Yes")
