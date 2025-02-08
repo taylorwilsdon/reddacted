@@ -168,9 +168,11 @@ class Sentiment():
                             result = self._pending_results[batch_idx]
                             result.llm_risk_score = risk_score
                             result.llm_findings = findings
-                            # Update PII risk score to be the maximum of pattern-based and LLM scores
-                            # Higher scores indicate higher risk
-                            result.pii_risk_score = max(result.pii_risk_score, risk_score)
+                            # Update scores
+                            result.llm_risk_score = risk_score
+                            # Use LLM risk score if it found PII, otherwise use pattern-based score
+                            if findings.get('has_pii', False):
+                                result.pii_risk_score = risk_score
                         
                         # Add completed results to final results list
                         results.extend(self._pending_results)
