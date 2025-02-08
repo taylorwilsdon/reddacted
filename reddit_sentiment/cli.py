@@ -97,9 +97,11 @@ class Listing(Command):
                     console.print(f"[red]Error checking model availability: {str(e)}[/]")
                     return 1
 
+                # For local LLMs, we need to set both api_key and api_key_path to bypass OpenAI's validation
                 llm_config = {
                     'api_key': 'sk-not-needed',
-                    'api_base': base_url,
+                    'api_key_path': None,  # This helps bypass the key validation
+                    'api_base': f"{base_url}/v1",  # Ollama expects /v1 prefix for OpenAI compatibility
                     'model': model_name,
                     'default_headers': {'User-Agent': 'Reddit-Sentiment-Analyzer'}
                 }
@@ -210,9 +212,11 @@ class User(Command):
                     console.print(f"[red]Error checking model availability: {str(e)}[/]")
                     return 1
 
+                # For local LLMs, we need to set both api_key and api_key_path to bypass OpenAI's validation
                 llm_config = {
                     'api_key': 'sk-not-needed',
-                    'api_base': base_url,
+                    'api_key_path': None,  # This helps bypass the key validation
+                    'api_base': f"{base_url}/v1",  # Ollama expects /v1 prefix for OpenAI compatibility
                     'model': model_name,
                     'default_headers': {'User-Agent': 'Reddit-Sentiment-Analyzer'}
                 }
