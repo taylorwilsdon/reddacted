@@ -243,11 +243,13 @@ class Sentiment():
             def should_show_result(result):
                 if not self.pii_only:
                     return True
-                # Show results where either detection found something (score > 0.0)
-                return result.pii_risk_score > 0.0 or (
-                    result.llm_findings and 
-                    result.llm_findings.get('has_pii', False)
-                )
+                # Only show results with actual PII detections
+                has_pattern_pii = result.pii_risk_score > 0.0
+                has_llm_pii = (result.llm_findings and 
+                              isinstance(result.llm_findings, dict) and
+                              result.llm_findings.get('has_pii', False) and
+                              result.llm_findings.get('confidence', 0.0) > 0.0)
+                return has_pattern_pii or has_llm_pii
 
             comment_count = 1
             for comment in comments:
@@ -304,8 +306,13 @@ class Sentiment():
         def should_show_result(result):
             if not self.pii_only:
                 return True
-            # Show results where either detection found something (score < 1.0)
-            return result.pii_risk_score < 1.0
+            # Only show results with actual PII detections
+            has_pattern_pii = result.pii_risk_score > 0.0
+            has_llm_pii = (result.llm_findings and 
+                          isinstance(result.llm_findings, dict) and
+                          result.llm_findings.get('has_pii', False) and
+                          result.llm_findings.get('confidence', 0.0) > 0.0)
+            return has_pattern_pii or has_llm_pii
 
         total_comments = len(comments)
         print(f"Analysis for '{url}'")
