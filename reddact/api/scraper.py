@@ -13,7 +13,7 @@ class Scraper(api.API):
     reddit objects.
     """
 
-    def parse_listing(self, subreddit, article, **kwargs):
+    def parse_listing(self, subreddit, article, limit=100, **kwargs):
         """Parses a listing and extracts the comments from it.
 
        :param subreddit: a subreddit
@@ -48,7 +48,7 @@ class Scraper(api.API):
 
         return comments
 
-    def parse_user(self, username, **kwargs):
+    def parse_user(self, username, limit=100, **kwargs):
         """Parses a listing and extracts the comments from it.
 
        :param username: a user

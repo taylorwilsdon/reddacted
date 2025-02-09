@@ -44,7 +44,7 @@ class Reddit(api.API):
         reddit.read_only = True
         self.reddit = reddit
 
-    def parse_listing(self, subreddit, article, limit, **kwargs):
+    def parse_listing(self, subreddit, article, limit=100, **kwargs):
         """Parses a listing and extracts the comments from it.
 
        :param subreddit: a subreddit
@@ -58,7 +58,7 @@ class Reddit(api.API):
         
         return comments
 
-    def parse_user(self, username, limit, **kwargs):
+    def parse_user(self, username, limit=100, **kwargs):
         """Parses a listing and extracts the comments from it.
 
        :param username: a user
