@@ -42,7 +42,6 @@ class LLMDetector:
         client = openai.AsyncOpenAI(**self.client_config)
         batch_size = 3
         results = []
-        print('init analyze_batch')
         try:
             client = openai.AsyncOpenAI(**self.client_config)
         except openai.AuthenticationError as e:
@@ -118,7 +117,6 @@ class LLMDetector:
         Analyze a single text using LLM for potential personal information.
         Returns tuple of (risk_score, details).
         """
-        print('init analyze_text')
         try:
             results = asyncio.run(self.analyze_batch([text]))
             return results[0]
