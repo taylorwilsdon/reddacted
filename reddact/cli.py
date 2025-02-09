@@ -41,8 +41,7 @@ class Listing(Command):
         parser.add_argument('--openai-base', type=str,
                             help='Optional OpenAI API base URL')
         parser.add_argument('--openai-model', type=str,
-                            default='gpt-3.5-turbo',
-                            help='OpenAI model to use (default: gpt-3.5-turbo)')
+                            help='OpenAI or local LLM model to use')
         parser.add_argument('--pii-only', action='store_true',
                             help='Only show comments that contain PII (0 < score < 1.0)')
         return parser
@@ -135,6 +134,47 @@ class Listing(Command):
                         "Enter local LLM endpoint URL",
                         default="http://localhost:11434"
                     )
+                    
+                    # Check connection and get available models
+                    base_url = args.local_llm.rstrip('/v1')
+                    try:
+                        response = requests.get(base_url)
+                        if response.status_code != 200:
+                            console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
+                            return 1
+
+                        models_url = f"{base_url}/api/tags"
+                        response = requests.get(models_url)
+                        if response.status_code == 200:
+                            models_data = response.json()
+                            available_models = [m['name'] for m in models_data.get('models', [])]
+                            
+                            if not available_models:
+                                console.print("[red]Error: No models found on the local LLM server[/]")
+                                return 1
+                            
+                            # Show available models in a panel
+                            model_list = "\n".join(f"• {model}" for model in available_models)
+                            console.print(Panel(
+                                model_list,
+                                title="[cyan]Available Models[/]",
+                                border_style="dim",
+                                padding=(0, 1)
+                            ))
+                            
+                            # Prompt for model selection
+                            args.openai_model = Prompt.ask(
+                                "\nSelect model",
+                                choices=available_models,
+                                default=available_models[0]
+                            )
+                        else:
+                            console.print(f"[red]Error: Could not fetch available models: {response.status_code}[/]")
+                            return 1
+                    except Exception as e:
+                        console.print(f"[red]Error checking model availability: {str(e)}[/]")
+                        return 1
+                    
                     # Recursively call the LLM setup logic for local LLM
                     return self.take_action(args)
         
@@ -184,8 +224,7 @@ class User(Command):
         parser.add_argument('--openai-base', type=str,
                             help='Optional OpenAI API base URL')
         parser.add_argument('--openai-model', type=str,
-                            default='gpt-3.5-turbo',
-                            help='OpenAI model to use (default: gpt-3.5-turbo)')
+                            help='OpenAI or local LLM model to use')
         parser.add_argument('--pii-only', action='store_true',
                             help='Only show comments that contain PII (0 < score < 1.0)')
         return parser
@@ -278,6 +317,47 @@ class User(Command):
                         "Enter local LLM endpoint URL",
                         default="http://localhost:11434"
                     )
+                    
+                    # Check connection and get available models
+                    base_url = args.local_llm.rstrip('/v1')
+                    try:
+                        response = requests.get(base_url)
+                        if response.status_code != 200:
+                            console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
+                            return 1
+
+                        models_url = f"{base_url}/api/tags"
+                        response = requests.get(models_url)
+                        if response.status_code == 200:
+                            models_data = response.json()
+                            available_models = [m['name'] for m in models_data.get('models', [])]
+                            
+                            if not available_models:
+                                console.print("[red]Error: No models found on the local LLM server[/]")
+                                return 1
+                            
+                            # Show available models in a panel
+                            model_list = "\n".join(f"• {model}" for model in available_models)
+                            console.print(Panel(
+                                model_list,
+                                title="[cyan]Available Models[/]",
+                                border_style="dim",
+                                padding=(0, 1)
+                            ))
+                            
+                            # Prompt for model selection
+                            args.openai_model = Prompt.ask(
+                                "\nSelect model",
+                                choices=available_models,
+                                default=available_models[0]
+                            )
+                        else:
+                            console.print(f"[red]Error: Could not fetch available models: {response.status_code}[/]")
+                            return 1
+                    except Exception as e:
+                        console.print(f"[red]Error checking model availability: {str(e)}[/]")
+                        return 1
+                    
                     # Recursively call the LLM setup logic for local LLM
                     return self.take_action(args)
         
