@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from os import environ
 
 import logging
 import re
@@ -15,6 +16,7 @@ from rich.text import Text
 from reddact.api.scraper import Scraper
 from reddact.api.reddit import Reddit
 from reddact.pii_detector import PIIDetector
+from reddact.llm_detector import LLMDetector
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
@@ -58,8 +60,8 @@ class Sentiment():
         
         # Initialize LLM detector if config provided
         self.llm_detector = None
+        print(llm_config)
         if llm_config and pii_enabled:
-            from reddact.llm_detector import LLMDetector
             self.llm_detector = LLMDetector(
                 api_key=llm_config.get('api_key'),
                 api_base=llm_config.get('api_base'),
@@ -68,7 +70,6 @@ class Sentiment():
         
         if auth_enabled:
             self.api = Reddit()
-            
         self._print_config(auth_enabled, pii_enabled, llm_config)
 
     def get_user_sentiment(self, username, output_file=None):
@@ -77,8 +78,12 @@ class Sentiment():
         :param username: name of user to search
         :param output_file (optional): file to output relevant data.
         """
+        print(f"get_user_sentiment limit {self.limit}")
         comments = self.api.parse_user(username, headers=self.headers, limit=self.limit)
+        print(comments)
         self.score, self.results = self._analyze(comments)
+        print(self.score)
+        print(self.results)
         self.sentiment = self._get_sentiment(self.score)
 
         user_id = f"/user/{username}"
@@ -115,6 +120,7 @@ class Sentiment():
         :param comments: comments to perform analysis on.
         :return: tuple of (sentiment_score, list of AnalysisResult objects)
         """
+        print('sentiment line 123')
         sentiment_analyzer = SentimentIntensityAnalyzer()
         final_score = 0
         results = []
@@ -130,6 +136,7 @@ class Sentiment():
             TimeElapsedColumn(),
             transient=True
         )
+        print('sentiment line 139')
         with progress:
             main_task = progress.add_task(f"💭 Processing comments...", total=total_comments)
             pii_task = progress.add_task("🔍 PII Analysis", visible=False, total=1)
@@ -175,6 +182,7 @@ class Sentiment():
                     self._pending_results.append(result)
                     
                     # Process batch when full or at end
+                    print('sentiment line 185')
                     if len(self._llm_batch) >= 3 or i == total_comments:
                         logging.debug(f"\nProcessing LLM batch of {len(self._llm_batch)} items")
                         progress.update(llm_task, visible=True)
@@ -205,6 +213,7 @@ class Sentiment():
                         self._pending_results = []
                 
                 # Only append results directly if not using LLM
+                print('sentiment line 216')
                 if not self.llm_detector:
                     results.append(AnalysisResult(
                         sentiment_score=score,
@@ -310,15 +319,19 @@ class Sentiment():
         :param: comments: the parsed contents to analyze.
         :param: url: the url being parsed.
         """
+        print('init print_comments')
         def should_show_result(result):
+            print(result)
             if not self.pii_only:
                 return True
             # Only show results with actual PII detections
             has_pattern_pii = result.pii_risk_score > 0.0
+            print(has_pattern_pii)
             has_llm_pii = (result.llm_findings and 
                           isinstance(result.llm_findings, dict) and
                           result.llm_findings.get('has_pii', False) and
                           result.llm_findings.get('confidence', 0.0) > 0.0)
+            print(has_llm_pii)
             return has_pattern_pii or has_llm_pii
 
         total_comments = len(comments)
@@ -341,12 +354,13 @@ class Sentiment():
 
         # Filter results if pii_only is enabled
         filtered_results = [r for r in self.results if should_show_result(r)]
-        
+        print('sentiment line 357')
         if hasattr(self, 'pii_only') and self.pii_only and not filtered_results:
             print("No comments with high PII risk found.")
             return
 
         panels = []
+        print('sentiment line 363')
         for i, result in enumerate(filtered_results, 1):
             # Basic info panel
             basic_info = Group(
@@ -382,6 +396,7 @@ class Sentiment():
             
             # LLM Findings panel
             llm_content = []
+            print('sentiment line 399')
             if result.llm_findings:
                 llm_content.extend([
                     Text.assemble(
@@ -394,15 +409,17 @@ class Sentiment():
                          "red" if result.llm_findings.get('has_pii') else "green")
                     )
                 ])
-                
+                print('sentiment line 412')
                 if result.llm_findings.get('details'):
+                    print(result.llm_findings.get('details'))
                     llm_content.append(Text("Findings:", style="bold"))
                     for detail in result.llm_findings['details']:
+                        print(detail)
                         if isinstance(detail, dict):
-                            llm_content.append(Text(f"  • {detail['type']}: {detail['example']}", style="cyan"))
+                            llm_content.append(Text(f"  • {detail['finding']}: {detail['reasoning']}", style="cyan"))
                         else:
                             llm_content.append(Text(f"  • {detail}", style="cyan"))
-                
+                print('sentiment line 420')
                 if result.llm_findings.get('risk_factors'):
                     llm_content.append(Text("\nRisk Factors:", style="bold"))
                     for factor in result.llm_findings['risk_factors']:
@@ -448,7 +465,6 @@ class Sentiment():
             progress.update(task, advance=1)
   
     def _print_config(self, auth_enabled, pii_enabled, llm_config):
-        from os import environ
         progress = Progress(
             SpinnerColumn(spinner_name="dots"),
             TextColumn("[bold blue]{task.description}"),
