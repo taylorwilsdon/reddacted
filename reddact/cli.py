@@ -44,6 +44,10 @@ class Listing(Command):
                             help='OpenAI or local LLM model to use')
         parser.add_argument('--pii-only', action='store_true',
                             help='Only show comments that contain PII (0 < score < 1.0)')
+        parser.add_argument('--limit', type=int, default=100,
+                            help='Maximum number of comments to analyze (default: 100, use 0 for unlimited)')
+        parser.add_argument('--limit', type=int, default=100,
+                            help='Maximum number of comments to analyze (default: 100, use 0 for unlimited)')
         return parser
 
     def take_action(self, args):
@@ -191,9 +195,12 @@ class Listing(Command):
             llm_config=llm_config,
             pii_only=args.pii_only
         )
+        # Convert limit of 0 to None for unlimited
+        limit = None if args.limit == 0 else args.limit
         sent.get_listing_sentiment(args.subreddit,
                                    args.article,
-                                   args.output_file)
+                                   args.output_file,
+                                   limit=limit)
 
 
 class User(Command):
@@ -374,7 +381,9 @@ class User(Command):
             llm_config=llm_config,
             pii_only=args.pii_only
         )
-        sent.get_user_sentiment(args.username, args.output_file)
+        # Convert limit of 0 to None for unlimited
+        limit = None if args.limit == 0 else args.limit
+        sent.get_user_sentiment(args.username, args.output_file, limit=limit)
 
 
 class CLI(App):

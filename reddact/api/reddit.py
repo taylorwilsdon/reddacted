@@ -44,26 +44,28 @@ class Reddit(api.API):
         reddit.read_only = True
         self.reddit = reddit
 
-    def parse_listing(self, subreddit, article, **kwargs):
+    def parse_listing(self, subreddit, article, limit=100, **kwargs):
         """Parses a listing and extracts the comments from it.
 
        :param subreddit: a subreddit
        :param article: an article associated with the subreddit
+       :param limit: maximum number of comments to return (None for unlimited)
        :return: a list of comments from an article.
        """
         url = f"https://www.reddit.com/r/{subreddit}/comments/{article}"
         submission = self.reddit.submission(url=url)
-        comments = submission.comments.new(limit=None)
+        comments = submission.comments.new(limit=limit)
         
         return comments
 
-    def parse_user(self, username, **kwargs):
+    def parse_user(self, username, limit=100, **kwargs):
         """Parses a listing and extracts the comments from it.
 
        :param username: a user
+       :param limit: maximum number of comments to return (None for unlimited)
        :return: a list of comments from a user.
        """
         redditor = self.reddit.redditor({username})
-        comments = redditor.comments.new(limit=None)
+        comments = redditor.comments.new(limit=limit)
         
         return comments
