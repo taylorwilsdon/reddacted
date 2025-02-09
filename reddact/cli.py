@@ -187,18 +187,18 @@ class Listing(Command):
                 'model': args.openai_model
             }
         
+        # Convert limit of 0 to None for unlimited
+        limit = None if args.limit == 0 else args.limit
         sent = Sentiment(
             auth_enabled=args.enable_auth,
             pii_enabled=not args.disable_pii,
             llm_config=llm_config,
-            pii_only=args.pii_only
+            pii_only=args.pii_only,
+            limit=limit
         )
-        # Convert limit of 0 to None for unlimited
-        limit = None if args.limit == 0 else args.limit
         sent.get_listing_sentiment(args.subreddit,
                                    args.article,
-                                   args.output_file,
-                                   limit=limit)
+                                   args.output_file)
 
 
 class User(Command):
@@ -375,15 +375,16 @@ class User(Command):
                 'model': args.openai_model
             }
         
+        # Convert limit of 0 to None for unlimited
+        limit = None if args.limit == 0 else args.limit
         sent = Sentiment(
             auth_enabled=args.enable_auth,
             pii_enabled=not args.disable_pii,
             llm_config=llm_config,
-            pii_only=args.pii_only
+            pii_only=args.pii_only,
+            limit=limit
         )
-        # Convert limit of 0 to None for unlimited
-        limit = None if args.limit == 0 else args.limit
-        sent.get_user_sentiment(args.username, args.output_file, limit=limit)
+        sent.get_user_sentiment(args.username, args.output_file)
 
 
 class CLI(App):
