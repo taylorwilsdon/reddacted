@@ -121,7 +121,7 @@ class Listing(Command):
                     'model': model_name,
                     'default_headers': {'User-Agent': 'Reddit-Sentiment-Analyzer'}
                 }
-            elif not args.openai_key:
+            elif not args.openai_key and not args.local_llm:
                 console.print("[yellow]No LLM configuration provided.[/]")
                 llm_choice = Prompt.ask(
                     "Choose LLM provider",
@@ -135,8 +135,10 @@ class Listing(Command):
                         "Enter local LLM endpoint URL",
                         default="http://localhost:11434"
                     )
+                    # Recursively call the LLM setup logic for local LLM
+                    return self.take_action(args)
         
-        if args.openai_key and not args.local_llm:
+        if args.openai_key:
             llm_config = {
                 'api_key': args.openai_key,
                 'api_base': args.openai_base,
@@ -262,7 +264,7 @@ class User(Command):
                     'model': model_name,
                     'default_headers': {'User-Agent': 'Reddit-Sentiment-Analyzer'}
                 }
-            elif not args.openai_key:
+            elif not args.openai_key and not args.local_llm:
                 console.print("[yellow]No LLM configuration provided.[/]")
                 llm_choice = Prompt.ask(
                     "Choose LLM provider",
@@ -276,8 +278,10 @@ class User(Command):
                         "Enter local LLM endpoint URL",
                         default="http://localhost:11434"
                     )
+                    # Recursively call the LLM setup logic for local LLM
+                    return self.take_action(args)
         
-        if args.openai_key and not args.local_llm:
+        if args.openai_key:
             llm_config = {
                 'api_key': args.openai_key,
                 'api_base': args.openai_base,
