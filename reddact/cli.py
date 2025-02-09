@@ -171,7 +171,7 @@ class CLI(App):
             return {
                 'api_key': args.openai_key,
                 'api_base': args.openai_base or "https://api.openai.com/v1",
-                'model': args.model or "gpt-3.5-turbo"
+                'model': args.model or "gpt-4"
             }
 
         # Prompt for configuration if none provided
@@ -187,7 +187,7 @@ class CLI(App):
             return {
                 'api_key': args.openai_key,
                 'api_base': args.openai_base or "https://api.openai.com/v1",
-                'model': args.model or "gpt-3.5-turbo"
+                'model': args.model or "gpt-4"
             }
         else:
             args.local_llm = Prompt.ask(
