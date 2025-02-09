@@ -6,8 +6,13 @@ from cliff.commandmanager import CommandManager
 from cliff.command import Command
 from rich.console import Console
 from rich.prompt import Prompt
+from rich.panel import Panel
+from rich.columns import Columns
 
 from reddact.sentiment import Sentiment
+
+import requests
+
 
 console = Console()
 
@@ -40,7 +45,7 @@ class Listing(Command):
                             help='URL for local LLM endpoint (OpenAI compatible)')
         parser.add_argument('--openai-base', type=str,
                             help='Optional OpenAI API base URL')
-        parser.add_argument('--openai-model', type=str,
+        parser.add_argument('--model', type=str,
                             help='OpenAI or local LLM model to use')
         parser.add_argument('--pii-only', action='store_true',
                             help='Only show comments that contain PII (0 < score < 1.0)')
@@ -59,7 +64,6 @@ class Listing(Command):
                 console.print(f"[blue]Using local LLM endpoint: {base_url}[/]")
                 
                 # Check model availability
-                import requests
                 try:
                     # First check if Ollama is running
                     response = requests.get(base_url)
@@ -74,12 +78,8 @@ class Listing(Command):
                         models_data = response.json()
                         available_models = [m['name'] for m in models_data.get('models', [])]
                         
-                        # Create a panel with available models
-                        from rich.panel import Panel
-                        from rich.columns import Columns
-                        
                         # For local LLMs, ensure model name is properly formatted
-                        model_name = args.openai_model if args.openai_model else available_models[0]
+                        model_name = args.model if args.model else available_models[0]
                         if model_name in available_models:
                             # Create a subtle panel for available models
                             model_list = "\n".join(
@@ -105,7 +105,7 @@ class Listing(Command):
                                     else:
                                         console.print(f"  • {model}")
                             else:
-                                console.print(f"\n[red]Error: Model '{args.openai_model}' not found in available models.[/]")
+                                console.print(f"\n[red]Error: Model '{args.model}' not found in available models.[/]")
                                 return 1
                     else:
                         console.print(f"[red]Error: Could not fetch available models: {response.status_code}[/]")
@@ -130,7 +130,9 @@ class Listing(Command):
                     default="openai"
                 )
                 if llm_choice == "openai":
+                    print('setting openai key')
                     args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
+                    print('set openai key')
                 else:
                     args.local_llm = Prompt.ask(
                         "Enter local LLM endpoint URL",
@@ -165,7 +167,7 @@ class Listing(Command):
                             ))
                             
                             # Prompt for model selection
-                            args.openai_model = Prompt.ask(
+                            args.model = Prompt.ask(
                                 "\nSelect model",
                                 choices=available_models,
                                 default=available_models[0]
@@ -178,13 +180,15 @@ class Listing(Command):
                         return 1
                     
                     # Recursively call the LLM setup logic for local LLM
+                    print("trying to execute take_action")
                     return self.take_action(args)
         
         if args.openai_key:
+            print("openai key detected")
             llm_config = {
                 'api_key': args.openai_key,
                 'api_base': args.openai_base,
-                'model': args.openai_model
+                'model': args.model
             }
         
         # Convert limit of 0 to None for unlimited
@@ -228,7 +232,7 @@ class User(Command):
                             help='URL for local LLM endpoint (OpenAI compatible)')
         parser.add_argument('--openai-base', type=str,
                             help='Optional OpenAI API base URL')
-        parser.add_argument('--openai-model', type=str,
+        parser.add_argument('--model', type=str,
                             help='OpenAI or local LLM model to use')
         parser.add_argument('--pii-only', action='store_true',
                             help='Only show comments that contain PII (0 < score < 1.0)')
@@ -247,7 +251,6 @@ class User(Command):
                 console.print(f"[blue]Using local LLM endpoint: {base_url}[/]")
                 
                 # Check model availability
-                import requests
                 try:
                     # First check if Ollama is running
                     response = requests.get(base_url)
@@ -261,13 +264,9 @@ class User(Command):
                     if response.status_code == 200:
                         models_data = response.json()
                         available_models = [m['name'] for m in models_data.get('models', [])]
-                        
-                        # Create a panel with available models
-                        from rich.panel import Panel
-                        from rich.columns import Columns
-                        
+                                                
                         # For local LLMs, ensure model name is properly formatted
-                        model_name = args.openai_model if args.openai_model else available_models[0]
+                        model_name = args.model if args.model else available_models[0]
                         if model_name in available_models:
                             # Create a subtle panel for available models
                             model_list = "\n".join(
@@ -293,7 +292,7 @@ class User(Command):
                                     else:
                                         console.print(f"  • {model}")
                             else:
-                                console.print(f"\n[red]Error: Model '{args.openai_model}' not found in available models.[/]")
+                                console.print(f"\n[red]Error: Model '{args.model}' not found in available models.[/]")
                                 return 1
                     else:
                         console.print(f"[red]Error: Could not fetch available models: {response.status_code}[/]")
@@ -318,15 +317,16 @@ class User(Command):
                     default="openai"
                 )
                 if llm_choice == "openai":
+                    print('setting openai key')
                     args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
                 else:
                     args.local_llm = Prompt.ask(
                         "Enter local LLM endpoint URL",
                         default="http://localhost:11434"
                     )
-                    
                     # Check connection and get available models
                     base_url = args.local_llm.rstrip('/v1')
+                    print(base_url)
                     try:
                         response = requests.get(base_url)
                         if response.status_code != 200:
@@ -353,7 +353,7 @@ class User(Command):
                             ))
                             
                             # Prompt for model selection
-                            args.openai_model = Prompt.ask(
+                            args.model = Prompt.ask(
                                 "\nSelect model",
                                 choices=available_models,
                                 default=available_models[0]
@@ -369,13 +369,15 @@ class User(Command):
                     return self.take_action(args)
         
         if args.openai_key:
+            print(args)
             llm_config = {
                 'api_key': args.openai_key,
                 'api_base': args.openai_base,
-                'model': args.openai_model
+                'model': args.model
             }
         
         # Convert limit of 0 to None for unlimited
+        print(llm_config)
         limit = None if args.limit == 0 else args.limit
         sent = Sentiment(
             auth_enabled=args.enable_auth,
