@@ -122,9 +122,19 @@ class Listing(Command):
                     'default_headers': {'User-Agent': 'Reddit-Sentiment-Analyzer'}
                 }
             elif not args.openai_key:
-                console.print("[yellow]No OpenAI API key provided.[/]")
-                if Prompt.ask("Would you like to enable LLM-based PII analysis?", choices=["y", "n"], default="y") == "y":
+                console.print("[yellow]No LLM configuration provided.[/]")
+                llm_choice = Prompt.ask(
+                    "Choose LLM provider",
+                    choices=["openai", "local"],
+                    default="openai"
+                )
+                if llm_choice == "openai":
                     args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
+                else:
+                    args.local_llm = Prompt.ask(
+                        "Enter local LLM endpoint URL",
+                        default="http://localhost:11434"
+                    )
         
         if args.openai_key and not args.local_llm:
             llm_config = {
@@ -253,9 +263,19 @@ class User(Command):
                     'default_headers': {'User-Agent': 'Reddit-Sentiment-Analyzer'}
                 }
             elif not args.openai_key:
-                console.print("[yellow]No OpenAI API key provided.[/]")
-                if Prompt.ask("Would you like to enable LLM-based PII analysis?", choices=["y", "n"], default="y") == "y":
+                console.print("[yellow]No LLM configuration provided.[/]")
+                llm_choice = Prompt.ask(
+                    "Choose LLM provider",
+                    choices=["openai", "local"],
+                    default="openai"
+                )
+                if llm_choice == "openai":
                     args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
+                else:
+                    args.local_llm = Prompt.ask(
+                        "Enter local LLM endpoint URL",
+                        default="http://localhost:11434"
+                    )
         
         if args.openai_key and not args.local_llm:
             llm_config = {
