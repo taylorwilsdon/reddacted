@@ -9,8 +9,7 @@ setup(
     license='MIT',
 
     description='reddact',
-    long_description='Obtains Sentiment Score of various reddit objects.',
-
+    long_description='Analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts',
     author='Taylor Wilsdon',
     author_email='taylorwilsdon@gmail.com',
     url='https://github.com/taylorwilsdon/reddact',

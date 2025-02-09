@@ -1,6 +1,20 @@
-# Reddit Sentiment Analyzer 😁😐😕
+# reddact: AI-Powered Reddit Privacy Suite
 
-The Reddit Sentiment Analyzer is a [sentiment analysis](https://en.wikipedia.org/wiki/Sentiment_analysis) CLI tool for [Reddit](https://www.reddit.com/). Reddit Sentiment gathers comments and builds a sentiment score for the following reddit abstractions:
+[![Privacy Shield](https://img.shields.io/badge/Privacy-100%25_Client--Side_Processing-success)](https://example.com)
+[![AI Analysis](https://img.shields.io/badge/AI-PII_Detection-blueviolet)](https://example.com)
+
+**Next-generation anonymous content management with neural privacy protection**
+
+## What is reddact?
+- Clean up your online footprint without blowing away everyything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts. 
+- Easy, lazy, self hosted - the way an aging former engineer with a career doing things right at the enterprise cale would clean up your dirty laundry. 
+
+✅ **Zero-Trust Architecture**  
+- Client-side execution only
+- No tracking or external calls
+- Session-based authentication
+- Keep your nonsense comments without unintentionally doxing yourself someday off in the future when you run for mayor. 
+
 
 - **Listings**: Get the sentiment based on top comments in an article
 - **Users**:  Get the sentiment based on the most recent comments submitted
@@ -8,15 +22,15 @@ The Reddit Sentiment Analyzer is a [sentiment analysis](https://en.wikipedia.org
 ## Installation ##
 
 ```bash
-$ pip install reddit-sentiment
+$ pip install reddact
 ```
 
 ## Using the CLI ##
 
 The CLI allows the following commands:
 
-- `reddit-sentiment listing <subreddit> <article>` Outputs the sentiment score of a particular Listing.
-- `reddit-sentiment user <name>` Outputs the sentiment score of a particular User.
+- `reddact listing <subreddit> <article>` Outputs the sentiment score of a particular Listing.
+- `reddact user <name>` Outputs the sentiment score of a particular User.
 
 ### Additional Options ###
 
@@ -43,9 +57,6 @@ $ export REDDIT_USERNAME=your-username
 $ export REDDIT_PASSWORD=your-password
 $ export REDDIT_CLIENT_ID=your-client-id
 $ export REDDIT_CLIENT_SECRET=your-client-secret
-
-# verify env variables have been set
-$ printenv
 ```
 
 Now when running the CLI, all requests will be authenticated.
@@ -125,7 +136,7 @@ $ pytest tests
 
 ### too many requests ###
 
-This may happen often as reddit performs rate-limiting to it's API. This can be solved by either authenticating or simply try again in a few seconds.
+If you're unauthenticated, reddit has relatively low rate limits for it's API. Either authenticate against your account, or just wait a sec and  try again.
 
 ### the page you requested does not exist ###
 

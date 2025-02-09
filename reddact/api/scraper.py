@@ -2,7 +2,7 @@ import logging
 from types import BuiltinMethodType
 import requests
 
-from reddit_sentiment.api import api
+from reddact.api import api
 
 
 class Scraper(api.API):

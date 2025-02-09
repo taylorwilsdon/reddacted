@@ -58,7 +58,7 @@ class Sentiment():
         # Initialize LLM detector if config provided
         self.llm_detector = None
         if llm_config and pii_enabled:
-            from reddit_sentiment.llm_detector import LLMDetector
+            from reddact.llm_detector import LLMDetector
             self.llm_detector = LLMDetector(
                 api_key=llm_config.get('api_key'),
                 api_base=llm_config.get('api_base'),
