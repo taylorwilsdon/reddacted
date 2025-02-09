@@ -54,145 +54,9 @@ class Listing(Command):
         return parser
 
     def take_action(self, args):
-        llm_config = None
-        
-        # Handle LLM configuration
-        if not args.disable_pii:
-            if args.local_llm:
-                # Remove trailing /v1 if present
-                base_url = args.local_llm.rstrip('/v1')
-                console.print(f"[blue]Using local LLM endpoint: {base_url}[/]")
-                
-                # Check model availability
-                try:
-                    # First check if Ollama is running
-                    response = requests.get(base_url)
-                    if response.status_code != 200:
-                        console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
-                        return 1
-
-                    # Get available models
-                    models_url = f"{base_url}/api/tags"  # Ollama's actual model list endpoint
-                    response = requests.get(models_url)
-                    if response.status_code == 200:
-                        models_data = response.json()
-                        available_models = [m['name'] for m in models_data.get('models', [])]
-                        
-                        # For local LLMs, ensure model name is properly formatted
-                        model_name = args.model if args.model else available_models[0]
-                        if model_name in available_models:
-                            # Create a subtle panel for available models
-                            model_list = "\n".join(
-                                f"• [green]{model}[/] [dim](active)[/]" if model == model_name else f"• {model}"
-                                for model in available_models
-                            )
-                            models_panel = Panel(
-                                model_list,
-                                title="[dim]Available models[/]",
-                                border_style="dim",
-                                padding=(0, 1)
-                            )
-                            console.print(models_panel)
-                        else:
-                            # Try without any prefix/suffix
-                            base_model = model_name.split(':')[0].split('/')[-1]
-                            if base_model in available_models:
-                                model_name = base_model
-                                console.print("\n[dim]Available models:[/]")
-                                for model in available_models:
-                                    if model == model_name:
-                                        console.print(f"  • [green]{model}[/] [dim](active)[/]")
-                                    else:
-                                        console.print(f"  • {model}")
-                            else:
-                                console.print(f"\n[red]Error: Model '{args.model}' not found in available models.[/]")
-                                return 1
-                    else:
-                        console.print(f"[red]Error: Could not fetch available models: {response.status_code}[/]")
-                        return 1
-                except Exception as e:
-                    console.print(f"[red]Error checking model availability: {str(e)}[/]")
-                    return 1
-
-                # For local LLMs, we need to set both api_key and api_key_path to bypass OpenAI's validation
-                llm_config = {
-                    'api_key': 'sk-not-needed',
-                    'api_key_path': None,  # This helps bypass the key validation
-                    'api_base': f"{base_url}/v1",  # Ollama expects /v1 prefix for OpenAI compatibility
-                    'model': model_name,
-                    'default_headers': {'User-Agent': 'Reddit-Sentiment-Analyzer'}
-                }
-            elif not args.openai_key and not args.local_llm:
-                console.print("[yellow]No LLM configuration provided.[/]")
-                llm_choice = Prompt.ask(
-                    "Choose LLM provider",
-                    choices=["openai", "local"],
-                    default="openai"
-                )
-                if llm_choice == "openai":
-                    print('setting openai key')
-                    args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
-                    print('set openai key')
-                else:
-                    args.local_llm = Prompt.ask(
-                        "Enter local LLM endpoint URL",
-                        default="http://localhost:11434"
-                    )
-                    
-                    # Check connection and get available models
-                    base_url = args.local_llm.rstrip('/v1')
-                    try:
-                        response = requests.get(base_url)
-                        if response.status_code != 200:
-                            console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
-                            return 1
-
-                        models_url = f"{base_url}/api/tags"
-                        response = requests.get(models_url)
-                        if response.status_code == 200:
-                            models_data = response.json()
-                            available_models = [m['name'] for m in models_data.get('models', [])]
-                            
-                            if not available_models:
-                                console.print("[red]Error: No models found on the local LLM server[/]")
-                                return 1
-                            
-                            # Show available models in a panel
-                            model_list = "\n".join(f"• {model}" for model in available_models)
-                            console.print(Panel(
-                                model_list,
-                                title="[cyan]Available Models[/]",
-                                border_style="dim",
-                                padding=(0, 1)
-                            ))
-                            
-                            # Prompt for model selection
-                            args.model = Prompt.ask(
-                                "\nSelect model",
-                                choices=available_models,
-                                default=available_models[0]
-                            )
-                        else:
-                            console.print(f"[red]Error: Could not fetch available models: {response.status_code}[/]")
-                            return 1
-                    except Exception as e:
-                        console.print(f"[red]Error checking model availability: {str(e)}[/]")
-                        return 1
-                    
-                    # Recursively call the LLM setup logic for local LLM
-                    print("trying to execute take_action")
-                    return self.take_action(args)
-        
-        if args.openai_key:
-            print("openai key detected")
-            llm_config = {
-                'api_key': args.openai_key,
-                'api_base': args.openai_base,
-                'model': args.model
-            }
-        
-        # Convert limit of 0 to None for unlimited
+        llm_config = CLI()._configure_llm(args, console)
         limit = None if args.limit == 0 else args.limit
+        
         sent = Sentiment(
             auth_enabled=args.enable_auth,
             pii_enabled=not args.disable_pii,
@@ -200,9 +64,7 @@ class Listing(Command):
             pii_only=args.pii_only,
             limit=limit
         )
-        sent.get_listing_sentiment(args.subreddit,
-                                   args.article,
-                                   args.output_file)
+        sent.get_listing_sentiment(args.subreddit, args.article, args.output_file)
 
 
 class User(Command):
@@ -241,144 +103,9 @@ class User(Command):
         return parser
 
     def take_action(self, args):
-        llm_config = None
-        
-        # Handle LLM configuration
-        if not args.disable_pii:
-            if args.local_llm:
-                # Remove trailing /v1 if present
-                base_url = args.local_llm.rstrip('/v1')
-                console.print(f"[blue]Using local LLM endpoint: {base_url}[/]")
-                
-                # Check model availability
-                try:
-                    # First check if Ollama is running
-                    response = requests.get(base_url)
-                    if response.status_code != 200:
-                        console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
-                        return 1
-
-                    # Get available models
-                    models_url = f"{base_url}/api/tags"  # Ollama's actual model list endpoint
-                    response = requests.get(models_url)
-                    if response.status_code == 200:
-                        models_data = response.json()
-                        available_models = [m['name'] for m in models_data.get('models', [])]
-                                                
-                        # For local LLMs, ensure model name is properly formatted
-                        model_name = args.model if args.model else available_models[0]
-                        if model_name in available_models:
-                            # Create a subtle panel for available models
-                            model_list = "\n".join(
-                                f"• [green]{model}[/] [dim](active)[/]" if model == model_name else f"• {model}"
-                                for model in available_models
-                            )
-                            models_panel = Panel(
-                                model_list,
-                                title="[dim]Available models[/]",
-                                border_style="dim",
-                                padding=(0, 1)
-                            )
-                            console.print(models_panel)
-                        else:
-                            # Try without any prefix/suffix
-                            base_model = model_name.split(':')[0].split('/')[-1]
-                            if base_model in available_models:
-                                model_name = base_model
-                                console.print("\n[dim]Available models:[/]")
-                                for model in available_models:
-                                    if model == model_name:
-                                        console.print(f"  • [green]{model}[/] [dim](active)[/]")
-                                    else:
-                                        console.print(f"  • {model}")
-                            else:
-                                console.print(f"\n[red]Error: Model '{args.model}' not found in available models.[/]")
-                                return 1
-                    else:
-                        console.print(f"[red]Error: Could not fetch available models: {response.status_code}[/]")
-                        return 1
-                except Exception as e:
-                    console.print(f"[red]Error checking model availability: {str(e)}[/]")
-                    return 1
-
-                # For local LLMs, we need to set both api_key and api_key_path to bypass OpenAI's validation
-                llm_config = {
-                    'api_key': 'sk-not-needed',
-                    'api_key_path': None,  # This helps bypass the key validation
-                    'api_base': f"{base_url}/v1",  # Ollama expects /v1 prefix for OpenAI compatibility
-                    'model': model_name,
-                    'default_headers': {'User-Agent': 'Reddit-Sentiment-Analyzer'}
-                }
-            elif not args.openai_key and not args.local_llm:
-                console.print("[yellow]No LLM configuration provided.[/]")
-                llm_choice = Prompt.ask(
-                    "Choose LLM provider",
-                    choices=["openai", "local"],
-                    default="openai"
-                )
-                if llm_choice == "openai":
-                    print('setting openai key')
-                    args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
-                else:
-                    args.local_llm = Prompt.ask(
-                        "Enter local LLM endpoint URL",
-                        default="http://localhost:11434"
-                    )
-                    # Check connection and get available models
-                    base_url = args.local_llm.rstrip('/v1')
-                    print(base_url)
-                    try:
-                        response = requests.get(base_url)
-                        if response.status_code != 200:
-                            console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
-                            return 1
-
-                        models_url = f"{base_url}/api/tags"
-                        response = requests.get(models_url)
-                        if response.status_code == 200:
-                            models_data = response.json()
-                            available_models = [m['name'] for m in models_data.get('models', [])]
-                            
-                            if not available_models:
-                                console.print("[red]Error: No models found on the local LLM server[/]")
-                                return 1
-                            
-                            # Show available models in a panel
-                            model_list = "\n".join(f"• {model}" for model in available_models)
-                            console.print(Panel(
-                                model_list,
-                                title="[cyan]Available Models[/]",
-                                border_style="dim",
-                                padding=(0, 1)
-                            ))
-                            
-                            # Prompt for model selection
-                            args.model = Prompt.ask(
-                                "\nSelect model",
-                                choices=available_models,
-                                default=available_models[0]
-                            )
-                        else:
-                            console.print(f"[red]Error: Could not fetch available models: {response.status_code}[/]")
-                            return 1
-                    except Exception as e:
-                        console.print(f"[red]Error checking model availability: {str(e)}[/]")
-                        return 1
-                    
-                    # Recursively call the LLM setup logic for local LLM
-                    return self.take_action(args)
-        
-        if args.openai_key:
-            print(args)
-            llm_config = {
-                'api_key': args.openai_key,
-                'api_base': args.openai_base,
-                'model': args.model
-            }
-        
-        # Convert limit of 0 to None for unlimited
-        print(llm_config)
+        llm_config = CLI()._configure_llm(args, console)
         limit = None if args.limit == 0 else args.limit
+        
         sent = Sentiment(
             auth_enabled=args.enable_auth,
             pii_enabled=not args.disable_pii,
@@ -396,6 +123,78 @@ class CLI(App):
             description="Obtains Sentiment Score of various reddit objects.",
             command_manager=CommandManager('reddit.sentiment'),
             deferred_help=True,)
+
+    def _configure_llm(self, args, console):
+        """Centralized LLM configuration handler"""
+        llm_config = None
+        if args.disable_pii:
+            return None
+
+        if args.local_llm:
+            base_url = args.local_llm.rstrip('/v1')
+            console.print(f"[blue]Using local LLM endpoint: {base_url}[/]")
+
+            try:
+                # Verify Ollama connection
+                response = requests.get(base_url)
+                if response.status_code != 200:
+                    console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
+                    return None
+
+                # Get available models
+                models_url = f"{base_url}/api/tags"
+                response = requests.get(models_url)
+                if response.status_code != 200:
+                    console.print(f"[red]Error: Could not fetch models: {response.status_code}[/]")
+                    return None
+
+                models_data = response.json()
+                available_models = [m['name'] for m in models_data.get('models', [])]
+                args.model = args.model or available_models[0]
+
+                if args.model not in available_models:
+                    console.print(f"[red]Error: Model '{args.model}' not available[/]")
+                    return None
+
+                return {
+                    'api_key': 'sk-not-needed',
+                    'api_base': f"{base_url}/v1",
+                    'model': args.model,
+                    'default_headers': {'User-Agent': 'Reddit-Sentiment-Analyzer'}
+                }
+
+            except Exception as e:
+                console.print(f"[red]Connection error: {str(e)}[/]")
+                return None
+
+        elif args.openai_key:
+            return {
+                'api_key': args.openai_key,
+                'api_base': args.openai_base or "https://api.openai.com/v1",
+                'model': args.model or "gpt-3.5-turbo"
+            }
+
+        # Prompt for configuration if none provided
+        console.print("[yellow]LLM required for PII detection[/]")
+        llm_choice = Prompt.ask(
+            "Choose LLM provider",
+            choices=["openai", "local"],
+            default="openai"
+        )
+
+        if llm_choice == "openai":
+            args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
+            return {
+                'api_key': args.openai_key,
+                'api_base': args.openai_base or "https://api.openai.com/v1",
+                'model': args.model or "gpt-3.5-turbo"
+            }
+        else:
+            args.local_llm = Prompt.ask(
+                "Enter local LLM endpoint URL",
+                default="http://localhost:11434"
+            )
+            return self._configure_llm(args, console)
 
 
 def main(argv=sys.argv[1:]):
