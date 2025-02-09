@@ -38,7 +38,7 @@ neutral_sentiment = "😐"
 class Sentiment():
     """Performs the sentiment analysis on a given set of Reddit Objects."""
 
-    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, debug=False):
+    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, debug=False, limit=100):
         # Configure logging
         log_level = logging.DEBUG if debug else logging.INFO
         logging.basicConfig(
@@ -54,6 +54,7 @@ class Sentiment():
         self.pii_enabled = pii_enabled
         self.pii_detector = PIIDetector() if pii_enabled else None
         self.pii_only = pii_only
+        self.limit = limit
         
         # Initialize LLM detector if config provided
         self.llm_detector = None
@@ -76,7 +77,7 @@ class Sentiment():
         :param username: name of user to search
         :param output_file (optional): file to output relevant data.
         """
-        comments = self.api.parse_user(username, headers=self.headers)
+        comments = self.api.parse_user(username, headers=self.headers, limit=self.limit)
         self.score, self.results = self._analyze(comments)
         self.sentiment = self._get_sentiment(self.score)
 
@@ -96,7 +97,8 @@ class Sentiment():
         """
         comments = self.api.parse_listing(subreddit,
                                           article,
-                                          headers=self.headers)
+                                          headers=self.headers,
+                                          limit=self.limit)
         self.score, self.results = self._analyze(comments)
         self.sentiment = self._get_sentiment(self.score)
 
