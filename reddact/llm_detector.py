@@ -1,4 +1,4 @@
-import os
+import json
 import asyncio
 import logging
 from typing import Tuple, Dict, Any, List
@@ -41,12 +41,11 @@ class LLMDetector:
         client = openai.AsyncOpenAI(**self.client_config)
         batch_size = 3
         results = []
-        
+        print('init analyze_batch')
         try:
             for i in range(0, len(texts), batch_size):
                 batch = texts[i:i + batch_size]
                 tasks = []
-                
                 for text in batch:
                     task = client.chat.completions.create(
                         model=self.model,
@@ -64,7 +63,6 @@ class LLMDetector:
                 
                 for response in batch_responses:
                     try:
-                        import json
                         raw_response = response.choices[0].message.content.strip()
                         logging.debug(f"\n🤖 Raw LLM Response:\n{raw_response}\n")
                         try:
@@ -100,7 +98,6 @@ class LLMDetector:
                         results.append((risk_score, analysis))
                     except Exception as e:
                         results.append((0.0, {"error": str(e)}))
-                
             return results
             
         except Exception as e:
@@ -113,6 +110,7 @@ class LLMDetector:
         Analyze a single text using LLM for potential personal information.
         Returns tuple of (risk_score, details).
         """
+        print('init analyze_text')
         try:
             results = asyncio.run(self.analyze_batch([text]))
             return results[0]
