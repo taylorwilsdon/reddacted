@@ -77,7 +77,7 @@ class Listing(Command):
                         from rich.columns import Columns
                         
                         # For local LLMs, ensure model name is properly formatted
-                        model_name = args.openai_model
+                        model_name = args.openai_model if args.openai_model else available_models[0]
                         if model_name in available_models:
                             # Create a subtle panel for available models
                             model_list = "\n".join(
@@ -260,7 +260,7 @@ class User(Command):
                         from rich.columns import Columns
                         
                         # For local LLMs, ensure model name is properly formatted
-                        model_name = args.openai_model
+                        model_name = args.openai_model if args.openai_model else available_models[0]
                         if model_name in available_models:
                             # Create a subtle panel for available models
                             model_list = "\n".join(
