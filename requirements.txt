@@ -1,4 +1,4 @@
-openai
+openai>=1.0.0,<2.0.0
 requests==2.31.0
 six==1.10.0
 cliff==4.3.0

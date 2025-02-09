@@ -25,10 +25,11 @@ class LLMDetector:
     Text to analyze: {text}
     """
 
-    def __init__(self, api_key: str, api_base: str = None, model: str = "gpt-3.5-turbo"):
+    def __init__(self, api_key: str, api_base: str = None, model: str = "gpt-3.5-turbo", headers: dict = None):
         self.model = model
         self.client_config = {
             'api_key': api_key,
+            'default_headers': headers or {},
         }
         if api_base:
             self.client_config['base_url'] = api_base
@@ -42,6 +43,13 @@ class LLMDetector:
         batch_size = 3
         results = []
         print('init analyze_batch')
+        try:
+            client = openai.AsyncOpenAI(**self.client_config)
+        except openai.AuthenticationError as e:
+            raise ValueError("Invalid API key") from e
+        except openai.APIError as e:
+            raise ConnectionError(f"API error: {e.message}") from e
+
         try:
             for i in range(0, len(texts), batch_size):
                 batch = texts[i:i + batch_size]
