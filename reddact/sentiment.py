@@ -166,7 +166,7 @@ class Sentiment():
                     
                     # Create result with combined risk score
                     result = AnalysisResult(
-                        comment_id=str(comment.id),
+                        comment_id=str(i),
                         sentiment_score=score,
                         sentiment_emoji=self._get_sentiment(score),
                         pii_risk_score=pii_risk_score,  # Initial PII score
