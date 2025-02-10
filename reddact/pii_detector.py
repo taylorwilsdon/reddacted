@@ -15,18 +15,26 @@ class PIIDetector:
     
     # Common PII patterns
     PATTERNS = {
-        'email': (r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', 0.9),
-        'phone': (r'\b(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b', 0.8),
-        'ssn': (r'\b\d{3}-\d{2}-\d{4}\b', 0.95),
-        'credit_card': (r'\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b', 0.9),
-        'address': (r'\b\d+\s+[A-Za-z\s]+(?:street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr)\b', 0.7),
-        'name_pattern': (r'\b(?:Mr\.|Mrs\.|Ms\.|Dr\.)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', 0.6),
+        'email': (r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', 0.95),
+        'phone': (r'\b(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b', 0.85),
+        'ssn': (r'\b\d{3}-\d{2}-\d{4}\b', 0.97),
+        'credit_card': (r'\b(?:\d{4}[- ]?){3}\d{4}\b', 0.95),
+        'address': (r'\b\d{2,5}\s+(?:[A-Za-z]+\s)+(?:street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr)\.?\b', 0.65),
+        'name_pattern': (r'\b(?:Mr\.|Mrs\.|Ms\.|Dr\.)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2}\b', 0.7),
     }
 
     # Keywords that might indicate PII context
     CONTEXT_KEYWORDS = [
-        'my name is', 'i live', 'my address', 'you can reach me at',
-        'my phone', 'my email', 'contact me', 'call me at'
+        'name is', 'live at', 'address', 'reach me', 
+        'phone', 'email', 'contact', 'call me', 'ssn',
+        'social security', 'credit card', 'driver license'
+    ]
+
+    COMMON_FALSE_POSITIVES = [
+        r'\b\d+ (llm|ai|gpu|cpu|ram|mb|gb|ghz|mhz|api)\b',
+        r'\b\d+ (times|years|days|hours|minutes|seconds)\b',
+        r'\b\d+(?:st|nd|rd|th)\b',
+        r'\b\d+[km]?b?\b',
     ]
 
     def __init__(self):
@@ -34,6 +42,10 @@ class PIIDetector:
             name: re.compile(pattern, re.IGNORECASE)
             for name, (pattern, _) in self.PATTERNS.items()
         }
+        self.false_positive_patterns = [
+            re.compile(pattern, re.IGNORECASE)
+            for pattern in self.COMMON_FALSE_POSITIVES
+        ]
 
     def analyze_text(self, text: str) -> List[PIIMatch]:
         """
@@ -42,21 +54,33 @@ class PIIDetector:
         """
         matches = []
         
-        # Check for PII patterns
+        # First check for false positives
+        if any(fp.search(text) for fp in self.false_positive_patterns):
+            return []
+
+        # Validate matches against known false positive contexts
         for pii_type, (_, confidence) in self.PATTERNS.items():
             pattern = self.compiled_patterns[pii_type]
-            found = pattern.findall(text)
-            if found:
-                for match in found:
-                    match_str = match if isinstance(match, str) else match[0]
-                    matches.append(PIIMatch(pii_type, match_str, confidence))
+            for match in pattern.finditer(text):
+                full_match = match.group(0)
+                
+                # Additional validation per type
+                if pii_type == 'phone' and len(full_match.replace('-', '').replace(' ', '')) < 10:
+                    continue
+                    
+                if pii_type == 'address' and not any(c.isalpha() for c in full_match.split()[-2]):
+                    continue
 
-        # Adjust confidence based on context
+                matches.append(PIIMatch(pii_type, full_match, confidence))
+
+        # Contextual confidence boost with cap
+        context_boost = 0.15 if any(
+            re.search(rf'\b{re.escape(kw)}\b', text, re.IGNORECASE)
+            for kw in self.CONTEXT_KEYWORDS
+        ) else 0.0
+
         for match in matches:
-            for keyword in self.CONTEXT_KEYWORDS:
-                if keyword.lower() in text.lower():
-                    # Increase confidence if contextual keywords are present
-                    match.confidence = min(1.0, match.confidence + 0.1)
+            match.confidence = min(1.0, match.confidence + context_boost)
 
         return matches
 
@@ -69,8 +93,17 @@ class PIIDetector:
         if not matches:
             return 0.0, []
             
-        # Calculate weighted average of confidence scores
-        total_confidence = sum(match.confidence for match in matches)
-        risk_score = min(1.0, total_confidence / len(matches))
+        # Weighted average with type weights
+        type_weights = {
+            'ssn': 1.2,
+            'credit_card': 1.2,
+            'email': 1.0,
+            'phone': 0.9,
+            'address': 0.7,
+            'name_pattern': 0.6
+        }
         
-        return risk_score, matches
+        total_weight = sum(type_weights.get(match.type, 1.0) for match in matches)
+        weighted_sum = sum(match.confidence * type_weights.get(match.type, 1.0) for match in matches)
+        
+        return min(1.0, weighted_sum / total_weight), matches
