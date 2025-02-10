@@ -1,5 +1,6 @@
 import unittest
 import json
+import asyncio
 from unittest.mock import MagicMock, patch, AsyncMock
 
 from reddact.llm_detector import LLMDetector
@@ -45,7 +46,10 @@ class LLMDetectorTestCases(unittest.TestCase):
         self.assertEqual(risk_score, 0.85)
         self.assertEqual(details['details'], SAMPLE_RESPONSE['details'])
         self.assertEqual(details['risk_factors'], SAMPLE_RESPONSE['risk_factors'])
-        mock_client.assert_called_once()
+        mock_client.assert_called_once_with(
+            api_key="sk-test",
+            default_headers={}
+        )
 
     @patch('openai.AsyncOpenAI')
     def test_analyze_invalid_key(self, mock_client):
@@ -70,10 +74,10 @@ class LLMDetectorTestCases(unittest.TestCase):
             "Third clean text"
         ]
         
-        results = detector.analyze_batch(texts)
+        results = asyncio.run(detector.analyze_batch(texts))
         self.assertEqual(len(results), 3)
         self.assertEqual(results[0][0], 0.85)
-        self.assertEqual(results[2][0], 0.0)  # Last result uses different mock
+        self.assertEqual(results[1][0], 0.85)  # All mock responses are same now
 
     @patch('openai.AsyncOpenAI')
     def test_invalid_json_response(self, mock_client):

@@ -39,7 +39,6 @@ class LLMDetector:
         Analyze a batch of texts using LLM for potential personal information.
         Returns list of tuples (risk_score, details).
         """
-        client = openai.AsyncOpenAI(**self.client_config)
         batch_size = 3
         results = []
         try:
