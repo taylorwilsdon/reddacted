@@ -16,7 +16,6 @@
 - Keep your nonsense comments without unintentionally doxing yourself someday off in the future when you run for mayor. 
 
 
-- **Listings**: Get the sentiment based on top comments in an article
 - **Users**:  Get the sentiment based on the most recent comments submitted
 
 ## Installation ##
@@ -29,14 +28,13 @@ $ pip install reddact
 
 The CLI allows the following commands:
 
-- `reddact listing <subreddit> <article>` Outputs the sentiment score of a particular Listing.
 - `reddact user <name>` Outputs the sentiment score of a particular User.
 
 ### Additional Options ###
 
 #### Reporting ####
 
-Passing `--output-file file_name.txt` after any of the above will generate a file with detailed sentiment analysis results.
+Passing `--output-file file_name.txt` after the user command will generate a file with detailed sentiment analysis results.
 
 #### Authentication ####
 
@@ -140,4 +138,4 @@ If you're unauthenticated, reddit has relatively low rate limits for it's API. E
 
 ### the page you requested does not exist ###
 
-Simply a 404, which means that the provided username, or subreddit and article combination do not point to a valid page.
+Simply a 404, which means that the provided username does not point to a valid page.
