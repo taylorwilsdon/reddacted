@@ -430,7 +430,17 @@ class Sentiment():
             # LLM Findings panel
             llm_content = []
             if result.llm_findings:
-                print(result.llm_findings)
+                # Helper function to safely extract detail text
+                def format_detail(detail):
+                    if isinstance(detail, dict):
+                        # Handle different model response formats
+                        return (
+                            f"{detail.get('type', 'Finding')}: {detail.get('example', 'N/A')}".strip()
+                            or f"{detail.get('finding', 'N/A')}: {detail.get('reasoning', '')}".strip()
+                            or str(detail)
+                        )
+                    return str(detail)
+                
                 llm_content.extend([
                     Text.assemble(
                         ("Risk Score: ", "dim"),
@@ -442,20 +452,16 @@ class Sentiment():
                          "red" if result.llm_findings.get('has_pii') else "green")
                     )
                 ])
+                
                 if result.llm_findings.get('details'):
                     llm_content.append(Text("Findings:", style="bold"))
                     for detail in result.llm_findings['details']:
-                        if isinstance(detail, dict):
-                            # Some local models like smaller qwens are unreliable about formatting, so I've tried to handle for all the cases I've seen here. There's probably a more elegant way to do this. 
-                            if detail.get('type') and detail.get('example'):
-                                llm_content.append(Text(f"  • {detail['type']}: {detail['example']}", style="cyan"))
-                            elif detail.get('finding') and detail.get('reasoning'):
-                                print(detail.get('finding'))
-                                llm_content.append(Text(f"  • {detail['finding']}: {detail['reasoning']}", style="cyan"))
-                            else:
-                                llm_content.append(Text(f"  • {detail}", style="cyan"))
-                        else:
-                            llm_content.append(Text(f"  • {detail}", style="cyan"))
+                        try:
+                            detail_text = format_detail(detail)
+                            llm_content.append(Text(f"  • {detail_text}", style="cyan"))
+                        except Exception as e:
+                            logging.debug(f"Error formatting LLM detail: {str(e)}")
+                            llm_content.append(Text("  • [Malformed finding]", style="red dim"))
                 if result.llm_findings.get('risk_factors'):
                     llm_content.append(Text("\nRisk Factors:", style="bold"))
                     for factor in result.llm_findings['risk_factors']:
