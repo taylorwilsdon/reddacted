@@ -21,24 +21,48 @@
 ## Installation ##
 
 ```bash
-$ pip install reddact
+# Install globally
+pip install .
+
+# Or install in development mode (for contributors)
+pip install -e .
 ```
+
+That's it! No PATH configuration needed.
 
 ## Using the CLI ##
 
-The CLI allows the following commands:
+Install once with:
+```bash
+pip install .
+```
 
-- `reddact user <name>` Outputs the sentiment score of a particular User.
+Then run directly:
+```bash
+reddact user <username> [--output-file analysis.txt] [--enable-auth]
+reddact listing <subreddit> <article> [--output-file results.csv]
+```
 
-### Additional Options ###
+Key features:
+- Automatic dependency handling
+- Single-command operation
+- Built-in help: `reddact --help`
 
-#### Reporting ####
+## Troubleshooting ##
 
-Passing `--output-file file_name.txt` after the user command will generate a file with detailed sentiment analysis results.
+If you get "command not found" after installation:
+1. Check Python scripts directory is in your PATH:
+```bash
+# Typical Linux/Mac location
+export PATH="$HOME/.local/bin:$PATH"
 
-#### Authentication ####
-
-Passing `--enable-auth True` will allow the reddit request to be authenticated, which allows you to grab more/cleaner data. It will check if you have valid environment variables configured and use them to authenticate.
+# Typical Windows location
+set PATH=%APPDATA%\Python\Python311\Scripts;%PATH%
+```
+2. Verify installation location:
+```bash
+pip show reddact
+```
 
 ## Authentication ##
 
