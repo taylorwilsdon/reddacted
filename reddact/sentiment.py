@@ -12,6 +12,8 @@ from rich.panel import Panel
 from rich.columns import Columns
 from rich.console import Group
 from rich.text import Text
+from rich.table import Table, Column
+from rich.checkbox import Checkbox
 
 from reddact.api.scraper import Scraper
 from reddact.api.reddit import Reddit
@@ -24,6 +26,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 @dataclass
 class AnalysisResult:
     """Holds the results of both sentiment and PII analysis"""
+    comment_id: str
     sentiment_score: float
     sentiment_emoji: str
     pii_risk_score: float
@@ -164,6 +167,7 @@ class Sentiment():
                     
                     # Create result with combined risk score
                     result = AnalysisResult(
+                        comment_id=str(comment.id),
                         sentiment_score=score,
                         sentiment_emoji=self._get_sentiment(score),
                         pii_risk_score=pii_risk_score,  # Initial PII score
@@ -304,6 +308,43 @@ class Sentiment():
                 comment_count += 1
 
 
+    def _generate_summary_table(self, filtered_results: List[AnalysisResult]) -> Table:
+        """Generate an interactive-style summary table with checkboxes"""
+        table = Table(
+            Column("Select", width=12),
+            Column("Risk", justify="right", width=8),
+            Column("Sentiment", width=12),
+            Column("Comment Preview", width=50),
+            Column("ID", width=20),
+            title="[bold]Comments Requiring Action[/]",
+            header_style="bold magenta",
+            box=None
+        )
+        
+        for result in filtered_results:
+            # Determine risk level styling
+            risk_style = "red" if result.pii_risk_score > 0.5 else "yellow" if result.pii_risk_score > 0.2 else "green"
+            risk_text = Text(f"{result.pii_risk_score:.0%}", style=risk_style)
+            
+            # Create interactive-style checkbox
+            checkbox = Checkbox(
+                checked=result.pii_risk_score > 0.5,  # Auto-check high risk items
+                style="bold" if result.pii_risk_score > 0.5 else None
+            )
+            
+            # Trim comment text for preview
+            preview = result.text[:47] + "..." if len(result.text) > 50 else result.text
+            
+            table.add_row(
+                checkbox,
+                risk_text,
+                Text(f"{result.sentiment_emoji} {result.sentiment_score:.2f}"),
+                preview,
+                result.comment_id,
+            )
+        
+        return table
+
     def _print_comments(self, comments, url):
         """Prints out analysis of user comments.
 
@@ -432,6 +473,23 @@ class Sentiment():
                 title=f"[bold]Comment {i}[/]",
                 border_style="cyan"
             ))
+
+        # Add summary table
+        summary_table = self._generate_summary_table(filtered_results)
+        panels.append(Panel(summary_table, 
+            title="[bold]Action Summary[/]", 
+            border_style="green",
+            padding=(1, 4)
+        ))
+        
+        # Add deletion confirmation prompt
+        panels.append(
+            Panel.fit(
+                Text("Review above and use '--delete' with comma-separated IDs\nto remove high-risk comments", 
+                     style="italic yellow"),
+                border_style="red"
+            )
+        )
 
         # Print all panels
         with Progress(
