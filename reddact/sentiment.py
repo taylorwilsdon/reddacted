@@ -186,10 +186,10 @@ class Sentiment():
                     self._pending_results.append(result)
                     
                     # Process batch when full or at end
-                    if len(self._llm_batch) >= 3 or i == total_comments:
+                    if len(self._llm_batch) >= 10 or i == total_comments:
                         logging.debug(f"\nProcessing LLM batch of {len(self._llm_batch)} items")
                         progress.update(llm_task, visible=True)
-                        progress.update(llm_task, description="🤖 Starting LLM analysis")
+                        progress.update(llm_task, description="🤖 LLM analysis in progress...")
                         batch_results = await self.llm_detector.analyze_batch(self._llm_batch)
                         progress.update(llm_task, description="✅ LLM analysis complete")
                         logging.debug(f"LLM batch_results: {batch_results}")
@@ -430,6 +430,7 @@ class Sentiment():
             # LLM Findings panel
             llm_content = []
             if result.llm_findings:
+                print(result.llm_findings)
                 llm_content.extend([
                     Text.assemble(
                         ("Risk Score: ", "dim"),
@@ -445,7 +446,14 @@ class Sentiment():
                     llm_content.append(Text("Findings:", style="bold"))
                     for detail in result.llm_findings['details']:
                         if isinstance(detail, dict):
-                            llm_content.append(Text(f"  • {detail['finding']}: {detail['reasoning']}", style="cyan"))
+                            # Some local models like smaller qwens are unreliable about formatting, so I've tried to handle for all the cases I've seen here. There's probably a more elegant way to do this. 
+                            if detail.get('type') and detail.get('example'):
+                                llm_content.append(Text(f"  • {detail['type']}: {detail['example']}", style="cyan"))
+                            elif detail.get('finding') and detail.get('reasoning'):
+                                print(detail.get('finding'))
+                                llm_content.append(Text(f"  • {detail['finding']}: {detail['reasoning']}", style="cyan"))
+                            else:
+                                llm_content.append(Text(f"  • {detail}", style="cyan"))
                         else:
                             llm_content.append(Text(f"  • {detail}", style="cyan"))
                 if result.llm_findings.get('risk_factors'):
