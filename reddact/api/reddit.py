@@ -38,7 +38,7 @@ class Reddit(api.API):
             client_id=client_id,
             client_secret=client_secret,
             password=password,
-            user_agent="Reddit Sentiment Analyzer u/{username}",
+            user_agent="reddacted u/{username}",
             username=username,
         )
         reddit.read_only = True
