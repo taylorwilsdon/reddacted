@@ -12,8 +12,7 @@ from rich.panel import Panel
 from rich.columns import Columns
 from rich.console import Group
 from rich.text import Text
-from rich.table import Table, Column
-from rich.checkbox import Checkbox
+from rich.table import Table
 
 from reddact.api.scraper import Scraper
 from reddact.api.reddit import Reddit
@@ -309,28 +308,28 @@ class Sentiment():
 
 
     def _generate_summary_table(self, filtered_results: List[AnalysisResult]) -> Table:
-        """Generate an interactive-style summary table with checkboxes"""
+        """Generate summary table with selection indicators"""
         table = Table(
-            Column("Select", width=12),
-            Column("Risk", justify="right", width=8),
-            Column("Sentiment", width=12),
-            Column("Comment Preview", width=50),
-            Column("ID", width=20),
             title="[bold]Comments Requiring Action[/]",
             header_style="bold magenta",
             box=None
         )
+        
+        # Add columns with style parameters directly
+        table.add_column("Select", width=12, justify="center")
+        table.add_column("Risk", justify="right", width=8)
+        table.add_column("Sentiment", width=12)
+        table.add_column("Comment Preview", width=50)
+        table.add_column("ID", width=20)
         
         for result in filtered_results:
             # Determine risk level styling
             risk_style = "red" if result.pii_risk_score > 0.5 else "yellow" if result.pii_risk_score > 0.2 else "green"
             risk_text = Text(f"{result.pii_risk_score:.0%}", style=risk_style)
             
-            # Create interactive-style checkbox
-            checkbox = Checkbox(
-                checked=result.pii_risk_score > 0.5,  # Auto-check high risk items
-                style="bold" if result.pii_risk_score > 0.5 else None
-            )
+            # Create checkbox-like indicator
+            checkbox = Text("☑ " if result.pii_risk_score > 0.5 else "☐ ", 
+                          style="bold green" if result.pii_risk_score > 0.5 else "dim")
             
             # Trim comment text for preview
             preview = result.text[:47] + "..." if len(result.text) > 50 else result.text
