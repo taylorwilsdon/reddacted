@@ -80,7 +80,11 @@ class Sentiment():
         :param output_file (optional): file to output relevant data.
         """
         comments = self.api.parse_user(username, headers=self.headers, limit=self.limit)
-        self.score, self.results = self._analyze(comments)
+        if asyncio.get_event_loop().is_running():
+            future = asyncio.ensure_future(self._analyze(comments))
+            self.score, self.results = asyncio.get_event_loop().run_until_complete(future)
+        else:
+            self.score, self.results = asyncio.run(self._analyze(comments))
         self.sentiment = self._get_sentiment(self.score)
 
         user_id = f"/user/{username}"
@@ -101,7 +105,11 @@ class Sentiment():
                                           article,
                                           headers=self.headers,
                                           limit=self.limit)
-        self.score, self.results = self._analyze(comments)
+        if asyncio.get_event_loop().is_running():
+            future = asyncio.ensure_future(self._analyze(comments))
+            self.score, self.results = asyncio.get_event_loop().run_until_complete(future)
+        else:
+            self.score, self.results = asyncio.run(self._analyze(comments))
         self.sentiment = self._get_sentiment(self.score)
 
         article_id = f"/r/{subreddit}/comments/{article}"
@@ -111,7 +119,7 @@ class Sentiment():
         else:
              self._print_comments(comments, article_id)
 
-    def _analyze(self, comments):
+    async def _analyze(self, comments):
         """Analyzes comments for both sentiment and PII content.
 
         :param comments: comments to perform analysis on.
@@ -182,7 +190,7 @@ class Sentiment():
                         logging.debug(f"\nProcessing LLM batch of {len(self._llm_batch)} items")
                         progress.update(llm_task, visible=True)
                         progress.update(llm_task, description="🤖 Starting LLM analysis")
-                        batch_results = asyncio.run(self.llm_detector.analyze_batch(self._llm_batch))
+                        batch_results = await self.llm_detector.analyze_batch(self._llm_batch)
                         progress.update(llm_task, description="✅ LLM analysis complete")
                         logging.debug(f"LLM batch_results: {batch_results}")
                         progress.update(llm_task, visible=False)

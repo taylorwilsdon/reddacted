@@ -111,13 +111,13 @@ class LLMDetector:
             print(f"Batch LLM analysis failed: {str(e)}")
             return [(0.0, {"error": str(e)})] * len(texts)
 
-    def analyze_text(self, text: str) -> Tuple[float, Dict[str, Any]]:
+    async def analyze_text(self, text: str) -> Tuple[float, Dict[str, Any]]:
         """
         Analyze a single text using LLM for potential personal information.
         Returns tuple of (risk_score, details).
         """
         try:
-            results = asyncio.run(self.analyze_batch([text]))
+            results = await self.analyze_batch([text])
             return results[0]
         except Exception as e:
             print(f"LLM analysis failed: {str(e)}")
