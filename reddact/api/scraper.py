@@ -20,7 +20,7 @@ class Scraper(api.API):
        :param article: an article associated with the subreddit
        :return: a list of comments from an article.
        """
-        url = f"https://www.reddit.com/r/{subreddit}/{article}.json"
+        url = f"https://www.reddit.com/r/{subreddit}/{article}.json?limit={limit}"
         headers = kwargs.get('headers')
         
         try:
@@ -54,7 +54,7 @@ class Scraper(api.API):
        :param username: a user
        :return: a list of comments from a user.
        """
-        url = f"https://www.reddit.com/user/{username}.json"
+        url = f"https://www.reddit.com/user/{username}.json?limit={limit}"
         headers = kwargs.get('headers')
         try:
             response = requests.get(url, headers = headers)

@@ -15,10 +15,10 @@ class LLMDetector:
     Analyze the following text for any information that could potentially identify the author or reveal personal details about them.
     Consider both explicit PII (like names, addresses) and implicit personal information (like specific life events, locations, relationships).
     
-    Respond in JSON format with these fields:
+   YOU MUST Respond in JSON format with these fields. DO NOT CHANGE FIELD NAMES, THEY ARE VERY IMPORTANT. 
     - has_pii: boolean
     - confidence: float (0-1)
-    - details: list of findings with specific examples from the text
+    - details: list of findings with type and example from the comment text
     - reasoning: detailed explanation of why this content might identify the author
     - risk_factors: list of specific elements that contribute to the risk score
     

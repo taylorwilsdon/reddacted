@@ -28,7 +28,7 @@ setup(
 
     scripts=[],
     provides=[],
-    install_requires=['cliff', 'praw', 'nltk', 'requests', 'six'],
+    install_requires=['cliff', 'praw', 'nltk', 'requests', 'six', 'openai', 'rich'],
     namespace_packages=[],
     packages=find_packages(),
     include_package_data=True,
