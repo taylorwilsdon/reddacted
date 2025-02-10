@@ -64,7 +64,7 @@ class Sentiment():
             self.llm_detector = LLMDetector(
                 api_key=llm_config.get('api_key'),
                 api_base=llm_config.get('api_base'),
-                model=llm_config.get('model', 'gpt-3.5-turbo')
+                model=llm_config.get('model', 'gpt-4o-mini')
             )
         
         if auth_enabled:
