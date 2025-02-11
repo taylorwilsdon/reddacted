@@ -6,7 +6,7 @@
 **Next-generation anonymous content management with neural privacy protection**
 
 ## What is reddacted?
-- Clean up your online footprint without blowing away everyything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts.
+- Clean up your online footprint without blowing away everything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts.
 - Easy, lazy, self hosted - the way an aging former engineer with a career doing things right at the enterprise cale would clean up your dirty laundry.
 
 ✅ **Zero-Trust Architecture**
@@ -163,3 +163,22 @@ If you're unauthenticated, reddit has relatively low rate limits for it's API. E
 ### the page you requested does not exist ###
 
 Simply a 404, which means that the provided username does not point to a valid page.
+
+## Privacy By Design
+- Local analysis option (Ollama/Mistral)
+- Ephemeral API key handling
+- AES-256 content sanitization
+- No training data retention
+
+## Support & Community
+Join our subreddit: [r/reddacted](https://reddit.com/r/reddacted)
+
+## FAQ
+**Q:** How does the AI handle false positives?  
+**A:** Adjust confidence threshold (default 0.7) per risk tolerance. You're building a repo from source off some random dude's github - don't run this and just delete a bunch of shit blindly, you're a smart person. Review your results, and if it is doing something crazy, please tell me. 
+
+**Q:** What LLMs are supported?  
+**A:** Local: any model via Ollama, vLLM or other platform capable of exposing an openai-compatible endpoint. • Cloud: OpenAI-compatible endpoints
+
+**Q:** Is my data sent externally?  
+**A:** If you choose to use a hosted provider, yes - in cloud mode - local analysis stays fully private.
