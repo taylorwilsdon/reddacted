@@ -1,0 +1,18 @@
+#!/bin/sh
+# Remove trailing whitespace from all staged files
+
+# Get list of staged files
+staged_files=$(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |g')
+
+# Remove trailing whitespace for each file
+for file in $staged_files; do
+    # Only process text files
+    if file --mime-encoding "$file" | grep -qE '(us-ascii|utf-8)'; then
+        # Portable whitespace removal using awk
+        awk '{ sub(/[ \t]+$/, ""); print }' "$file" > "$file.tmp" &&
+        mv "$file.tmp" "$file"
+    fi
+done
+
+# Re-add modified files to staging
+git add -u
