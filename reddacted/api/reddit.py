@@ -21,7 +21,7 @@ class Reddit(api.API):
 
     def __init__(self):
         self.authenticated = False
-        
+
         # Check for all required credentials first
         required_vars = {
             "REDDIT_USERNAME": os.environ.get("REDDIT_USERNAME"),
@@ -29,7 +29,7 @@ class Reddit(api.API):
             "REDDIT_CLIENT_ID": os.environ.get("REDDIT_CLIENT_ID"),
             "REDDIT_CLIENT_SECRET": os.environ.get("REDDIT_CLIENT_SECRET")
         }
-        
+
         if None in required_vars.values():
             missing = [k for k, v in required_vars.items() if v is None]
             logging.error(f"Missing authentication variables: {', '.join(missing)}")
@@ -59,7 +59,7 @@ class Reddit(api.API):
         url = f"https://www.reddit.com/r/{subreddit}/comments/{article}"
         submission = self.reddit.submission(url=url)
         comments = submission.comments.new(limit=limit)
-        
+
         return comments
 
     def delete_comments(self, comment_ids: list[str], batch_size: int = 10) -> dict[str, any]:
@@ -95,7 +95,7 @@ class Reddit(api.API):
                         })
                     # Respect Reddit's API rate limit (1 req/sec)
                     time.sleep(1.1)
-                
+
                 results['processed'] += len(batch)
             except praw.exceptions.APIException as e:
                 logging.error(f"API rate limit exceeded: {str(e)}")
@@ -113,5 +113,5 @@ class Reddit(api.API):
        """
         redditor = self.reddit.redditor({username})
         comments = redditor.comments.new(limit=limit)
-        
+
         return comments

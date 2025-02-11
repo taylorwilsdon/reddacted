@@ -22,13 +22,13 @@ class Scraper(api.API):
        """
         url = f"https://www.reddit.com/r/{subreddit}/{article}.json?limit={limit}"
         headers = kwargs.get('headers')
-        
+
         try:
             response = requests.get(url, headers = headers)
         except Exception as e:
             logging.error("Error obtaining article information: %s" % e)
             return []
-        
+
         comments = []
         json_resp = response.json()
 
@@ -42,7 +42,7 @@ class Scraper(api.API):
                         comment = data["body"].rstrip()
                         comment = " ".join(comment.split())
                         comment = comment.replace("&amp;#x200B;", "")
-                        
+
                         if comment != "":
                             comments.append(comment)
 
@@ -77,5 +77,5 @@ class Scraper(api.API):
 
                     if comment != "":
                         comments.append(comment)
-        
+
         return comments

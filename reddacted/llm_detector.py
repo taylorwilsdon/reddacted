@@ -14,14 +14,14 @@ class LLMDetector:
     DEFAULT_PROMPT = """
     Analyze the following text for any information that could potentially identify the author or reveal personal details about them.
     Consider both explicit PII (like names, addresses) and implicit personal information (like specific life events, locations, relationships).
-    
-   YOU MUST Respond in JSON format with these fields. DO NOT CHANGE FIELD NAMES, THEY ARE VERY IMPORTANT. 
+
+   YOU MUST Respond in JSON format with these fields. DO NOT CHANGE FIELD NAMES, THEY ARE VERY IMPORTANT.
     - has_pii: boolean
     - confidence: float (0-1)
     - details: list of findings with type and example from the comment text
     - reasoning: detailed explanation of why this content might identify the author
     - risk_factors: list of specific elements that contribute to the risk score
-    
+
     Text to analyze: {text}
     """
 
@@ -64,9 +64,9 @@ class LLMDetector:
                     logging.debug(f"Using API base: {client.base_url}")
                     logging.debug(f"Using model: {self.model}")
                     tasks.append(task)
-                
+
                 batch_responses = await asyncio.gather(*tasks)
-                
+
                 for response in batch_responses:
                     try:
                         raw_response = response.choices[0].message.content.strip()
@@ -81,14 +81,14 @@ class LLMDetector:
                                 analysis = json.loads(json_content)
                             else:
                                 raise
-                        
+
                         # Calculate risk score based on confidence and PII presence
                         confidence = float(analysis.get('confidence', 0.0))
                         has_pii = analysis.get('has_pii', False)
-                        
+
                         logging.debug(f"Parsed confidence: {confidence}")
                         logging.debug(f"Parsed has_pii: {has_pii}")
-                        
+
                         if has_pii:
                             risk_score = confidence
                         else:
@@ -100,12 +100,12 @@ class LLMDetector:
                                 'risk_factors': [],
                                 'reasoning': "No PII detected"
                             }
-                            
+
                         results.append((risk_score, analysis))
                     except Exception as e:
                         results.append((0.0, {"error": str(e)}))
             return results
-            
+
         except Exception as e:
             logging.error("AI analysis failed")
             print(f"Batch LLM analysis failed: {str(e)}")

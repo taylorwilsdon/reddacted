@@ -60,7 +60,7 @@ class Sentiment():
         self.pii_detector = PIIDetector() if pii_enabled else None
         self.pii_only = pii_only
         self.limit = limit
-        
+
         # Initialize LLM detector if config provided
         self.llm_detector = None
         if llm_config and pii_enabled:
@@ -69,7 +69,7 @@ class Sentiment():
                 api_base=llm_config.get('api_base'),
                 model=llm_config.get('model', 'gpt-4o-mini')
             )
-        
+
         if auth_enabled:
             self.api = Reddit()
         self._print_config(auth_enabled, pii_enabled, llm_config)
@@ -134,7 +134,7 @@ class Sentiment():
 
         total_comments = len(comments)
         print(f"\n📊 Retrieved {total_comments} comments to analyze")
-        
+
         progress = Progress(
             SpinnerColumn(spinner_name="dots"),
             TextColumn("[bold blue]{task.description}"),
@@ -145,11 +145,11 @@ class Sentiment():
             main_task = progress.add_task(f"💭 Processing comments...", total=total_comments)
             pii_task = progress.add_task("🔍 PII Analysis", visible=False, total=1)
             llm_task = progress.add_task("🤖 LLM Analysis", visible=False, total=1)
-            
+
             for i, comment in enumerate(comments, 1):
                 clean_comment = re.sub(cleanup_regex, '', str(comment))
                 progress.update(main_task, description=f"💭 Processing comment {i}/{total_comments}")
-                
+
                 # Sentiment analysis
                 all_scores = sentiment_analyzer.polarity_scores(clean_comment)
                 score = all_scores['compound']
@@ -157,22 +157,22 @@ class Sentiment():
 
                 # PII analysis
                 pii_risk_score, pii_matches = 0.0, []
-                
+
                 if self.pii_enabled:
                     progress.update(pii_task, visible=True)
                     progress.update(pii_task, description=f"🔍 Scanning comment {i} for PII")
                     pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment)
                     progress.update(pii_task, visible=False)
-                    
+
                     # Store comment for batch processing
                     if not hasattr(self, '_llm_batch'):
                         self._llm_batch = []
                         self._llm_batch_indices = []
                         self._pending_results = []
-                    
+
                     self._llm_batch.append(clean_comment)
                     self._llm_batch_indices.append(len(self._pending_results))
-                    
+
                     # Create result with combined risk score
                     result = AnalysisResult(
                         comment_id=str(i),
@@ -185,7 +185,7 @@ class Sentiment():
                         llm_findings=None
                     )
                     self._pending_results.append(result)
-                    
+
                     # Process batch when full or at end
                     if len(self._llm_batch) >= 10 or i == total_comments:
                         logging.debug(f"\nProcessing LLM batch of {len(self._llm_batch)} items")
@@ -195,27 +195,27 @@ class Sentiment():
                         progress.update(llm_task, description="✅ LLM analysis complete")
                         logging.debug(f"LLM batch_results: {batch_results}")
                         progress.update(llm_task, visible=False)
-                        
+
                         # Update pending results with batch results
                         for batch_idx, (risk_score, findings) in zip(self._llm_batch_indices, batch_results):
                             result = self._pending_results[batch_idx]
                             # Always set LLM results regardless of PII detection
                             result.llm_risk_score = risk_score
                             result.llm_findings = findings
-                            
+
                             # Update PII risk score if LLM found PII
                             if findings and findings.get('has_pii'):
                                 result.pii_risk_score = max(result.pii_risk_score, risk_score)
-                            
+
                             # Add this result to final results immediately
                             results.append(result)
                             logging.debug("Added result to final results")
-                        
+
                         # Clear batch
                         self._llm_batch = []
                         self._llm_batch_indices = []
                         self._pending_results = []
-                
+
                 # Only append results directly if not using LLM
                 if not self.llm_detector:
                     results.append(AnalysisResult(
@@ -227,7 +227,7 @@ class Sentiment():
                         llm_risk_score=0.0,
                         llm_findings=None
                     ))
-                
+
                 progress.update(main_task, advance=1)
 
         try:
@@ -268,7 +268,7 @@ class Sentiment():
                     return True
                 # Only show results with actual PII detections
                 has_pattern_pii = result.pii_risk_score > 0.0
-                has_llm_pii = (result.llm_findings and 
+                has_llm_pii = (result.llm_findings and
                               isinstance(result.llm_findings, dict) and
                               result.llm_findings.get('has_pii', False) and
                               result.llm_findings.get('confidence', 0.0) > 0.0)
@@ -278,23 +278,23 @@ class Sentiment():
             for comment in comments:
                 score, results = self._analyze([comment])
                 filtered_results = [r for r in results if should_show_result(r)]
-                
+
                 if not filtered_results and hasattr(self, 'pii_only') and self.pii_only:
                     continue
-                    
+
                 for result in filtered_results:
                     target.write(f"Comment {comment_count}:\n")
                     target.write(f"Text: {result.text}\n")
                     target.write(f"Sentiment Score: {result.sentiment_score}\n")
                     target.write(f"Sentiment: {result.sentiment_emoji}\n")
                     target.write(f"PII Risk Score: {result.pii_risk_score:.2f}\n")
-                    
+
                     if result.pii_matches:
                         target.write("Pattern-based PII Detected:\n")
                         for pii in result.pii_matches:
                             target.write(f"  - Type: {pii.type}\n")
                             target.write(f"    Confidence: {pii.confidence:.2f}\n")
-                    
+
                     if result.llm_findings:
                         target.write("\nLLM Privacy Analysis:\n")
                         target.write(f"  Risk Score: {result.llm_risk_score:.2f}\n")
@@ -312,7 +312,7 @@ class Sentiment():
                                 for factor in result.llm_findings['risk_factors']:
                                     target.write(f"    - {factor}\n")
                     target.write("\n")
-                    
+
                 comment_count += 1
 
 
@@ -323,26 +323,26 @@ class Sentiment():
             header_style="bold magenta",
             box=None
         )
-        
+
         # Add columns with style parameters directly
         table.add_column("Select", width=12, justify="center")
         table.add_column("Risk", justify="right", width=8)
         table.add_column("Sentiment", width=12)
         table.add_column("Comment Preview", width=50)
         table.add_column("ID", width=20)
-        
+
         for result in filtered_results:
             # Determine risk level styling
             risk_style = "red" if result.pii_risk_score > 0.5 else "yellow" if result.pii_risk_score > 0.2 else "green"
             risk_text = Text(f"{result.pii_risk_score:.0%}", style=risk_style)
-            
+
             # Create checkbox-like indicator
-            checkbox = Text("☑ " if result.pii_risk_score > 0.5 else "☐ ", 
+            checkbox = Text("☑ " if result.pii_risk_score > 0.5 else "☐ ",
                           style="bold green" if result.pii_risk_score > 0.5 else "dim")
-            
+
             # Trim comment text for preview
             preview = result.text[:47] + "..." if len(result.text) > 50 else result.text
-            
+
             table.add_row(
                 checkbox,
                 risk_text,
@@ -350,7 +350,7 @@ class Sentiment():
                 preview,
                 result.comment_id,
             )
-        
+
         return table
 
     def _print_comments(self, comments, url):
@@ -364,14 +364,14 @@ class Sentiment():
                 return True
             # Only show results with actual PII detections
             has_pattern_pii = result.pii_risk_score > 0.0
-            has_llm_pii = (result.llm_findings and 
+            has_llm_pii = (result.llm_findings and
                           isinstance(result.llm_findings, dict) and
                           result.llm_findings.get('has_pii', False) and
                           result.llm_findings.get('confidence', 0.0) > 0.0)
             return has_pattern_pii or has_llm_pii
 
         total_comments = len(comments)
-        
+
         # Create overall stats panel
         stats_panel = Panel(
             Group(
@@ -417,7 +417,7 @@ class Sentiment():
                     (f"{result.pii_risk_score:.2f}", "red bold" if result.pii_risk_score > 0.5 else "green bold")
                 )
             )
-            
+
             # PII Matches panel
             pii_content = []
             if result.pii_matches:
@@ -427,7 +427,7 @@ class Sentiment():
                         (f"{pii.type}: ", "bold"),
                         (f"({pii.confidence:.2f})", "dim")
                     ))
-            
+
             # LLM Findings panel
             llm_content = []
             if result.llm_findings:
@@ -441,7 +441,7 @@ class Sentiment():
                             or str(detail)
                         )
                     return str(detail)
-                
+
                 llm_content.extend([
                     Text.assemble(
                         ("Risk Score: ", "dim"),
@@ -449,11 +449,11 @@ class Sentiment():
                     ),
                     Text.assemble(
                         ("PII Detected: ", "dim"),
-                        ("Yes" if result.llm_findings.get('has_pii') else "No", 
+                        ("Yes" if result.llm_findings.get('has_pii') else "No",
                          "red" if result.llm_findings.get('has_pii') else "green")
                     )
                 ])
-                
+
                 if result.llm_findings.get('details'):
                     llm_content.append(Text("Findings:", style="bold"))
                     for detail in result.llm_findings['details']:
@@ -470,21 +470,21 @@ class Sentiment():
 
             # Create sub-panels
             sub_panels = [Panel(basic_info, title="[bold]Basic Info[/]", border_style="blue")]
-            
+
             if pii_content:
                 sub_panels.append(Panel(
                     Group(*pii_content),
                     title="[bold]Pattern PII[/]",
                     border_style="yellow"
                 ))
-            
+
             if llm_content:
                 sub_panels.append(Panel(
                     Group(*llm_content),
                     title="[bold]LLM Analysis[/]",
                     border_style="magenta"
                 ))
-                
+
             # Add sentiment analysis summary panel
             if i == 1:  # Only add to first comment
                 sub_panels.append(stats_panel)
@@ -498,16 +498,16 @@ class Sentiment():
 
         # Add summary table
         summary_table = self._generate_summary_table(filtered_results)
-        panels.append(Panel(summary_table, 
-            title="[bold]Action Summary[/]", 
+        panels.append(Panel(summary_table,
+            title="[bold]Action Summary[/]",
             border_style="green",
             padding=(1, 4)
         ))
-        
+
         # Add deletion confirmation prompt
         panels.append(
             Panel.fit(
-                Text("Review above and use '--delete' with comma-separated IDs\nto remove high-risk comments", 
+                Text("Review above and use '--delete' with comma-separated IDs\nto remove high-risk comments",
                      style="italic yellow"),
                 border_style="red"
             )
@@ -523,7 +523,7 @@ class Sentiment():
             task = progress.add_task("", total=1, visible=False)
             progress.console.print(Group(*panels))
             progress.update(task, advance=1)
-  
+
     def _print_config(self, auth_enabled, pii_enabled, llm_config):
         progress = Progress(
             SpinnerColumn(spinner_name="dots"),
@@ -534,7 +534,7 @@ class Sentiment():
         with progress:
             task = progress.add_task("", total=1, visible=False)
             progress.console.print("\n[bold cyan]Active Configuration[/]")
-            
+
             def format_status(enabled, true_text="Enabled", false_text="Disabled"):
                 return Text.assemble(
                     (true_text if enabled else false_text, "green" if enabled else "red")
@@ -547,7 +547,7 @@ class Sentiment():
                 ("PII-Only Filter", format_status(self.pii_only, "Active", "Inactive")),
                 ("Comment Limit", Text(f"{self.limit if self.limit else 'Unlimited'}", style="cyan"))
             ]
-            
+
             panels = []
             panels.append(
                 Panel.fit(
@@ -556,7 +556,7 @@ class Sentiment():
                     border_style="blue"
                 )
             )
-            
+
             if auth_enabled:
                 auth_table = [
                     ("REDDIT_USERNAME", environ.get("REDDIT_USERNAME", "[red]Not Set[/]")),
@@ -569,6 +569,6 @@ class Sentiment():
                         border_style="yellow"
                     )
                 )
-            
+
             progress.console.print(Columns(panels))
             progress.update(task, advance=1)

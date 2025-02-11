@@ -12,7 +12,7 @@ class PIIMatch:
 
 class PIIDetector:
     """Detects various types of personally identifiable information in text"""
-    
+
     # Common PII patterns
     PATTERNS = {
         'email': (r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', 0.95),
@@ -25,7 +25,7 @@ class PIIDetector:
 
     # Keywords that might indicate PII context
     CONTEXT_KEYWORDS = [
-        'name is', 'live at', 'address', 'reach me', 
+        'name is', 'live at', 'address', 'reach me',
         'phone', 'email', 'contact', 'call me', 'ssn',
         'social security', 'credit card', 'driver license'
     ]
@@ -53,7 +53,7 @@ class PIIDetector:
         Returns a list of PIIMatch objects for each PII instance found.
         """
         matches = []
-        
+
         # First check for false positives
         if any(fp.search(text) for fp in self.false_positive_patterns):
             return []
@@ -63,11 +63,11 @@ class PIIDetector:
             pattern = self.compiled_patterns[pii_type]
             for match in pattern.finditer(text):
                 full_match = match.group(0)
-                
+
                 # Additional validation per type
                 if pii_type == 'phone' and len(full_match.replace('-', '').replace(' ', '')) < 10:
                     continue
-                    
+
                 if pii_type == 'address' and not any(c.isalpha() for c in full_match.split()[-2]):
                     continue
 
@@ -92,7 +92,7 @@ class PIIDetector:
         matches = self.analyze_text(text)
         if not matches:
             return 0.0, []
-            
+
         # Weighted average with type weights
         type_weights = {
             'ssn': 1.2,
@@ -102,8 +102,8 @@ class PIIDetector:
             'address': 0.7,
             'name_pattern': 0.6
         }
-        
+
         total_weight = sum(type_weights.get(match.type, 1.0) for match in matches)
         weighted_sum = sum(match.confidence * type_weights.get(match.type, 1.0) for match in matches)
-        
+
         return min(1.0, weighted_sum / total_weight), matches

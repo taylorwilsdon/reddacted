@@ -56,7 +56,7 @@ class Listing(Command):
     def take_action(self, args):
         llm_config = CLI()._configure_llm(args, console)
         limit = None if args.limit == 0 else args.limit
-        
+
         sent = Sentiment(
             auth_enabled=args.enable_auth,
             pii_enabled=not args.disable_pii,
@@ -105,7 +105,7 @@ class User(Command):
     def take_action(self, args):
         llm_config = CLI()._configure_llm(args, console)
         limit = None if args.limit == 0 else args.limit
-        
+
         sent = Sentiment(
             auth_enabled=args.enable_auth,
             pii_enabled=not args.disable_pii,

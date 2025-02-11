@@ -25,7 +25,7 @@ class ScraperPostiveTestCases(unittest.TestCase):
         valid_user_response.json = MagicMock(return_value=user_data)
         valid_user_response.status_code = 200
         requests.get = MagicMock(return_value=valid_user_response)
-        
+
         expected = ['Sure is! Appended it to my tweet.',
                     'Anyone not treating the animals properly, should simply be banned after a warning.',
                     'Is it safe to shower using head and shoulders once per day?',
@@ -53,7 +53,7 @@ class ScraperPostiveTestCases(unittest.TestCase):
         valid_article_response.json = MagicMock(return_value=article_data)
         valid_article_response.status_code = 200
         requests.get = MagicMock(return_value=valid_article_response)
-        
+
         expected = ['Looks sick!',
                     '#DOGE HOLD IT',
                     '10/10 very art such picasso wow',

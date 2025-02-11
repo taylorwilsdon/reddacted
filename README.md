@@ -6,14 +6,14 @@
 **Next-generation anonymous content management with neural privacy protection**
 
 ## What is reddacted?
-- Clean up your online footprint without blowing away everyything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts. 
-- Easy, lazy, self hosted - the way an aging former engineer with a career doing things right at the enterprise cale would clean up your dirty laundry. 
+- Clean up your online footprint without blowing away everyything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts.
+- Easy, lazy, self hosted - the way an aging former engineer with a career doing things right at the enterprise cale would clean up your dirty laundry.
 
-✅ **Zero-Trust Architecture**  
+✅ **Zero-Trust Architecture**
 - Client-side execution only
 - No tracking or external calls
 - Session-based authentication
-- Keep your nonsense comments without unintentionally doxing yourself someday off in the future when you run for mayor. 
+- Keep your nonsense comments without unintentionally doxing yourself someday off in the future when you run for mayor.
 
 
 - **Users**:  Get the sentiment based on the most recent comments submitted

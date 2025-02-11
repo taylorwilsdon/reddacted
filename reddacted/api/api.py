@@ -13,7 +13,7 @@ class API(object):
     @abc.abstractmethod
     def parse_listing(self, subreddit, article, limit=100, **kwargs):
         """Parses a Listing Reddit Object.
-        
+
         Args:
             subreddit: Subreddit to parse
             article: Article ID to parse
@@ -24,7 +24,7 @@ class API(object):
     @abc.abstractmethod
     def parse_user(self, username, limit=100, **kwargs):
         """Parses a User Reddit Object.
-        
+
         Args:
             username: Username to parse
             limit: Maximum number of comments to return (None for unlimited)
