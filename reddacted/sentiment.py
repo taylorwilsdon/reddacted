@@ -276,7 +276,7 @@ class Sentiment():
 
             comment_count = 1
             for comment in comments:
-                score, results = self._analyze([comment])
+                score, results = asyncio.run(self._analyze([comment]))
                 filtered_results = [r for r in results if should_show_result(r)]
 
                 if not filtered_results and hasattr(self, 'pii_only') and self.pii_only:
