@@ -2,7 +2,7 @@ import logging
 from types import BuiltinMethodType
 import requests
 
-from reddact.api import api
+from reddacted.api import api
 
 
 class Scraper(api.API):

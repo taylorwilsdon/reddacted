@@ -3,7 +3,7 @@ from types import BuiltinMethodType
 import time
 import os
 import praw
-from reddact.api import api
+from reddacted.api import api
 
 
 class AuthenticationRequiredError(Exception):

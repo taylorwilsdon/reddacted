@@ -3,7 +3,7 @@ import json
 import asyncio
 from unittest.mock import MagicMock, patch, AsyncMock
 
-from reddact.llm_detector import LLMDetector
+from reddacted.llm_detector import LLMDetector
 
 SAMPLE_RESPONSE = {
     "has_pii": True,

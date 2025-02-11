@@ -13,12 +13,13 @@ from rich.columns import Columns
 from rich.console import Group
 from rich.text import Text
 from rich.table import Table
-
-from reddact.api.scraper import Scraper
-from reddact.api.reddit import Reddit
-from reddact.pii_detector import PIIDetector
-from reddact.llm_detector import LLMDetector
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+
+from reddacted.api.scraper import Scraper
+from reddacted.api.reddit import Reddit
+from reddacted.pii_detector import PIIDetector
+from reddacted.llm_detector import LLMDetector
+
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 

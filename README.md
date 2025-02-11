@@ -1,11 +1,11 @@
-# reddact: AI-Powered Reddit Privacy Suite
+# reddacted: AI-Powered Reddit Privacy Suite
 
 [![Privacy Shield](https://img.shields.io/badge/Privacy-100%25_Client--Side_Processing-success)](https://example.com)
 [![AI Analysis](https://img.shields.io/badge/AI-PII_Detection-blueviolet)](https://example.com)
 
 **Next-generation anonymous content management with neural privacy protection**
 
-## What is reddact?
+## What is reddacted?
 - Clean up your online footprint without blowing away everyything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts. 
 - Easy, lazy, self hosted - the way an aging former engineer with a career doing things right at the enterprise cale would clean up your dirty laundry. 
 
@@ -39,14 +39,14 @@ pip install .
 
 Then run directly:
 ```bash
-reddact user <username> [--output-file analysis.txt] [--enable-auth]
-reddact listing <subreddit> <article> [--output-file results.csv]
+reddacted user <username> [--output-file analysis.txt] [--enable-auth]
+reddacted listing <subreddit> <article> [--output-file results.csv]
 ```
 
 Key features:
 - Automatic dependency handling
 - Single-command operation
-- Built-in help: `reddact --help`
+- Built-in help: `reddacted --help`
 
 ## Troubleshooting ##
 
@@ -61,7 +61,7 @@ set PATH=%APPDATA%\Python\Python311\Scripts;%PATH%
 ```
 2. Verify installation location:
 ```bash
-pip show reddact
+pip show reddacted
 ```
 
 ## Authentication ##

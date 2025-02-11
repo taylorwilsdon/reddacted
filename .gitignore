@@ -91,6 +91,6 @@ ENV/
 # Other
 .DS_Store
 .vscode
-reddact.egg-info/
-reddact.egg-info/
+reddacted.egg-info/
+reddacted.egg-info/
 .aider*

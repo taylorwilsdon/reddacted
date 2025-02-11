@@ -8,12 +8,12 @@ setup(
     version='1.0',
     license='MIT',
 
-    description='reddact',
+    description='reddacted',
     long_description='Analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts',
     author='Taylor Wilsdon',
     author_email='taylorwilsdon@gmail.com',
-    url='https://github.com/taylorwilsdon/reddact',
-    download_url='https://github.com/taylorwilsdon/reddact/archive/refs/heads/master.zip',
+    url='https://github.com/taylorwilsdon/reddacted',
+    download_url='https://github.com/taylorwilsdon/reddacted/archive/refs/heads/master.zip',
 
     classifiers=['Development Status :: 1 - Alpha',
                  'Intended Audience :: Science/Research',
@@ -23,7 +23,7 @@ setup(
                  'Programming Language :: Python :: 3.11',
                  'Environment :: Console',
                  ],
-    keywords = ['reddact', 'reddit', 'llm', 'pii', 'sentiment', 'analysis', 'nlp'],
+    keywords = ['reddact', 'reddacted', 'reddit', 'llm', 'pii', 'sentiment', 'analysis', 'nlp'],
     platforms=['Any'],
 
     scripts=[],
@@ -35,11 +35,11 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'reddact = reddact.cli:main'
+            'reddacted = reddacted.cli:main'
         ],
         'reddit.sentiment': [
-            'listing = reddact.cli:Listing',
-            'user = reddact.cli:User'
+            'listing = reddacted.cli:Listing',
+            'user = reddacted.cli:User'
         ],
     },
 )

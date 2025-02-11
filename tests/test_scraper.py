@@ -4,7 +4,7 @@ import json
 
 from unittest.mock import MagicMock
 
-from reddact.api import scraper
+from reddacted.api import scraper
 
 
 class ScraperPostiveTestCases(unittest.TestCase):
