@@ -9,7 +9,7 @@ from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.columns import Columns
 
-from reddact.sentiment import Sentiment
+from reddacted.sentiment import Sentiment
 
 import requests
 
