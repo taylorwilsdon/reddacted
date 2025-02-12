@@ -6,7 +6,7 @@
 **Next-generation anonymous content management with neural privacy protection** · *For aging engineers who care about their future political careers* 🏛️
 
 ## What is reddacted?
-- Clean up your online footprint without blowing away everyything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts.
+- Clean up your online footprint without blowing away everything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts.
 - Easy, lazy, self hosted - the way an aging former engineer with a career doing things right at the enterprise cale would clean up your dirty laundry.
 
 🛡️ **PII Detection** - Find potential personal info leaks in comments using AI/Regex
