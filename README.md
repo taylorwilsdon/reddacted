@@ -31,6 +31,9 @@ reddacted user yourusername \
 - Keep your nonsense comments with lots of upvotes and good vibes without unintentionally doxing yourself someday off in the future when you run for mayor.
 
 
+https://github.com/user-attachments/assets/395958e8-1e2e-415b-bca2-9c48cf98e9a1
+
+
 ## Installation ##
 
 ```bash
@@ -55,6 +58,9 @@ Then run directly:
 reddacted user <username> [--output-file analysis.txt] [--enable-auth]
 reddacted listing <subreddit> <article> [--output-file results.csv]
 ```
+
+https://github.com/user-attachments/assets/10934119-95f5-4f62-b8e0-ebb883fbd57b
+
 
 ## 💡 FAQ
 
