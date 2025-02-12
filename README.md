@@ -15,7 +15,7 @@
 
 🔒 **Zero-Trust Architecture** - Client-side execution only, no data leaves your machine unless you choose to use a hosted API. Fully compatible with all OpenAI compatible endpoints.
 
-⚡ **Self-Host Ready** - Run locally with Ollama/Mistral or cloud providers
+⚡ **Self-Host Ready** - Local: You can use any model via Ollama, llama.cpp, vLLM or other platform capable of exposing an OpenAI-compatible endpoint. LiteLLM works just dandy. • Cloud: OpenAI-compatible endpoints
 
 📊 **Smart Cleanup** - Preserve valuable contributions while removing risky content
 
