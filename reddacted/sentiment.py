@@ -377,26 +377,20 @@ class Sentiment():
         )
 
         # Add columns with style parameters directly
-        table.add_column("Select", width=12, justify="center")
         table.add_column("Risk", justify="right", width=8)
         table.add_column("Sentiment", width=12)
-        table.add_column("Comment Preview", width=50)
-        table.add_column("ID", width=20)
+        table.add_column("Comment Preview", width=85)
+        table.add_column("ID", width=8)
 
         for result in filtered_results:
             # Determine risk level styling
             risk_style = "red" if result.pii_risk_score > 0.5 else "yellow" if result.pii_risk_score > 0.2 else "green"
             risk_text = Text(f"{result.pii_risk_score:.0%}", style=risk_style)
 
-            # Create checkbox-like indicator
-            checkbox = Text("☑ " if result.pii_risk_score > 0.5 else "☐ ",
-                          style="bold green" if result.pii_risk_score > 0.5 else "dim")
-
             # Trim comment text for preview
-            preview = result.text[:47] + "..." if len(result.text) > 50 else result.text
+            preview = result.text[:67] + "..." if len(result.text) > 70 else result.text
 
             table.add_row(
-                checkbox,
                 risk_text,
                 Text(f"{result.sentiment_emoji} {result.sentiment_score:.2f}"),
                 preview,

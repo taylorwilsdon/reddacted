@@ -42,7 +42,8 @@ class Scraper(api.API):
                         comment = data["body"].rstrip()
                         comment = " ".join(comment.split())
                         comment = comment.replace("&amp;#x200B;", "")
-
+                        upvotes = data["ups"]
+                        downvotes = data["downs"]
                         if comment != "":
                             comments.append(comment)
 
@@ -74,6 +75,8 @@ class Scraper(api.API):
                     comment = data["body"].rstrip()
                     comment = " ".join(comment.split())
                     comment = comment.replace("&amp;#x200B;", "")
+                    upvotes = data["ups"]
+                    downvotes = data["downs"]
 
                     if comment != "":
                         comments.append(comment)
