@@ -30,8 +30,6 @@
 ⚡ **Self-Host Ready** - Local: You can use any model via Ollama, llama.cpp, vLLM or other platform capable of exposing an OpenAI-compatible endpoint. LiteLLM works just dandy. • Cloud: OpenAI-compatible endpoints
 
 📊 **Smart Cleanup** - Preserve valuable contributions while removing risky content
-
-✅ **Zero-Trust Architecture**
 ### 🔐 Can I trust this with my data?
 ```bash
 # you don't have to - read the code for yourself, only reddit is called
@@ -55,7 +53,7 @@ pip install -e .
 
 That's it! No PATH configuration needed.
 
-## Using the CLI ##
+## Using the CLI
 
 Install once with:
 ```bash
@@ -87,7 +85,7 @@ Surprisingly good. Good enough that I run it against my own stuff in delete mode
 **Q:** Is my data sent externally?
 **A:** If you choose to use a hosted provider, yes - in cloud mode - local analysis stays fully private.
 
-## Troubleshooting ##
+## Troubleshooting
 
 If you get "command not found" after installation:
 1. Check Python scripts directory is in your PATH:
@@ -103,7 +101,7 @@ set PATH=%APPDATA%\Python\Python311\Scripts;%PATH%
 pip show reddacted
 ```
 
-## Authentication ##
+## Authentication
 
 Before running an commands, in order to ensure that we are able to use the reddit API consecutively, we should authenticate with reddit. In order to do this the following is required:
 
@@ -122,7 +120,7 @@ $ export REDDIT_CLIENT_SECRET=your-client-secret
 
 Now when running the CLI, all requests will be authenticated.
 
-## Development ##
+## Development
 
 It is recommended that you first create a python virtual environment to not overwrite pip dependencies in your system. See [virtualenvs](http://docs.python-guide.org/en/latest/dev/virtualenvs/):
 
@@ -155,7 +153,7 @@ Now you can go ahead and test the new features you have implemented! Contributio
 - Opening an Issue
 - Creating a PR with additions/fixes
 
-## Testing ##
+## Testing
 
 I have included a number of unit tests to validate the application. In order to run the tests, simply perform the following:
 
@@ -193,13 +191,13 @@ $ pip install -r test-requirements.txt
 $ pytest tests
 ```
 
-## Common Exceptions ##
+## Common Exceptions
 
-### too many requests ###
+### too many requests
 
 If you're unauthenticated, reddit has relatively low rate limits for it's API. Either authenticate against your account, or just wait a sec and  try again.
 
-### the page you requested does not exist ###
+### the page you requested does not exist
 
 Simply a 404, which means that the provided username does not point to a valid page.
 
