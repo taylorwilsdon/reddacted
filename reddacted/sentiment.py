@@ -135,7 +135,7 @@ class Sentiment():
         cleanup_regex = re.compile('<.*?>')
 
         total_comments = len(comments)
-        print(f"\n📊 Retrieved {total_comments} comments to analyze")
+        print(f"📊 Retrieved {total_comments} comments to analyze")
 
         progress = Progress(
             SpinnerColumn(spinner_name="dots"),
@@ -303,7 +303,7 @@ class Sentiment():
                     target.write(f"**Text**: {result.text}\n\n")
                     target.write(f"- Sentiment Score: `{result.sentiment_score:.2f}` {result.sentiment_emoji}\n")
                     target.write(f"- PII Risk Score: `{result.pii_risk_score:.2f}`\n")
-                    target.write(f"- Votes: ⬆️ `{result.upvotes}` ⬇️ `{result.downvotes}`\n\n")
+                    target.write(f"- Votes: ⬆️ `{result.upvotes}` ⬇️ `{result.downvotes}`\n")
 
                     # PII Matches Section
                     if result.pii_matches:
@@ -384,10 +384,12 @@ class Sentiment():
         # Add columns with style parameters directly
         table.add_column("Risk", justify="right", width=8)
         table.add_column("Sentiment", width=12)
-        table.add_column("Comment Preview", width=85)
+        table.add_column("Comment Preview", width=75)
+        table.add_column("Upvotes", width=8)
         table.add_column("ID", width=8)
 
         for result in filtered_results:
+            print(result)
             # Determine risk level styling
             risk_style = "red" if result.pii_risk_score > 0.5 else "yellow" if result.pii_risk_score > 0.2 else "green"
             risk_text = Text(f"{result.pii_risk_score:.0%}", style=risk_style)
@@ -399,6 +401,7 @@ class Sentiment():
                 risk_text,
                 Text(f"{result.sentiment_emoji} {result.sentiment_score:.2f}"),
                 preview,
+                Text(f"{result.upvotes} / {result.downvotes}"),
                 result.comment_id,
             )
 
@@ -467,13 +470,14 @@ class Sentiment():
                     ("\n   Score: ", "dim"),
                     (f"{result.pii_risk_score:.2f}", "red bold" if result.pii_risk_score > 0.5 else "green bold")
                 ),
+                Text("━" * 50, style="dim"),  # Separator line
                 Text.assemble(
                     ("📊 ", "yellow"),
-                    ("Votes:", "bold cyan"),
-                    ("\n   ⬆️ ", "green"),
-                    (f"{result.upvotes}", "green bold"),
-                    ("  ⬇️ ", "red"),
-                    (f"{result.downvotes}", "red bold")
+                    ("Upvotes: ", "bold cyan"),
+                    # (" ⬆️ ", "green"),
+                    (f"{result.upvotes} / ", "green"),
+                    # (" ⬇️ ", "red"),
+                    (f"{result.downvotes}", "red")
                 )
             )
 
