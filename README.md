@@ -3,7 +3,7 @@
 [![Privacy Shield](https://img.shields.io/badge/Privacy-100%25_Client--Side_Processing-success)](https://github.com/taylorwilsdon)
 [![AI Analysis](https://img.shields.io/badge/AI-PII_Detection-blueviolet)](https://example.com)
 
-**Next-generation anonymous content management with neural privacy protection** · *For aging engineers who care about their future political careers* 🏛️
+**Next-generation digital footprint management with llm, sentiment analysis & pii detection insights into your true privacy** · *For aging engineers who care about their future political careers* 🏛️
 
 ## What is reddacted?
 - Clean up your online footprint without blowing away everything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts.
