@@ -1,74 +1,59 @@
-# 🔴 reddacted · AI-Powered Reddit Privacy Suite
+# reddacted: AI-Powered Reddit Privacy Suite
 
-[![PyPI Version](https://img.shields.io/pypi/v/reddacted?color=blue&logo=pypi&logoColor=white)](https://pypi.org/project/reddacted/)
-[![License](https://img.shields.io/badge/License-BSD_3--Clause-red.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Privacy Shield](https://img.shields.io/badge/Privacy-100%25_Client--Side_Processing-success)](https://github.com/yourusername/reddacted)
+[![Privacy Shield](https://img.shields.io/badge/Privacy-100%25_Client--Side_Processing-success)](https://github.com/taylorwilsdon)
+[![AI Analysis](https://img.shields.io/badge/AI-PII_Detection-blueviolet)](https://example.com)
 
-> **Your digital alias caretaker** · *For aging engineers who care about their future political careers* 🏛️
+**Next-generation anonymous content management with neural privacy protection** · *For aging engineers who care about their future political careers* 🏛️
 
-![reddacted demo](https://via.placeholder.com/800x300.png?text=reddacted+CLI+Demo+Screenshot)
+## What is reddacted?
+- Clean up your online footprint without blowing away everyything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts.
+- Easy, lazy, self hosted - the way an aging former engineer with a career doing things right at the enterprise cale would clean up your dirty laundry.
 
-## Table of Contents
-- [✨ Features](#-features)
-- [🚀 Quick Start](#-quick-start)
-- [🔧 Configuration](#-configuration)
-- [📖 Documentation](#-documentation)
-- [🤖 Privacy Tech](#-privacy-tech)
-- [💡 FAQ](#-faq)
-- [🤝 Contributing](#-contributing)
+🛡️ **PII Detection** - Find potential personal info leaks in comments using AI/Regex
+🤫 **Sentiment Analysis** - Understand the emotional tone of your Reddit history
+🔒 **Zero-Trust Architecture** - Client-side execution only, no data leaves your machine unless you choose to use a hosted API. Fully compatible with all OpenAI compatible endpoints.
+⚡ **Self-Host Ready** - Run locally with Ollama/Mistral or cloud providers
+📊 **Smart Cleanup** - Preserve valuable contributions while removing risky content
 
-## ✨ Features
-▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
-
-- 🛡️ **PII Detection** - Find potential personal info leaks in comments using AI/Regex
-- 🤫 **Sentiment Analysis** - Understand the emotional tone of your Reddit history
-- 🔒 **Zero-Trust Architecture** - Client-side execution only, no data leaves your machine
-- ⚡ **Self-Host Ready** - Run locally with Ollama/Mistral or cloud providers
-- 📊 **Smart Cleanup** - Preserve valuable contributions while removing risky content
-- 🕵️ **Stealth Mode** - Appear active while scrubbing sensitive history
-
-![Feature Matrix](https://via.placeholder.com/600x200.png?text=Privacy+Features+Comparison+Table)
+✅ **Zero-Trust Architecture**
+- Client-side execution only
+- No tracking or external calls
+- Session-based authentication
+- Keep your nonsense comments with lots of upvotes and good vibes without unintentionally doxing yourself someday off in the future when you run for mayor.
 
 
 - **Users**:  Get the sentiment based on the most recent comments submitted
 
-## 🚀 Quick Start
+## Installation ##
 
 ```bash
-# Install with pipx (recommended)
-pipx install reddacted
+# Install globally
+pip install .
 
-# Basic analysis (no auth)
-reddacted user yourusername --output-file analysis.md
-
-# Full authenticated analysis
-reddacted user yourusername \
-  --enable-auth \
-  --output-file sensitive-analysis.md
-
-# Subreddit analysis
-reddacted listing programming python \
-  --output-file python-sentiment.csv
+# Or install in development mode (for contributors)
+pip install -e .
 ```
 
-## 🔧 Configuration
+That's it! No PATH configuration needed.
 
+## Using the CLI ##
+
+Install once with:
 ```bash
-# Authenticate with Reddit API (recommended)
-export REDDIT_CLIENT_ID="your-client-id"
-export REDDIT_CLIENT_SECRET="your-client-secret"
-export REDDIT_USERNAME="your-username"
-export REDDIT_PASSWORD="your-password"
+pip install .
+```
 
-# For local AI processing
-export OLLAMA_API_BASE="http://localhost:11434"
+Then run directly:
+```bash
+reddacted user <username> [--output-file analysis.txt] [--enable-auth]
+reddacted listing <subreddit> <article> [--output-file results.csv]
 ```
 
 Key features:
 - Automatic dependency handling
 - Single-command operation
 - Built-in help: `reddacted --help`
+- Interactive and flag driven workflows
 
 ## Troubleshooting ##
 
@@ -185,44 +170,3 @@ If you're unauthenticated, reddit has relatively low rate limits for it's API. E
 ### the page you requested does not exist ###
 
 Simply a 404, which means that the provided username does not point to a valid page.
-
-## 🤖 Privacy Tech Stack
-
-```mermaid
-graph LR
-    A[Reddit API] --> B[Client Machine]
-    B --> C{PII Detection}
-    C --> D[Local LLM]
-    C --> E[Regex Rules]
-    D --> F[Sanitized Output]
-    E --> F
-    F --> G[Encrypted Storage]
-```
-
-## 💡 FAQ
-### ❓ How accurate is the PII detection?
-We use a defense-in-depth approach combining:
-- **AI Detection**: GPT-4/3.5-turbo, Mistral, or local LLMs
-- **Pattern Matching**: 50+ regex rules for common PII formats
-- **Context Analysis**: Sentence structure evaluation
-
-### 🌐 What LLMs are supported?
-```bash
-# Local Models
-ollama run mistral
-ollama run llama3
-
-# Cloud Providers
-export OPENAI_API_KEY="your-key"
-export ANTHROPIC_API_KEY="your-key"
-```
-
-### 🔐 Can I trust this with my data?
-```bash
-# Full offline mode
-reddacted user yourusername \
-  --local \
-  --model ollama/mistral
-```
-
-> **Pro Tip**: Always review changes before executing deletions!
