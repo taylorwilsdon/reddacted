@@ -268,6 +268,13 @@ class Sentiment():
                 target.write(f"- **Comments Analyzed**: {len(comments)}\n\n")
                 target.write("---\n\n")
 
+                # Initialize summary statistics
+                total_pii_comments = 0
+                total_llm_pii_comments = 0
+                max_risk_score = 0.0
+                riskiest_comment = None
+                sentiment_scores = []
+
                 def should_show_result(result):
                     if not self.pii_only:
                         return True
@@ -315,8 +322,50 @@ class Sentiment():
                         target.write("\n")
 
                     target.write("---\n\n")
+                    # Update summary stats
+                    sentiment_scores.append(result.sentiment_score)
+                    if result.pii_risk_score > 0:
+                        total_pii_comments += 1
+                    if result.llm_risk_score > 0:
+                        total_llm_pii_comments += 1
+                    if result.pii_risk_score > max_risk_score:
+                        max_risk_score = result.pii_risk_score
+                        riskiest_comment = result.text[:100] + "..." if len(result.text) > 100 else result.text
+
                     comment_count += 1
                     progress.update(progress_task, advance=1)
+
+                # Add summary section to file
+                target.write("\n# Summary\n\n")
+                target.write(f"- Total Comments Analyzed: {len(comments)}\n")
+                target.write(f"- Comments with PII Detected: {total_pii_comments} ({total_pii_comments/len(comments):.1%})\n")
+                target.write(f"- Comments with LLM Privacy Risks: {total_llm_pii_comments} ({total_llm_pii_comments/len(comments):.1%})\n")
+                target.write(f"- Average Sentiment Score: {sum(sentiment_scores)/len(sentiment_scores):.2f}\n")
+                target.write(f"- Highest PII Risk Score: {max_risk_score:.2f}\n")
+                if riskiest_comment:
+                    target.write(f"- Riskiest Comment Preview: '{riskiest_comment}'\n")
+                target.write("\n✅ Analysis complete\n")
+
+            # Add console completion message
+            progress.console.print(
+                Panel(
+                    Text.assemble(
+                        ("📄 Report saved to ", "bold blue"),
+                        (f"{filename}\n", "bold yellow"),
+                        ("🗒️  Total comments: ", "bold blue"),
+                        (f"{len(comments)}\n", "bold cyan"),
+                        ("🔐 PII detected in: ", "bold blue"),
+                        (f"{total_pii_comments} ", "bold red"),
+                        (f"({total_pii_comments/len(comments):.1%})\n", "dim"),
+                        ("🤖 LLM findings in: ", "bold blue"),
+                        (f"{total_llm_pii_comments} ", "bold magenta"),
+                        (f"({total_llm_pii_comments/len(comments):.1%})", "dim")
+                    ),
+                    title="[bold green]Analysis Complete[/]",
+                    border_style="green",
+                    padding=(1, 4)
+                )
+            )
 
 
     def _generate_summary_table(self, filtered_results: List[AnalysisResult]) -> Table:
