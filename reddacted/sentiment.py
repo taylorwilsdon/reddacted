@@ -32,6 +32,8 @@ class AnalysisResult:
     pii_risk_score: float
     pii_matches: List[Any]
     text: str
+    upvotes: int = 0
+    downvotes: int = 0
     llm_risk_score: float = 0.0
     llm_findings: Dict[str, Any] = None
 
@@ -146,8 +148,8 @@ class Sentiment():
             pii_task = progress.add_task("🔍 PII Analysis", visible=False, total=1)
             llm_task = progress.add_task("🤖 LLM Analysis", visible=False, total=1)
 
-            for i, comment in enumerate(comments, 1):
-                clean_comment = re.sub(cleanup_regex, '', str(comment))
+            for i, comment_data in enumerate(comments, 1):
+                clean_comment = re.sub(cleanup_regex, '', str(comment_data['text']))
                 progress.update(main_task, description=f"💭 Processing comment {i}/{total_comments}")
 
                 # Sentiment analysis
@@ -181,6 +183,8 @@ class Sentiment():
                         pii_risk_score=pii_risk_score,  # Initial PII score
                         pii_matches=pii_matches,
                         text=clean_comment,
+                        upvotes=comment_data['upvotes'],
+                        downvotes=comment_data['downvotes'],
                         llm_risk_score=0.0,
                         llm_findings=None
                     )
@@ -298,7 +302,8 @@ class Sentiment():
                     target.write(f"## Comment {comment_count}\n\n")
                     target.write(f"**Text**: {result.text}\n\n")
                     target.write(f"- Sentiment Score: `{result.sentiment_score:.2f}` {result.sentiment_emoji}\n")
-                    target.write(f"- PII Risk Score: `{result.pii_risk_score:.2f}`\n\n")
+                    target.write(f"- PII Risk Score: `{result.pii_risk_score:.2f}`\n")
+                    target.write(f"- Votes: ⬆️ `{result.upvotes}` ⬇️ `{result.downvotes}`\n\n")
 
                     # PII Matches Section
                     if result.pii_matches:
@@ -461,6 +466,14 @@ class Sentiment():
                     ("Privacy Risk:", "bold cyan"),
                     ("\n   Score: ", "dim"),
                     (f"{result.pii_risk_score:.2f}", "red bold" if result.pii_risk_score > 0.5 else "green bold")
+                ),
+                Text.assemble(
+                    ("📊 ", "yellow"),
+                    ("Votes:", "bold cyan"),
+                    ("\n   ⬆️ ", "green"),
+                    (f"{result.upvotes}", "green bold"),
+                    ("  ⬇️ ", "red"),
+                    (f"{result.downvotes}", "red bold")
                 )
             )
 

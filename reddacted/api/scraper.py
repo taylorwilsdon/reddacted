@@ -39,13 +39,15 @@ class Scraper(api.API):
                     data = children[child]["data"]
                     if "body" in data:
                          # remove empty spaces and weird reddit strings
-                        comment = data["body"].rstrip()
-                        comment = " ".join(comment.split())
-                        comment = comment.replace("&amp;#x200B;", "")
-                        upvotes = data["ups"]
-                        downvotes = data["downs"]
-                        if comment != "":
-                            comments.append(comment)
+                        comment_text = data["body"].rstrip()
+                        comment_text = " ".join(comment_text.split())
+                        comment_text = comment_text.replace("&amp;#x200B;", "")
+                        if comment_text != "":
+                            comments.append({
+                                'text': comment_text,
+                                'upvotes': data["ups"],
+                                'downvotes': data["downs"]
+                            })
 
         return comments
 
