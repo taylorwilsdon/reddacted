@@ -10,9 +10,13 @@
 - Easy, lazy, self hosted - the way an aging former engineer with a career doing things right at the enterprise cale would clean up your dirty laundry.
 
 🛡️ **PII Detection** - Find potential personal info leaks in comments using AI/Regex
+
 🤫 **Sentiment Analysis** - Understand the emotional tone of your Reddit history
+
 🔒 **Zero-Trust Architecture** - Client-side execution only, no data leaves your machine unless you choose to use a hosted API. Fully compatible with all OpenAI compatible endpoints.
+
 ⚡ **Self-Host Ready** - Run locally with Ollama/Mistral or cloud providers
+
 📊 **Smart Cleanup** - Preserve valuable contributions while removing risky content
 
 ✅ **Zero-Trust Architecture**
