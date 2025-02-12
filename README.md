@@ -3,6 +3,18 @@
 [![Privacy Shield](https://img.shields.io/badge/Privacy-100%25_Client--Side_Processing-success)](https://github.com/taylorwilsdon)
 [![AI Analysis](https://img.shields.io/badge/AI-PII_Detection-blueviolet)](https://example.com)
 
+## Table of Contents
+- [What is reddacted?](#what-is-reddacted)
+- [Installation](#installation)
+- [Using the CLI](#using-the-cli)
+- [FAQ](#faq)
+- [Support & Community](#support--community)
+- [Troubleshooting](#troubleshooting)
+- [Authentication](#authentication)
+- [Development](#development)
+- [Testing](#testing)
+- [Common Exceptions](#common-exceptions)
+
 **Next-generation digital footprint management with llm, sentiment analysis & pii detection insights into your true privacy** · *For aging engineers who care about their future political careers* 🏛️
 
 ## What is reddacted?
@@ -31,7 +43,7 @@ reddacted user yourusername \
 - Keep your nonsense comments with lots of upvotes and good vibes without unintentionally doxing yourself someday off in the future when you run for mayor.
 
 
-## Installation ##
+## Installation
 
 ```bash
 # Install globally
