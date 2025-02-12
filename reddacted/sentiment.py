@@ -251,19 +251,24 @@ class Sentiment():
             return sad_sentiment
 
     def _generate_output_file(self, filename, comments, url):
-        """Outputs a file containing a detailed sentiment and PII analysis per
-        sentence.
+        """Outputs a file containing a detailed sentiment and PII analysis per sentence."""
+        # First get all results at once to show proper progress
+        with Progress(
+            SpinnerColumn(spinner_name="dots"),
+            TextColumn("[bold blue]{task.description}"),
+            TimeElapsedColumn(),
+            transient=True
+        ) as progress:
+            progress_task = progress.add_task("📝 Generating analysis report...", total=len(comments))
+            
+            with open(filename, 'w+') as target:
+                target.write(f"# Analysis Report for '{url}'\n\n")
+                target.write(f"- **Overall Sentiment Score**: {self.score:.2f}\n")
+                target.write(f"- **Overall Sentiment**: {self.sentiment}\n")
+                target.write(f"- **Comments Analyzed**: {len(comments)}\n\n")
+                target.write("---\n\n")
 
-        :param: filename: the name of the file to create and edit
-        :param: comments: the parsed contents to analyze.
-        :param: url: the url being parsed.
-        """
-        with open(filename, 'w+') as target:
-            target.write(f"Analysis for '{url}'\n")
-            target.write(f"Overall Sentiment Score: {self.score}\n")
-            target.write(f"Overall Sentiment: {self.sentiment}\n\n")
-
-            def should_show_result(result):
+                def should_show_result(result):
                 if not self.pii_only:
                     return True
                 # Only show results with actual PII detections
@@ -274,46 +279,44 @@ class Sentiment():
                               result.llm_findings.get('confidence', 0.0) > 0.0)
                 return has_pattern_pii or has_llm_pii
 
-            comment_count = 1
-            for comment in comments:
-                score, results = asyncio.run(self._analyze([comment]))
-                filtered_results = [r for r in results if should_show_result(r)]
+                comment_count = 1
+                for result in self.results:  # Use pre-computed results
+                    progress.update(progress_task, description=f"📝 Writing comment {comment_count}/{len(comments)}")
+                    
+                    if not should_show_result(result):
+                        comment_count += 1
+                        progress.update(progress_task, advance=1)
+                        continue
 
-                if not filtered_results and hasattr(self, 'pii_only') and self.pii_only:
-                    continue
+                    target.write(f"## Comment {comment_count}\n\n")
+                    target.write(f"**Text**: {result.text}\n\n")
+                    target.write(f"- Sentiment Score: `{result.sentiment_score:.2f}` {result.sentiment_emoji}\n")
+                    target.write(f"- PII Risk Score: `{result.pii_risk_score:.2f}`\n\n")
 
-                for result in filtered_results:
-                    target.write(f"Comment {comment_count}:\n")
-                    target.write(f"Text: {result.text}\n")
-                    target.write(f"Sentiment Score: {result.sentiment_score}\n")
-                    target.write(f"Sentiment: {result.sentiment_emoji}\n")
-                    target.write(f"PII Risk Score: {result.pii_risk_score:.2f}\n")
-
+                    # PII Matches Section
                     if result.pii_matches:
-                        target.write("Pattern-based PII Detected:\n")
+                        target.write("### Pattern-based PII Detected\n")
                         for pii in result.pii_matches:
-                            target.write(f"  - Type: {pii.type}\n")
-                            target.write(f"    Confidence: {pii.confidence:.2f}\n")
+                            target.write(f"- **{pii.type}** (confidence: {pii.confidence:.2f})\n")
+                        target.write("\n")
 
+                    # LLM Findings Section
                     if result.llm_findings:
-                        target.write("\nLLM Privacy Analysis:\n")
-                        target.write(f"  Risk Score: {result.llm_risk_score:.2f}\n")
+                        target.write("### LLM Privacy Analysis\n")
+                        target.write(f"- **Risk Score**: `{result.llm_risk_score:.2f}`\n")
                         if isinstance(result.llm_findings, dict):
-                            if result.llm_findings.get('has_pii'):
-                                target.write("  PII Detected: Yes\n")
-                            if result.llm_findings.get('details'):
-                                target.write("  Findings:\n")
-                                for detail in result.llm_findings['details']:
-                                    target.write(f"    - {detail}\n")
-                            if result.llm_findings.get('reasoning'):
-                                target.write(f"\n  Reasoning:\n    {result.llm_findings['reasoning']}\n")
-                            if result.llm_findings.get('risk_factors'):
-                                target.write("\n  Risk Factors:\n")
-                                for factor in result.llm_findings['risk_factors']:
-                                    target.write(f"    - {factor}\n")
-                    target.write("\n")
+                            target.write(f"- **PII Detected**: {'Yes' if result.llm_findings.get('has_pii') else 'No'}\n")
+                            if details := result.llm_findings.get('details'):
+                                target.write("\n#### Findings\n")
+                                for detail in details:
+                                    target.write(f"- {detail}\n")
+                            if reasoning := result.llm_findings.get('reasoning'):
+                                target.write(f"\n#### Reasoning\n{reasoning}\n")
+                        target.write("\n")
 
-                comment_count += 1
+                    target.write("---\n\n")
+                    comment_count += 1
+                    progress.update(progress_task, advance=1)
 
 
     def _generate_summary_table(self, filtered_results: List[AnalysisResult]) -> Table:
