@@ -47,7 +47,7 @@ class DeleteComments(ModifyComments):
     """Delete specified comments"""
 
     def get_description(self):
-        return 'Delete comments by their IDs'
+        return 'Delete specified Reddit comments permanently using their IDs'
 
     def take_action(self, parsed_args):
         results = self.process_comments(parsed_args, 'delete')
@@ -62,7 +62,7 @@ class UpdateComments(ModifyComments):
     """Update specified comments to r/reddacted"""
 
     def get_description(self):
-        return 'Update comments by their IDs to r/reddacted'
+        return 'Replace comment content with "r/reddacted" using their IDs'
 
     def take_action(self, parsed_args):
         results = self.process_comments(parsed_args, 'update')
@@ -77,7 +77,7 @@ class UpdateComments(ModifyComments):
 class Listing(Command):
 
     def get_description(self):
-        return 'get the sentiment score of a post.'
+        return 'Analyze sentiment and detect PII in a Reddit post and its comments'
 
     def get_parser(self, prog_name):
         parser = super(Listing, self).get_parser(prog_name)
@@ -127,7 +127,7 @@ class Listing(Command):
 class User(Command):
 
     def get_description(self):
-        return 'get the sentiment score of a user.'
+        return 'Analyze sentiment and detect PII in a Reddit user\'s comment history'
 
     def get_parser(self, prog_name):
         parser = super(User, self).get_parser(prog_name)
@@ -181,7 +181,36 @@ class CLI(App):
         
         super(CLI, self).__init__(
             version=1.0,
-            description="Obtains Sentiment Score of various reddit objects.",
+            description="""
+Reddit Sentiment & PII Analysis Tool
+
+Commands:
+  listing     Analyze a Reddit post and its comments
+  user        Analyze a user's comment history
+  delete      Delete comments by ID
+  update      Replace comment content with r/reddacted
+  
+Authentication:
+  Set these environment variables for Reddit API access:
+    REDDIT_USERNAME
+    REDDIT_PASSWORD
+    REDDIT_CLIENT_ID
+    REDDIT_CLIENT_SECRET
+
+LLM Configuration:
+  --openai-key     OpenAI API key
+  --local-llm      Local LLM endpoint URL
+  --openai-base    Custom OpenAI API base URL
+  --model          Model name to use (default: gpt-4)
+  
+Common Options:
+  --output-file    Save detailed analysis to file
+  --enable-auth    Use Reddit API authentication
+  --disable-pii    Skip PII detection
+  --pii-only       Show only comments with PII
+  --limit          Max comments to analyze (0=unlimited)
+  --batch-size     Comments per batch for delete/update
+""",
             command_manager=command_manager,
             deferred_help=True,)
 
