@@ -59,7 +59,7 @@ class Reddit(api.API):
         url = f"https://www.reddit.com/r/{subreddit}/comments/{article}"
         submission = self.reddit.submission(url=url)
         comments = submission.comments.new(limit=limit)
-
+        print('parsae listing fired')
         return comments
 
     def _process_comments(self, comment_ids: list[str], action: str, batch_size: int = 10) -> dict[str, any]:
@@ -70,6 +70,7 @@ class Reddit(api.API):
         :param batch_size: Number of comments to process per batch
         :return: Dict with results and statistics
         """
+        print('_process_comments fired')
         if not self.authenticated:
             raise AuthenticationRequiredError(f"Full authentication required for comment {action}")
 
@@ -134,7 +135,9 @@ class Reddit(api.API):
        :param limit: maximum number of comments to return (None for unlimited)
        :return: a list of comments from a user.
        """
+        print('parse_user fired')
         redditor = self.reddit.redditor({username})
+        print(redditor)
         comments = redditor.comments.new(limit=limit)
 
         return comments
