@@ -10,11 +10,68 @@ from rich.panel import Panel
 from rich.columns import Columns
 
 from reddacted.sentiment import Sentiment
+from reddacted.api.reddit import Reddit
 
 import requests
 
 
 console = Console()
+
+
+class ModifyComments(Command):
+    """Base class for comment modification commands"""
+    
+    def get_parser(self, prog_name):
+        parser = super(ModifyComments, self).get_parser(prog_name)
+        parser.add_argument(
+            'comment_ids',
+            help='Comma-separated list of comment IDs to process'
+        )
+        parser.add_argument(
+            '--batch-size',
+            type=int,
+            default=10,
+            help='Number of comments to process per batch'
+        )
+        return parser
+
+    def process_comments(self, parsed_args, action):
+        api = Reddit()
+        comment_ids = parsed_args.comment_ids.split(',')
+        if action == 'delete':
+            return api.delete_comments(comment_ids, batch_size=parsed_args.batch_size)
+        elif action == 'update':
+            return api.update_comments(comment_ids, batch_size=parsed_args.batch_size)
+        
+class DeleteComments(ModifyComments):
+    """Delete specified comments"""
+
+    def get_description(self):
+        return 'Delete comments by their IDs'
+
+    def take_action(self, parsed_args):
+        results = self.process_comments(parsed_args, 'delete')
+        console.print(Panel(
+            f"Processed: {results['processed']}\n"
+            f"Successful: {results['success']}\n"
+            f"Failed: {results['failures']}",
+            title="[bold red]Delete Results[/]"
+        ))
+
+class UpdateComments(ModifyComments):
+    """Update specified comments to r/reddacted"""
+
+    def get_description(self):
+        return 'Update comments by their IDs to r/reddacted'
+
+    def take_action(self, parsed_args):
+        results = self.process_comments(parsed_args, 'update')
+        console.print(Panel(
+            f"Processed: {results['processed']}\n"
+            f"Successful: {results['success']}\n"
+            f"Failed: {results['failures']}",
+            title="[bold blue]Update Results[/]"
+        ))
 
 
 class Listing(Command):
@@ -118,10 +175,14 @@ class User(Command):
 
 class CLI(App):
     def __init__(self):
+        command_manager = CommandManager('reddit.sentiment')
+        command_manager.add_command('delete', DeleteComments)
+        command_manager.add_command('update', UpdateComments)
+        
         super(CLI, self).__init__(
             version=1.0,
             description="Obtains Sentiment Score of various reddit objects.",
-            command_manager=CommandManager('reddit.sentiment'),
+            command_manager=command_manager,
             deferred_help=True,)
 
     def _configure_llm(self, args, console):
