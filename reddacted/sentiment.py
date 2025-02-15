@@ -569,12 +569,17 @@ class Sentiment():
             padding=(1, 4)
         ))
 
-        # Add deletion confirmation prompt
+        # Add action confirmation prompt
+        action_text = Group(
+            Text("Available actions for high-risk comments:", style="bold yellow"),
+            Text("• Use '--delete' with comma-separated IDs to remove comments", style="italic red"),
+            Text("• Use '--update' with comma-separated IDs to redact content", style="italic blue")
+        )
         panels.append(
             Panel.fit(
-                Text("Review above and use '--delete' with comma-separated IDs\nto remove high-risk comments",
-                     style="italic yellow"),
-                border_style="red"
+                action_text,
+                border_style="yellow",
+                title="[bold]Actions[/]"
             )
         )
 

@@ -62,15 +62,16 @@ class Reddit(api.API):
 
         return comments
 
-    def delete_comments(self, comment_ids: list[str], batch_size: int = 10) -> dict[str, any]:
+    def _process_comments(self, comment_ids: list[str], action: str, batch_size: int = 10) -> dict[str, any]:
         """
-        Delete comments in batches with rate limiting
-        :param comment_ids: List of comment IDs to delete
+        Process comments in batches with rate limiting
+        :param comment_ids: List of comment IDs to process
+        :param action: Action to perform ('delete' or 'update')
         :param batch_size: Number of comments to process per batch
         :return: Dict with results and statistics
         """
         if not self.authenticated:
-            raise AuthenticationRequiredError("Full authentication required for comment deletion")
+            raise AuthenticationRequiredError(f"Full authentication required for comment {action}")
 
         results = {
             'processed': 0,
@@ -85,7 +86,10 @@ class Reddit(api.API):
                 for comment_id in batch:
                     try:
                         comment = self.reddit.comment(id=comment_id)
-                        comment.delete()
+                        if action == 'delete':
+                            comment.delete()
+                        elif action == 'update':
+                            comment.edit("r/reddacted")
                         results['success'] += 1
                     except Exception as e:
                         results['failures'] += 1
@@ -103,6 +107,24 @@ class Reddit(api.API):
                 continue
 
         return results
+
+    def delete_comments(self, comment_ids: list[str], batch_size: int = 10) -> dict[str, any]:
+        """
+        Delete comments in batches with rate limiting
+        :param comment_ids: List of comment IDs to delete
+        :param batch_size: Number of comments to process per batch
+        :return: Dict with results and statistics
+        """
+        return self._process_comments(comment_ids, 'delete', batch_size)
+
+    def update_comments(self, comment_ids: list[str], batch_size: int = 10) -> dict[str, any]:
+        """
+        Update comments in batches with rate limiting to replace content with 'r/reddacted'
+        :param comment_ids: List of comment IDs to update
+        :param batch_size: Number of comments to process per batch
+        :return: Dict with results and statistics
+        """
+        return self._process_comments(comment_ids, 'update', batch_size)
 
     def update_comments(self, comment_ids: list[str], batch_size: int = 10) -> dict[str, any]:
         """
