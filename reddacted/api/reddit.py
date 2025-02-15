@@ -56,8 +56,7 @@ class Reddit(api.API):
        :param limit: maximum number of comments to return (None for unlimited)
        :return: a list of comments from an article.
        """
-        url = f"https://www.reddit.com/r/{subreddit}/comments/{article}"
-        submission = self.reddit.submission(url=url)
+        submission = self.reddit.submission(id=article)
         comments = submission.comments.new(limit=limit)
         print('parsae listing fired')
         return comments
@@ -136,7 +135,7 @@ class Reddit(api.API):
        :return: a list of comments from a user.
        """
         print('parse_user fired')
-        redditor = self.reddit.redditor({username})
+        redditor = self.reddit.redditor(username)
         print(redditor)
         comments = redditor.comments.new(limit=limit)
 
