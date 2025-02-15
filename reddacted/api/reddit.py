@@ -126,47 +126,6 @@ class Reddit(api.API):
         """
         return self._process_comments(comment_ids, 'update', batch_size)
 
-    def update_comments(self, comment_ids: list[str], batch_size: int = 10) -> dict[str, any]:
-        """
-        Update comments in batches with rate limiting to replace content with 'r/reddacted'
-        :param comment_ids: List of comment IDs to update
-        :param batch_size: Number of comments to process per batch
-        :return: Dict with results and statistics
-        """
-        if not self.authenticated:
-            raise AuthenticationRequiredError("Full authentication required for comment updates")
-
-        results = {
-            'processed': 0,
-            'success': 0,
-            'failures': 0,
-            'errors': []
-        }
-
-        for i in range(0, len(comment_ids), batch_size):
-            batch = comment_ids[i:i+batch_size]
-            try:
-                for comment_id in batch:
-                    try:
-                        comment = self.reddit.comment(id=comment_id)
-                        comment.edit("r/reddacted")
-                        results['success'] += 1
-                    except Exception as e:
-                        results['failures'] += 1
-                        results['errors'].append({
-                            'comment_id': comment_id,
-                            'error': str(e)
-                        })
-                    # Respect Reddit's API rate limit (1 req/sec)
-                    time.sleep(1.1)
-
-                results['processed'] += len(batch)
-            except praw.exceptions.APIException as e:
-                logging.error(f"API rate limit exceeded: {str(e)}")
-                time.sleep(60)  # Wait 1 minute before retrying
-                continue
-
-        return results
 
     def parse_user(self, username, limit=100, **kwargs):
         """Parses a listing and extracts the comments from it.
