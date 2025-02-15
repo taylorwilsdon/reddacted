@@ -57,9 +57,18 @@ class Reddit(api.API):
        :return: a list of comments from an article.
        """
         submission = self.reddit.submission(id=article)
-        comments = submission.comments.new(limit=limit)
-        print('parsae listing fired')
-        return comments
+        submission.comments.replace_more(limit=None)
+        comments = []
+        
+        for comment in submission.comments.list():
+            comments.append({
+                'text': comment.body.rstrip(),
+                'upvotes': comment.ups,
+                'downvotes': comment.downs,
+                'permalink': comment.permalink
+            })
+            
+        return comments[:limit] if limit else comments
 
     def _process_comments(self, comment_ids: list[str], action: str, batch_size: int = 10) -> dict[str, any]:
         """
@@ -134,9 +143,15 @@ class Reddit(api.API):
        :param limit: maximum number of comments to return (None for unlimited)
        :return: a list of comments from a user.
        """
-        print('parse_user fired')
         redditor = self.reddit.redditor(username)
-        print(redditor)
-        comments = redditor.comments.new(limit=limit)
-        print(comments)
+        comments = []
+        
+        for comment in redditor.comments.new(limit=limit):
+            comments.append({
+                'text': comment.body.rstrip(),
+                'upvotes': comment.ups,
+                'downvotes': comment.downs,
+                'permalink': comment.permalink
+            })
+            
         return comments
