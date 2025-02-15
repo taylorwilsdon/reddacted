@@ -138,5 +138,5 @@ class Reddit(api.API):
         redditor = self.reddit.redditor(username)
         print(redditor)
         comments = redditor.comments.new(limit=limit)
-
+        print(comments)
         return comments
