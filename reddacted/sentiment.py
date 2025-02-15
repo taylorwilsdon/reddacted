@@ -31,6 +31,7 @@ class AnalysisResult:
     sentiment_emoji: str
     pii_risk_score: float
     pii_matches: List[Any]
+    permalink: str
     text: str
     upvotes: int = 0
     downvotes: int = 0
@@ -43,7 +44,7 @@ neutral_sentiment = "😐"
 
 
 class Sentiment():
-    """Performs the sentiment analysis on a given set of Reddit Objects."""
+    """Performs the LLM PII & sentiment analysis on a given set of Reddit Objects."""
 
     def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, debug=False, limit=100):
         # Configure logging
@@ -185,6 +186,7 @@ class Sentiment():
                         text=clean_comment,
                         upvotes=comment_data['upvotes'],
                         downvotes=comment_data['downvotes'],
+                        permalink=comment_data['permalink'],
                         llm_risk_score=0.0,
                         llm_findings=None
                     )
@@ -393,10 +395,10 @@ class Sentiment():
             # Determine risk level styling
             risk_style = "red" if result.pii_risk_score > 0.5 else "yellow" if result.pii_risk_score > 0.2 else "green"
             risk_text = Text(f"{result.pii_risk_score:.0%}", style=risk_style)
-
+            permalink = f"https://reddit.com{result.permalink}"
             # Trim comment text for preview
             preview = result.text[:67] + "..." if len(result.text) > 70 else result.text
-
+            preview = f"[link={permalink}]{preview}[/link]"
             table.add_row(
                 risk_text,
                 Text(f"{result.sentiment_emoji} {result.sentiment_score:.2f}"),
