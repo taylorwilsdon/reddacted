@@ -2,6 +2,10 @@ import re
 from dataclasses import dataclass
 from typing import List, Tuple
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.exceptions import handle_exception
+
+logger = get_logger(__name__)
 
 @dataclass
 class PIIMatch:
@@ -47,6 +51,7 @@ class PIIDetector:
             for pattern in self.COMMON_FALSE_POSITIVES
         ]
 
+    @with_logging(logger)
     def analyze_text(self, text: str) -> List[PIIMatch]:
         """
         Analyze text for potential PII.
@@ -84,6 +89,7 @@ class PIIDetector:
 
         return matches
 
+    @with_logging(logger)
     def get_pii_risk_score(self, text: str, progress=None) -> Tuple[float, List[PIIMatch]]:
         """
         Calculate overall PII risk score for a text and return matches.

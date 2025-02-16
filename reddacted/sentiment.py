@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import logging  # Moved to top
 from os import environ
+from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.exceptions import handle_exception
+
+logger = get_logger(__name__)
 import re
 import asyncio
 import sys
@@ -64,17 +67,17 @@ class Sentiment():
         """
         # Set up logging
         self.debug = debug
-        self.logger = logging.getLogger(__name__)
-        if self.debug:
-            logging.getLogger().setLevel(logging.DEBUG)  # Set root & urllib logger to DEBUG
+        self.logger = logger  # Use module logger
+        if debug:
+            logging.getLogger().setLevel(logging.DEBUG)
             logging.getLogger('urllib3').setLevel(logging.DEBUG)
-            self.logger.setLevel(logging.DEBUG)
-            self.logger.info("Debug logging enabled")
+            logger.setLevel(logging.DEBUG)
+            logger.info("Debug logging enabled")
         else:
-            logging.getLogger().setLevel(logging.INFO)  # Set root & urllib logger to INFO
+            logging.getLogger().setLevel(logging.INFO)
             logging.getLogger('urllib3').setLevel(logging.INFO)
-            self.logger.setLevel(logging.INFO)
-        self.logger.debug("Initializing Sentiment Analyzer")
+            logger.setLevel(logging.INFO)
+        logger.debug("Initializing Sentiment Analyzer")
 
         # Initialize necessary variables
         self.llm_detector = None  # Initialize llm_detector early
@@ -120,6 +123,7 @@ class Sentiment():
         else:
             self.logger.debug("Authentication not enabled")
         self._print_config(auth_enabled, pii_enabled, llm_config)
+    @with_logging(logger)
     def get_user_sentiment(self, username, output_file=None, sort='new', time_filter='all'):
         """Obtains the sentiment for a user's comments.
         :param username: name of user to search
@@ -140,6 +144,7 @@ class Sentiment():
             self._generate_output_file(output_file, comments, user_id)
         else:
              self._print_comments(comments, user_id)
+    @with_logging(logger)
     def get_listing_sentiment(self, subreddit, article, output_file=None):
         """Obtains the sentiment for a listing's comments.
         :param subreddit: a subreddit
@@ -668,6 +673,7 @@ class Sentiment():
             future = asyncio.ensure_future(self._analyze(comments))
             return asyncio.get_event_loop().run_until_complete(future)
         return asyncio.run(self._analyze(comments))
+    @with_logging(logger)
     def get_sentiment(self, source_type, identifier, output_file=None, **kwargs):
         """Unified sentiment analysis entry point"""
         self.logger.debug(f"get_sentiment called with source_type={source_type}, identifier={identifier}")

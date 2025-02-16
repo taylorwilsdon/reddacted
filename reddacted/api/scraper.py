@@ -16,7 +16,7 @@ class Scraper(api.API):
 
     def __init__(self):
         """Initialize Scraper"""
-        pass
+        self.logger = logger  # Use module logger
 
     @with_logging(logger)
     def parse_listing(self, subreddit, article, limit=100, **kwargs):
@@ -66,7 +66,7 @@ class Scraper(api.API):
         self.logger.debug(f"Returning {len(comments)} processed comments")
         return comments
 
-    @with_logging(get_logger(__name__))
+    @with_logging(logger)
     def parse_user(self, username, limit=100, sort='new', time_filter='all', **kwargs):
         """Parses a listing and extracts the comments from it.
 
