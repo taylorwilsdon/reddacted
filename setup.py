@@ -30,14 +30,14 @@ setup(
     provides=[],
     install_requires=['cliff', 'praw', 'nltk', 'requests', 'six', 'openai', 'rich'],
     namespace_packages=[],
-    packages=find_packages(),
+    packages=find_packages(include=['reddacted', 'reddacted.*']),
     include_package_data=True,
 
     entry_points={
         'console_scripts': [
             'reddacted = reddacted.cli:main'
         ],
-        'reddit.sentiment': [
+        'reddacted.analyze': [
             'listing = reddacted.cli:Listing',
             'user = reddacted.cli:User'
         ],

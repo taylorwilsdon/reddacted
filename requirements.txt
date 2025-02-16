@@ -3,6 +3,6 @@ requests==2.31.0
 six==1.10.0
 cliff==4.3.0
 nltk==3.6.6
-praw==7.7.0
+praw==7.8.1
 urllib3>=1.26.5 # not directly required, pinned by Snyk to avoid a vulnerability
 rich>=13.7.0
