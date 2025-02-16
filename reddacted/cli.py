@@ -160,6 +160,18 @@ class User(Command):
         return parser
 
     def take_action(self, parsed_args):
+        """Execute the user analysis command
+        
+        Args:
+            parsed_args: Command line arguments
+            
+        Returns:
+            None
+            
+        Raises:
+            AttributeError: If required arguments are missing
+            Exception: For other unexpected errors
+        """
         try:
             llm_config = CLI()._configure_llm(parsed_args, console)
             limit = None if parsed_args.limit == 0 else parsed_args.limit
@@ -174,11 +186,21 @@ class User(Command):
             sent.get_user_sentiment(parsed_args.username, parsed_args.output_file)
         except AttributeError as e:
             from reddacted.utils.exceptions import handle_exception
-            handle_exception(e, f"Error processing user '{parsed_args.username}' in User.take_action()")
+            handle_exception(
+                e,
+                f"Missing or invalid arguments for user '{parsed_args.username}'\n" +
+                "Required: username\nOptional: --output-file, --enable-auth, --disable-pii, --limit",
+                debug="--debug" in sys.argv
+            )
             raise
         except Exception as e:
             from reddacted.utils.exceptions import handle_exception
-            handle_exception(e, f"Unexpected error analyzing user '{parsed_args.username}'")
+            handle_exception(
+                e,
+                f"Failed to analyze user '{parsed_args.username}'\n" +
+                "Check if the user exists and is not banned/private",
+                debug="--debug" in sys.argv
+            )
             raise
 
 

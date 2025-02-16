@@ -149,16 +149,27 @@ class Reddit(api.API):
        :param username: a user
        :param limit: maximum number of comments to return (None for unlimited)
        :return: a list of comments from a user.
+       :raises: prawcore.exceptions.NotFound if user doesn't exist
+       :raises: prawcore.exceptions.Forbidden if user is private/banned
        """
-        redditor = self.reddit.redditor(username)
-        comments = []
-        
-        for comment in redditor.comments.new(limit=limit):
-            comments.append({
-                'text': comment.body.rstrip(),
-                'upvotes': comment.ups,
-                'downvotes': comment.downs,
-                'permalink': comment.permalink
-            })
+        try:
+            redditor = self.reddit.redditor(username)
+            comments = []
             
-        return comments
+            for comment in redditor.comments.new(limit=limit):
+                comments.append({
+                    'text': comment.body.rstrip(),
+                    'upvotes': comment.ups,
+                    'downvotes': comment.downs,
+                    'permalink': comment.permalink
+                })
+                
+            return comments
+        except Exception as e:
+            from reddacted.utils.exceptions import handle_exception
+            handle_exception(
+                e,
+                f"Failed to fetch comments for user '{username}'",
+                debug=True
+            )
+            raise

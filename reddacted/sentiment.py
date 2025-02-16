@@ -47,6 +47,16 @@ class Sentiment():
     """Performs the LLM PII & sentiment analysis on a given set of Reddit Objects."""
 
     def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, debug=False, limit=100):
+        """Initialize Sentiment Analysis with optional PII detection
+        
+        Args:
+            auth_enabled (bool): Enable Reddit API authentication
+            pii_enabled (bool): Enable PII detection
+            llm_config (dict): Configuration for LLM-based analysis
+            pii_only (bool): Only show comments with PII detected
+            debug (bool): Enable debug logging
+            limit (int): Maximum number of comments to analyze
+        """
         from reddacted.utils.exceptions import handle_exception
         try:
             self.api = Scraper()
