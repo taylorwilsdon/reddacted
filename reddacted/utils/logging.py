@@ -4,9 +4,10 @@ from functools import wraps
 from typing import Callable, Any
 from reddacted.utils.exceptions import handle_exception
 
-def get_logger(name: str) -> logging.Logger:
+def get_logger(name: str, level: int = logging.INFO) -> logging.Logger:
     """Get a logger with consistent formatting"""
     logger = logging.getLogger(name)
+    logger.setLevel(level)
     
     # Add convenience methods for contextual logging
     def make_log_method(level: int):

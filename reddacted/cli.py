@@ -1,5 +1,6 @@
 import sys
 import getpass
+import logging
 
 from cliff.app import App
 from cliff.commandmanager import CommandManager
@@ -377,6 +378,10 @@ def suggest_command(input_command):
 
 def main(argv=sys.argv[1:]):
     try:
+        # Configure logging based on debug flag
+        log_level = logging.DEBUG if "--debug" in argv else logging.INFO
+        logger = get_logger(__name__, level=log_level)
+        
         app = CLI()
         
         if len(argv) > 0:
