@@ -79,16 +79,18 @@ class Sentiment():
         self.llm_detector = None  # Initialize llm_detector early
         try:
             self.api = Scraper()
-            logger.debug_with_context("Initialized Scraper API")
             self.score = 0
             self.sentiment = neutral_sentiment
             self.headers = _COMMENT_ANALYSIS_HEADERS
             self.authEnable = False
             self.pii_enabled = pii_enabled
-            logger.debug_with_context(f"PII detection enabled: {self.pii_enabled}")
             self.pii_detector = PIIDetector() if pii_enabled else None
             self.pii_only = pii_only
             self.limit = limit
+            logger.debug_with_context("Initialized with configuration: "
+                                    f"pii_enabled={pii_enabled}, "
+                                    f"pii_only={pii_only}, "
+                                    f"limit={limit}")
 
             # Initialize analysis pipeline
             self.analysis_pipeline = []
@@ -103,21 +105,22 @@ class Sentiment():
             raise
         # Initialize LLM detector if config provided
         if llm_config and pii_enabled:
-            self.logger.debug("Initializing LLM Detector")
+            logger.debug_with_context("Initializing LLM Detector")
             self.llm_detector = LLMDetector(
                 api_key=llm_config.get('api_key'),
                 api_base=llm_config.get('api_base'),
                 model=llm_config.get('model', 'gpt-4o-mini')
             )
-            self.logger.debug("LLM Detector initialized")
+            logger.debug_with_context("LLM Detector initialized")
         else:
-            self.logger.debug("LLM Detector not initialized (llm_config not provided or PII detection disabled)")
+            logger.debug_with_context("LLM Detector not initialized (llm_config not provided or PII detection disabled)")
+        
         if auth_enabled:
-            self.logger.debug("Authentication enabled, initializing Reddit API")
+            logger.debug_with_context("Authentication enabled, initializing Reddit API")
             self.api = Reddit()
-            self.logger.debug("Reddit API initialized")
+            logger.debug_with_context("Reddit API initialized")
         else:
-            self.logger.debug("Authentication not enabled")
+            logger.debug_with_context("Authentication not enabled")
         self._print_config(auth_enabled, pii_enabled, llm_config)
     @with_logging(logger)
     def get_user_sentiment(self, username, output_file=None, sort='new', time_filter='all'):
@@ -125,7 +128,7 @@ class Sentiment():
         :param username: name of user to search
         :param output_file (optional): file to output relevant data.
         """
-        self.logger.debug(f"get_user_sentiment called with username={username}, output_file={output_file}, sort={sort}, time_filter={time_filter}")
+        logger.debug_with_context(f"get_user_sentiment called with username={username}, output_file={output_file}, sort={sort}, time_filter={time_filter}")
         comments = self.api.parse_user(username, headers=self.headers, limit=self.limit, 
                                      sort=sort, time_filter=time_filter)
         self.logger.debug(f"Retrieved {len(comments)} comments for user '{username}'")
