@@ -453,21 +453,53 @@ class Sentiment():
         return table
 
     @with_logging(logger)
-    def get_user_sentiment(self, username, output_file=None, sort='new', time_filter='all'):
-        """Backwards compatibility method for user sentiment analysis"""
-        logger.debug_with_context("get_user_sentiment (backwards compatibility) called")
-        return self.get_sentiment('user', username, output_file=output_file,
-                                sort=sort, time_filter=time_filter)
+    def _print_config(self, auth_enabled: bool, pii_enabled: bool, llm_config: Optional[Dict[str, Any]]) -> None:
+        logger.debug_with_context("Printing active configuration")
+        progress = Progress(
+            SpinnerColumn(spinner_name="dots"),
+            TextColumn("[bold blue]{task.description}"),
+            TimeElapsedColumn(),
+            transient=True
+        )
+        with progress:
+            task = progress.add_task("", total=1, visible=False)
+            progress.console.print("\n[bold cyan]Active Configuration[/]")
+            def format_status(enabled, true_text="Enabled", false_text="Disabled"):
+                return Text.assemble(
+                    (true_text if enabled else false_text, "green" if enabled else "red")
+                )
+            config_table = [
+                ("Authentication", format_status(auth_enabled)),
+                ("PII Detection", format_status(pii_enabled)),
+                ("LLM Analysis", format_status(llm_config is not None, llm_config['model'] if llm_config else "Disabled")),
+                ("PII-Only Filter", format_status(self.pii_only, "Active", "Inactive")),
+                ("Comment Limit", Text(f"{self.limit if self.limit else 'Unlimited'}", style="cyan")),
+                ("Sort Preference", Text("new", style="cyan"))
+            ]
+            panels = []
+            panels.append(
+                Panel.fit(
+                    Group(*[Text.assemble(f"{k}: ", Text("")) + v for k, v in config_table]),
+                    title="[bold]Features[/]",
+                    border_style="blue"
+                )
+            )
+            if auth_enabled:
+                auth_table = [
+                    ("REDDIT_USERNAME", environ.get("REDDIT_USERNAME", "[red]Not Set[/]")),
+                    ("REDDIT_CLIENT_ID", environ.get("REDDIT_CLIENT_ID", "[red]Not Set[/]"))
+                ]
+                panels.append(
+                    Panel.fit(
+                        Group(*[Text(f"{k}: {v}") for k, v in auth_table]),
+                        title="[bold]Auth Environment[/]",
+                        border_style="yellow"
+                    )
+                )
+            progress.console.print(Columns(panels))
+            progress.update(task, advance=1)
 
-    @with_logging(logger)
-    def get_listing_sentiment(self, subreddit, article, output_file=None):
-        """Backwards compatibility method for listing sentiment analysis"""
-        logger.debug_with_context("get_listing_sentiment (backwards compatibility) called")
-        return self.get_sentiment('listing', f"{subreddit}/{article}",
-                                output_file=output_file)
-
-    @with_logging(logger)
-    def _print_comments(self, comments, url):
+    def _print_comments(self, comments: List[Dict[str, Any]], url: str) -> None:
         """Prints out analysis of user comments.
         :param: comments: the parsed contents to analyze.
         :param: url: the url being parsed.
@@ -638,7 +670,7 @@ class Sentiment():
             progress.update(task, advance=1)
 
     @with_logging(logger)
-    def _get_comments(self, source_type, identifier, **kwargs):
+    def _get_comments(self, source_type: str, identifier: str, **kwargs) -> List[Dict[str, Any]]:
         """Unified comment fetching method"""
         logger.debug_with_context(f"Fetching comments for {source_type} '{identifier}'")
         fetch_method = {
@@ -654,7 +686,7 @@ class Sentiment():
         )
 
     @with_logging(logger)
-    def _run_analysis_flow(self, comments):
+    def _run_analysis_flow(self, comments: List[Dict[str, Any]]) -> Tuple[float, List[AnalysisResult]]:
         """Centralized analysis execution"""
         logger.debug_with_context("Running analysis flow")
         if asyncio.get_event_loop().is_running():
@@ -663,7 +695,7 @@ class Sentiment():
         return asyncio.run(self._analyze(comments))
 
     @with_logging(logger)
-    def get_sentiment(self, source_type, identifier, output_file=None, **kwargs):
+    def get_sentiment(self, source_type: str, identifier: str, output_file: Optional[str] = None, **kwargs) -> None:
         """Unified sentiment analysis entry point"""
         logger.debug_with_context(f"get_sentiment called with source_type={source_type}, identifier={identifier}")
         comments = self._get_comments(source_type, identifier, **kwargs)
