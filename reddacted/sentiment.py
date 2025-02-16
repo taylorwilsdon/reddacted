@@ -451,6 +451,7 @@ class Sentiment():
                     border_style="blue"
                 )
             )
+            print(f"authenabled {auth_enabled}")
             if auth_enabled:
                 auth_table = [
                     ("REDDIT_USERNAME", environ.get("REDDIT_USERNAME", "[red]Not Set[/]")),
