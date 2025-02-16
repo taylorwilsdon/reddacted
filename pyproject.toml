@@ -27,7 +27,7 @@ classifiers = [
 dependencies = [
     "cliff",
     "praw",
-    "nltk", 
+    "nltk",
     "requests",
     "six",
     "openai",
