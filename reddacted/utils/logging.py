@@ -16,11 +16,19 @@ def set_global_logging_level(level: LogLevel) -> None:
         
     Note:
         This affects all existing loggers in the hierarchy.
+        Some third-party loggers may be set to specific levels for noise reduction.
     """
     root = logging.getLogger()
     root.setLevel(level)
+    
+    # Set specific levels for noisy third-party loggers when not in debug mode
+    if level > logging.DEBUG:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+    
+    # Set level for all other loggers
     for logger_name in root.manager.loggerDict:
-        logging.getLogger(logger_name).setLevel(level)
+        if logger_name != "httpx":  # Skip httpx as we handled it above
+            logging.getLogger(logger_name).setLevel(level)
 
 def get_logger(name: str, level: LogLevel = logging.INFO) -> LoggerType:
     """Get or create a logger with consistent formatting and contextual logging methods.
