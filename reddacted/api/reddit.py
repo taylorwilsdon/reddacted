@@ -36,7 +36,6 @@ class Reddit(api.API):
 
         if None in required_vars.values():
             missing = [k for k, v in required_vars.items() if v is None]
-            from reddacted.utils.exceptions import handle_exception
             handle_exception(
                 ValueError(f"Missing authentication variables: {', '.join(missing)}"),
                 "Reddit API authentication failed - missing environment variables",
@@ -57,7 +56,6 @@ class Reddit(api.API):
             self.authenticated = True
             logger.debug_with_context("Successfully authenticated with Reddit API")
         except Exception as e:
-            from reddacted.utils.exceptions import handle_exception
             handle_exception(e, "Authentication Failed")
 
     @with_logging(logger)
@@ -81,7 +79,8 @@ class Reddit(api.API):
                 'text': comment.body.rstrip(),
                 'upvotes': comment.ups,
                 'downvotes': comment.downs,
-                'permalink': comment.permalink
+                'permalink': comment.permalink,
+                'id': comment.id
             }
             logger.debug_with_context(f"Processing comment: ups={comment.ups}, downs={comment.downs}, text_preview='{comment.body[:50]}...'")
             comments.append(comment_data)
@@ -104,6 +103,8 @@ class Reddit(api.API):
             'processed': 0,
             'success': 0,
             'failures': 0,
+            'successful_ids': [],
+            'failed_ids': [],
             'errors': []
         }
 
@@ -114,12 +115,19 @@ class Reddit(api.API):
                     try:
                         comment = self.reddit.comment(id=comment_id)
                         if action == 'delete':
-                            comment.delete()
+                            logger.debug(f"Deleting comment ID {comment}")
+                            print(f'would have comment.deleted() {comment}')
+                            # comment.delete()
+                            results['successful_ids'].append(comment_id)
+                            results['success'] += 1
                         elif action == 'update':
+                            logger.debug(f"Updating comment ID {comment}")
                             comment.edit("This comment has been reddacted to preserve online privacy - see r/reddacted for more info")
-                        results['success'] += 1
+                            results['successful_ids'].append(comment_id)
+                            results['success'] += 1
                     except Exception as e:
                         results['failures'] += 1
+                        results['failed_ids'].append(comment_id)
                         results['errors'].append({
                             'comment_id': comment_id,
                             'error': str(e)
@@ -129,7 +137,6 @@ class Reddit(api.API):
 
                 results['processed'] += len(batch)
             except praw.exceptions.APIException as e:
-                from reddacted.utils.exceptions import handle_exception
                 handle_exception(e, "Reddit API Rate Limit Exceeded")
                 time.sleep(60)  # Wait 1 minute before retrying
                 continue
@@ -189,7 +196,8 @@ class Reddit(api.API):
                     'text': comment.body.rstrip(),
                     'upvotes': comment.ups,
                     'downvotes': comment.downs,
-                    'permalink': comment.permalink
+                    'permalink': comment.permalink,
+                    'id': comment.id
                 })
                 
             return comments

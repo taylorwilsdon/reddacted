@@ -28,7 +28,10 @@ console = Console()
 
 class ModifyComments(Command):
     """Base class for comment modification commands"""
-    
+
+    def get_description(self):
+        return self.__doc__ or ''
+
     def get_parser(self, prog_name):
         parser = super(ModifyComments, self).get_parser(prog_name)
         parser.add_argument(
@@ -59,11 +62,27 @@ class DeleteComments(ModifyComments):
 
     def take_action(self, parsed_args):
         results = self.process_comments(parsed_args, 'delete')
+        
+        # Create detailed results panel
+        details = []
+        details.append(f"[cyan]Processed:[/] {results['processed']}")
+        details.append(f"[green]Successful:[/] {results['success']}")
+        details.append(f"[red]Failed:[/] {results['failures']}\n")
+        
+        if results.get('successful_ids'):
+            details.append("[green]Successfully Deleted Comments:[/]")
+            for comment_id in results['successful_ids']:
+                details.append(f"  • [dim]t1_{comment_id}[/]")
+        
+        if results.get('failed_ids'):
+            details.append("\n[red]Failed to Delete Comments:[/]")
+            for comment_id in results['failed_ids']:
+                details.append(f"  • [dim]t1_{comment_id}[/]")
+        
         console.print(Panel(
-            f"Processed: {results['processed']}\n"
-            f"Successful: {results['success']}\n"
-            f"Failed: {results['failures']}",
-            title="[bold red]Delete Results[/]"
+            "\n".join(details),
+            title="[bold red]Delete Results[/]",
+            expand=False
         ))
 
 class UpdateComments(ModifyComments):
@@ -74,11 +93,27 @@ class UpdateComments(ModifyComments):
 
     def take_action(self, parsed_args):
         results = self.process_comments(parsed_args, 'update')
+        
+        # Create detailed results panel
+        details = []
+        details.append(f"[cyan]Processed:[/] {results['processed']}")
+        details.append(f"[green]Successful:[/] {results['success']}")
+        details.append(f"[red]Failed:[/] {results['failures']}\n")
+
+        if results.get('successful_ids'):
+            details.append("[green]Successfully Updated Comments:[/]")
+            for comment_id in results['successful_ids']:
+                details.append(f"  • [dim]t1_{comment_id}[/]")
+        
+        if results.get('failed_ids'):
+            details.append("\n[red]Failed to Update Comments:[/]")
+            for comment_id in results['failed_ids']:
+                details.append(f"  • [dim]t1_{comment_id}[/]")
+        
         console.print(Panel(
-            f"Processed: {results['processed']}\n"
-            f"Successful: {results['success']}\n"
-            f"Failed: {results['failures']}",
-            title="[bold blue]Update Results[/]"
+            "\n".join(details),
+            title="[bold blue]Update Results[/]",
+            expand=False
         ))
 
 
@@ -175,6 +210,7 @@ class User(BaseAnalyzeCommand):
             llm_config = CLI()._configure_llm(parsed_args, console)
             limit = None if parsed_args.limit == 0 else parsed_args.limit
 
+            logger.debug_with_context(f"Creating Sentiment analyzer with auth_enabled={parsed_args.enable_auth}")
             sent = Sentiment(
                 auth_enabled=parsed_args.enable_auth,
                 pii_enabled=not parsed_args.disable_pii,
@@ -215,9 +251,11 @@ class CLI(App):
         else:
             set_global_logging_level(logging.INFO)
         
-        command_manager = CommandManager('reddacted.analysis')
+        command_manager = CommandManager('reddacted.commands')
+        # Analysis commands
         command_manager.add_command('listing', Listing)
         command_manager.add_command('user', User)
+        # Modification commands  
         command_manager.add_command('delete', DeleteComments)
         command_manager.add_command('update', UpdateComments)
         
@@ -244,7 +282,8 @@ class CLI(App):
                 --local-llm      Local LLM endpoint URL
                 --openai-base    Custom OpenAI API base URL
                 --model          Model name to use (default: gpt-4)
-                
+
+
                 Common Options:
                 --output-file    Save detailed analysis to file
                 --enable-auth    Use Reddit API authentication
@@ -393,13 +432,6 @@ def main(argv=sys.argv[1:]):
     try:
         app = CLI()
         
-        if len(argv) > 0:
-            suggestion = suggest_command(argv[0])
-            if suggestion:
-                console = Console()
-                console.print(Panel(suggestion, title="[bold yellow]Command Helper[/]"))
-                return 1
-                
         return app.run(argv)
     except Exception as e:
         from reddacted.utils.exceptions import handle_exception

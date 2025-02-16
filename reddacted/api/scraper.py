@@ -58,7 +58,8 @@ class Scraper(api.API):
                                 'text': comment_text,
                                 'upvotes': data["ups"],
                                 'downvotes': data["downs"],
-                                'permalink': data["permalink"]
+                                'permalink': data["permalink"],
+                                'id': data["id"]
                             }
                             logger.debug_with_context(f"Added comment: ups={data['ups']}, downs={data['downs']}, text_preview='{comment_text[:50]}...'")
                             comments.append(comment_data)
@@ -104,7 +105,8 @@ class Scraper(api.API):
                             'text': comment_text,
                             'upvotes': data["ups"],
                             'downvotes': data["downs"],
-                            'permalink': data["permalink"]
+                            'permalink': data["permalink"],
+                            'id': data["id"]
                         })
         logger.debug_with_context(f"Reddact is scraping {url}...")
         return comments

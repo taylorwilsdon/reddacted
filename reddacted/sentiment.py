@@ -78,7 +78,7 @@ class Sentiment():
             self.score = 0
             self.sentiment = NEUTRAL_SENTIMENT
             self.headers = _COMMENT_ANALYSIS_HEADERS
-            self.authEnable = False
+            self.auth_enabled = auth_enabled
             self.pii_enabled = pii_enabled
             self.pii_detector = PIIDetector() if pii_enabled else None
             self.pii_only = pii_only
@@ -162,7 +162,7 @@ class Sentiment():
                         self._llm_batch_indices.append(len(self._pending_results))
                         # Create result with combined risk score
                         result = AnalysisResult(
-                            comment_id=str(i),
+                            comment_id=comment_data['id'],
                             sentiment_score=score,
                             sentiment_emoji=self._get_sentiment(score),
                             pii_risk_score=pii_risk_score,  # Initial PII score
@@ -203,7 +203,7 @@ class Sentiment():
                     # Only append results directly if not using LLM
                     if not self.llm_detector:
                         results.append(AnalysisResult(
-                            comment_id=str(i),
+                            comment_id=comment_data['id'],
                             sentiment_score=score,
                             sentiment_emoji=self._get_sentiment(score),
                             pii_risk_score=pii_risk_score,
@@ -301,6 +301,7 @@ class Sentiment():
                     target.write(f"- Sentiment Score: `{result.sentiment_score:.2f}` {result.sentiment_emoji}\n")
                     target.write(f"- PII Risk Score: `{result.pii_risk_score:.2f}`\n")
                     target.write(f"- Votes: ⬆️ `{result.upvotes}` ⬇️ `{result.downvotes}`\n")
+                    target.write(f"- Comement ID: `{result.comment_id}`\n\n")
                     # PII Matches Section
                     if result.pii_matches:
                         target.write("### Pattern-based PII Detected\n")
@@ -341,9 +342,14 @@ class Sentiment():
                 target.write(f"- Highest PII Risk Score: {max_risk_score:.2f}\n")
                 if riskiest_comment:
                     target.write(f"- Riskiest Comment Preview: '{riskiest_comment}'\n")
-                target.write("\n✅ Analysis complete\n")
+                target.write("✅ Analysis complete\n")
             # Add console completion message
-            progress.console.print(
+            # Add completion message with file info and action panel
+            high_risk_comments = [r for r in self.results if r.pii_risk_score > 0.5 or 
+                                (r.llm_findings and r.llm_findings.get('has_pii', False))]
+            comment_ids = [r.comment_id for r in high_risk_comments]
+            
+            completion_group = Group(
                 Panel(
                     Text.assemble(
                         ("📄 Report saved to ", "bold blue"),
@@ -360,8 +366,25 @@ class Sentiment():
                     title="[bold green]Analysis Complete[/]",
                     border_style="green",
                     padding=(1, 4)
+                ),
+                Panel.fit(
+                    Group(
+                        Text("Ready-to-use commands for high-risk comments:", style="bold yellow"),
+                        Text.assemble(
+                            ("Delete comments:\n", "bold red"),
+                            ("reddacted delete " + " ".join(comment_ids), "italic red")
+                        ),
+                        Text.assemble(
+                            ("\nReddact (edit) comments:\n", "bold blue"),
+                            ("reddacted update " + " ".join(comment_ids), "italic blue")
+                        ) if comment_ids else Text("No high-risk comments found", style="green")
+                    ),
+                    border_style="yellow",
+                    title="[bold]Actions[/]"
                 )
             )
+            progress.console.print(completion_group)
+
 
     @with_logging(logger)
     def _generate_summary_table(self, filtered_results: List[AnalysisResult]) -> Table:
@@ -428,6 +451,7 @@ class Sentiment():
                     border_style="blue"
                 )
             )
+            logger.debug_with_context(f"Authentication enabled: {auth_enabled}")
             if auth_enabled:
                 auth_table = [
                     ("REDDIT_USERNAME", environ.get("REDDIT_USERNAME", "[red]Not Set[/]")),
@@ -600,11 +624,21 @@ class Sentiment():
             border_style="green",
             padding=(1, 4)
         ))
-        # Add action confirmation prompt
+        # Add action confirmation prompt with ready-to-use commands
+        high_risk_comments = [r for r in filtered_results if r.pii_risk_score > 0.5 or 
+                            (r.llm_findings and r.llm_findings.get('has_pii', False))]
+        comment_ids = [r.comment_id for r in high_risk_comments]
+        
         action_text = Group(
-            Text("Available actions for high-risk comments:", style="bold yellow"),
-            Text("• Use '--delete' with comma-separated IDs to remove comments", style="italic red"),
-            Text("• Use '--update' with comma-separated IDs to redact content", style="italic blue")
+            Text("Ready-to-use commands for high-risk comments:", style="bold yellow"),
+            Text.assemble(
+                ("Delete comments:\n", "bold red"),
+                ("reddacted delete " + " ".join(comment_ids), "italic red")
+            ),
+            Text.assemble(
+                ("\nReddact (edit) comments:\n", "bold blue"),
+                ("reddacted update " + " ".join(comment_ids), "italic blue")
+            ) if comment_ids else Text("No high-risk comments found", style="green")
         )
         panels.append(
             Panel.fit(
