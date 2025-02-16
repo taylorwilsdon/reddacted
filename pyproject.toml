@@ -24,14 +24,15 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 
-[project.dependencies]
-cliff = "*"
-praw = "*"
-nltk = "*"
-requests = "*"
-six = "*"
-openai = "*"
-rich = "*"
+dependencies = [
+    "cliff",
+    "praw",
+    "nltk", 
+    "requests",
+    "six",
+    "openai",
+    "rich"
+]
 
 [project.optional-dependencies]
 dev = [
