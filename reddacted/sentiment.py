@@ -342,7 +342,7 @@ class Sentiment():
                 target.write(f"- Highest PII Risk Score: {max_risk_score:.2f}\n")
                 if riskiest_comment:
                     target.write(f"- Riskiest Comment Preview: '{riskiest_comment}'\n")
-                target.write("\n✅ Analysis complete\n")
+                target.write("✅ Analysis complete\n")
             # Add console completion message
             # Add completion message with file info and action panel
             high_risk_comments = [r for r in self.results if r.pii_risk_score > 0.5 or 

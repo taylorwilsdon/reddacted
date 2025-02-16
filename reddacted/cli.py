@@ -210,6 +210,7 @@ class User(BaseAnalyzeCommand):
             llm_config = CLI()._configure_llm(parsed_args, console)
             limit = None if parsed_args.limit == 0 else parsed_args.limit
 
+            logger.debug_with_context(f"Creating Sentiment analyzer with auth_enabled={parsed_args.enable_auth}")
             sent = Sentiment(
                 auth_enabled=parsed_args.enable_auth,
                 pii_enabled=not parsed_args.disable_pii,
