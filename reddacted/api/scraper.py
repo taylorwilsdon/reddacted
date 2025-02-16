@@ -46,7 +46,8 @@ class Scraper(api.API):
                             comments.append({
                                 'text': comment_text,
                                 'upvotes': data["ups"],
-                                'downvotes': data["downs"]
+                                'downvotes': data["downs"],
+                                'permalink': data["permalink"]
                             })
 
         return comments
@@ -81,7 +82,8 @@ class Scraper(api.API):
                         comments.append({
                             'text': comment_text,
                             'upvotes': data["ups"],
-                            'downvotes': data["downs"]
+                            'downvotes': data["downs"],
+                            'permalink': data["permalink"]
                         })
 
         return comments

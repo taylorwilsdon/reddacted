@@ -57,7 +57,7 @@ class Sentiment():
         self.api = Scraper()
         self.score = 0
         self.sentiment = neutral_sentiment
-        self.headers = {'User-agent': "Reddit Sentiment Analyzer"}
+        self.headers = {'User-agent': "reddacted"}
         self.authEnable = False
         self.pii_enabled = pii_enabled
         self.pii_detector = PIIDetector() if pii_enabled else None
