@@ -2,6 +2,9 @@ from types import BuiltinMethodType
 import requests
 from reddacted.api import api
 from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.exceptions import handle_exception
+
+logger = get_logger(__name__)
 
 class Scraper(api.API):
     """The Reddit Class obtains data to perform sentiment analysis by
@@ -12,10 +15,10 @@ class Scraper(api.API):
     """
 
     def __init__(self):
-        """Initialize Scraper with logging"""
-        self.logger = get_logger(__name__)
+        """Initialize Scraper"""
+        pass
 
-    @with_logging(get_logger(__name__))
+    @with_logging(logger)
     def parse_listing(self, subreddit, article, limit=100, **kwargs):
         """Parses a listing and extracts the comments from it.
 
@@ -32,7 +35,7 @@ class Scraper(api.API):
             response = requests.get(url, headers=headers)
             self.logger.debug(f"Response status code: {response.status_code}")
         except Exception as e:
-            self.logger.error(f"Error obtaining article information: {e}")
+            handle_exception(e, "Error obtaining article information", debug=True)
             return []
 
         comments = []
@@ -81,7 +84,7 @@ class Scraper(api.API):
         try:
             response = requests.get(url, headers = headers)
         except Exception as e:
-            self.logger.error(f"Error obtaining user information: {e}")
+            handle_exception(e, "Error obtaining user information", debug=True)
             return []
 
         comments = []
