@@ -121,50 +121,17 @@ class Sentiment():
 
     @with_logging(logger)
     def get_user_sentiment(self, username, output_file=None, sort='new', time_filter='all'):
-        """Obtains the sentiment for a user's comments.
-        :param username: name of user to search
-        :param output_file (optional): file to output relevant data.
-        """
-        logger.debug_with_context(f"get_user_sentiment called with username={username}, output_file={output_file}, sort={sort}, time_filter={time_filter}")
-        comments = self.api.parse_user(username, headers=self.headers, limit=self.limit,
-                                     sort=sort, time_filter=time_filter)
-        logger.debug_with_context(f"Retrieved {len(comments)} comments for user '{username}'")
-        if asyncio.get_event_loop().is_running():
-            future = asyncio.ensure_future(self._analyze(comments))
-            self.score, self.results = asyncio.get_event_loop().run_until_complete(future)
-        else:
-            self.score, self.results = asyncio.run(self._analyze(comments))
-        self.sentiment = self._get_sentiment(self.score)
-        user_id = f"/user/{username}"
-        if output_file:
-            self._generate_output_file(output_file, comments, user_id)
-        else:
-             self._print_comments(comments, user_id)
+        """Backwards compatibility method for user sentiment analysis"""
+        logger.debug_with_context("get_user_sentiment called")
+        return self.get_sentiment('user', username, output_file=output_file,
+                                sort=sort, time_filter=time_filter)
 
     @with_logging(logger)
     def get_listing_sentiment(self, subreddit, article, output_file=None):
-        """Obtains the sentiment for a listing's comments.
-        :param subreddit: a subreddit
-        :param article: an article associated with the subreddit
-        :param output_file (optional): file to output relevant data.
-        """
-        logger.debug_with_context(f"get_listing_sentiment called with subreddit={subreddit}, article={article}, output_file={output_file}")
-        comments = self.api.parse_listing(subreddit,
-                                          article,
-                                          headers=self.headers,
-                                          limit=self.limit)
-        logger.debug_with_context(f"Retrieved {len(comments)} comments for listing '/r/{subreddit}/comments/{article}'")
-        if asyncio.get_event_loop().is_running():
-            future = asyncio.ensure_future(self._analyze(comments))
-            self.score, self.results = asyncio.get_event_loop().run_until_complete(future)
-        else:
-            self.score, self.results = asyncio.run(self._analyze(comments))
-        self.sentiment = self._get_sentiment(self.score)
-        article_id = f"/r/{subreddit}/comments/{article}"
-        if output_file:
-            self._generate_output_file(output_file, comments, article_id)
-        else:
-             self._print_comments(comments, article_id)
+        """Backwards compatibility method for listing sentiment analysis"""
+        logger.debug_with_context("get_listing_sentiment called")
+        return self.get_sentiment('listing', f"{subreddit}/{article}",
+                                output_file=output_file)
 
     @with_logging(logger)
     async def _analyze(self, comments):
