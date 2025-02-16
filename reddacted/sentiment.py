@@ -91,6 +91,7 @@ class Sentiment():
         :param username: name of user to search
         :param output_file (optional): file to output relevant data.
         """
+        print(f"sort {sort}")
         comments = self.api.parse_user(username, headers=self.headers, limit=self.limit, 
                                      sort=sort, time_filter=time_filter)
         if asyncio.get_event_loop().is_running():
