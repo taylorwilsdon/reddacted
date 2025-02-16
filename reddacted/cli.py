@@ -369,7 +369,12 @@ def main(argv=sys.argv[1:]):
         return app.run(argv)
     except Exception as e:
         from reddacted.utils.exceptions import handle_exception
-        handle_exception(e, "An error occurred while running the command")
+        command = argv[0] if argv else "unknown"
+        handle_exception(
+            e,
+            f"Failed to execute command '{command}'",
+            debug="--debug" in argv
+        )
         return 1
 
 

@@ -35,7 +35,8 @@ class Reddit(api.API):
             from reddacted.utils.exceptions import handle_exception
             handle_exception(
                 ValueError(f"Missing authentication variables: {', '.join(missing)}"),
-                "Authentication Failed"
+                "Reddit API authentication failed - missing environment variables",
+                debug=True
             )
             return
 
