@@ -32,7 +32,11 @@ class Reddit(api.API):
 
         if None in required_vars.values():
             missing = [k for k, v in required_vars.items() if v is None]
-            logging.error(f"Missing authentication variables: {', '.join(missing)}")
+            from reddacted.utils.exceptions import handle_exception
+            handle_exception(
+                ValueError(f"Missing authentication variables: {', '.join(missing)}"),
+                "Authentication Failed"
+            )
             return
 
         try:
@@ -46,7 +50,8 @@ class Reddit(api.API):
             )
             self.authenticated = True
         except Exception as e:
-            logging.error(f"Authentication failed: {str(e)}")
+            from reddacted.utils.exceptions import handle_exception
+            handle_exception(e, "Authentication Failed")
 
     def parse_listing(self, subreddit, article, limit=100, **kwargs):
         """Parses a listing and extracts the comments from it.
@@ -111,7 +116,8 @@ class Reddit(api.API):
 
                 results['processed'] += len(batch)
             except praw.exceptions.APIException as e:
-                logging.error(f"API rate limit exceeded: {str(e)}")
+                from reddacted.utils.exceptions import handle_exception
+                handle_exception(e, "Reddit API Rate Limit Exceeded")
                 time.sleep(60)  # Wait 1 minute before retrying
                 continue
 

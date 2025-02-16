@@ -47,22 +47,20 @@ class Sentiment():
     """Performs the LLM PII & sentiment analysis on a given set of Reddit Objects."""
 
     def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, debug=False, limit=100):
-        # Configure logging
-        log_level = logging.DEBUG if debug else logging.INFO
-        logging.basicConfig(
-            level=log_level,
-            format='[%(levelname)s] %(message)s',
-            stream=sys.stdout
-        )
-        self.api = Scraper()
-        self.score = 0
-        self.sentiment = neutral_sentiment
-        self.headers = {'User-agent': "reddacted"}
-        self.authEnable = False
-        self.pii_enabled = pii_enabled
-        self.pii_detector = PIIDetector() if pii_enabled else None
-        self.pii_only = pii_only
-        self.limit = limit
+        from reddacted.utils.exceptions import handle_exception
+        try:
+            self.api = Scraper()
+            self.score = 0
+            self.sentiment = neutral_sentiment
+            self.headers = {'User-agent': "reddacted"}
+            self.authEnable = False
+            self.pii_enabled = pii_enabled
+            self.pii_detector = PIIDetector() if pii_enabled else None
+            self.pii_only = pii_only
+            self.limit = limit
+        except Exception as e:
+            handle_exception(e, "Failed to initialize Sentiment analyzer")
+            raise
 
         # Initialize LLM detector if config provided
         self.llm_detector = None

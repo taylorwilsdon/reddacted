@@ -347,16 +347,21 @@ def suggest_command(input_command):
             "\nTry one of these!")
 
 def main(argv=sys.argv[1:]):
-    app = CLI()
-    
-    if len(argv) > 0:
-        suggestion = suggest_command(argv[0])
-        if suggestion:
-            console = Console()
-            console.print(Panel(suggestion, title="[bold yellow]Command Helper[/]"))
-            return 1
-            
-    return app.run(argv)
+    try:
+        app = CLI()
+        
+        if len(argv) > 0:
+            suggestion = suggest_command(argv[0])
+            if suggestion:
+                console = Console()
+                console.print(Panel(suggestion, title="[bold yellow]Command Helper[/]"))
+                return 1
+                
+        return app.run(argv)
+    except Exception as e:
+        from reddacted.utils.exceptions import handle_exception
+        handle_exception(e, "An error occurred while running the command")
+        return 1
 
 
 if __name__ == '__main__':
