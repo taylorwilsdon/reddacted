@@ -143,7 +143,7 @@ class Listing(BaseAnalyzeCommand):
             pii_only=args.pii_only,
             limit=limit
         )
-        sent.get_listing_sentiment(args.subreddit, args.article, args.output_file)
+        sent.get_sentiment('listing', f"{args.subreddit}/{args.article}", output_file=args.output_file)
 
 
 class User(BaseAnalyzeCommand):
@@ -181,9 +181,10 @@ class User(BaseAnalyzeCommand):
                 pii_only=parsed_args.pii_only,
                 limit=limit
             )
-            sent.get_user_sentiment(
+            sent.get_sentiment(
+                'user',
                 parsed_args.username, 
-                parsed_args.output_file,
+                output_file=parsed_args.output_file,
                 sort=parsed_args.sort,
                 time_filter=parsed_args.time
             )
