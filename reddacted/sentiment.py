@@ -600,11 +600,21 @@ class Sentiment():
             border_style="green",
             padding=(1, 4)
         ))
-        # Add action confirmation prompt
+        # Add action confirmation prompt with ready-to-use commands
+        high_risk_comments = [r for r in filtered_results if r.pii_risk_score > 0.5 or 
+                            (r.llm_findings and r.llm_findings.get('has_pii', False))]
+        comment_ids = [self._extract_comment_id(r.permalink) for r in high_risk_comments]
+        
         action_text = Group(
-            Text("Available actions for high-risk comments:", style="bold yellow"),
-            Text("• Use '--delete' with comma-separated IDs to remove comments", style="italic red"),
-            Text("• Use '--update' with comma-separated IDs to redact content", style="italic blue")
+            Text("Ready-to-use commands for high-risk comments:", style="bold yellow"),
+            Text.assemble(
+                ("Delete comments:\n", "bold red"),
+                (self._format_command(comment_ids, 'delete'), "italic red")
+            ),
+            Text.assemble(
+                ("\nUpdate/redact comments:\n", "bold blue"),
+                (self._format_command(comment_ids, 'update'), "italic blue")
+            ) if comment_ids else Text("No high-risk comments found", style="green")
         )
         panels.append(
             Panel.fit(
