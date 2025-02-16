@@ -3,6 +3,10 @@ from types import BuiltinMethodType
 import requests
 
 from reddacted.api import api
+from reddacted.utils.exceptions import handle_exception
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 
 class Scraper(api.API):
@@ -20,18 +24,24 @@ class Scraper(api.API):
        :param article: an article associated with the subreddit
        :return: a list of comments from an article.
        """
+        self.logger.debug(f"Parsing listing for subreddit={subreddit}, article={article}, limit={limit}")
         url = f"https://www.reddit.com/r/{subreddit}/{article}.json?limit={limit}"
         headers = kwargs.get('headers')
+        self.logger.debug(f"Request URL: {url}")
+        self.logger.debug(f"Request headers: {headers}")
         try:
-            response = requests.get(url, headers = headers)
+            response = requests.get(url, headers=headers)
+            self.logger.debug(f"Response status code: {response.status_code}")
         except Exception as e:
             logging.error("Error obtaining article information: %s" % e)
             return []
 
         comments = []
         json_resp = response.json()
+        self.logger.debug(f"Retrieved {len(json_resp)} top-level JSON objects")
 
         for top in range(0, len(json_resp)):
+            self.logger.debug(f"Processing top-level object {top+1}/{len(json_resp)}")
             if json_resp[top]["data"]["children"]:
                 children = json_resp[top]["data"]["children"]
                 for child in range(0, len(children)):
@@ -42,13 +52,16 @@ class Scraper(api.API):
                         comment_text = " ".join(comment_text.split())
                         comment_text = comment_text.replace("&amp;#x200B;", "")
                         if comment_text != "":
-                            comments.append({
+                            comment_data = {
                                 'text': comment_text,
                                 'upvotes': data["ups"],
                                 'downvotes': data["downs"],
                                 'permalink': data["permalink"]
-                            })
+                            }
+                            self.logger.debug(f"Added comment: ups={data['ups']}, downs={data['downs']}, text_preview='{comment_text[:50]}...'")
+                            comments.append(comment_data)
 
+        self.logger.debug(f"Returning {len(comments)} processed comments")
         return comments
 
     def parse_user(self, username, limit=100, sort='new', time_filter='all', **kwargs):

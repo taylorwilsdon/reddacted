@@ -5,6 +5,9 @@ import os
 import praw
 from reddacted.api import api
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
 
 class AuthenticationRequiredError(Exception):
     """Raised when authentication is required but not configured"""
@@ -20,6 +23,8 @@ class Reddit(api.API):
     """
 
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug("Initializing Reddit API client")
         self.authenticated = False
 
         # Check for all required credentials first
@@ -40,6 +45,7 @@ class Reddit(api.API):
             )
             return
 
+        self.logger.debug("Attempting to initialize authenticated Reddit client")
         try:
             # Initialize authenticated client
             self.reddit = praw.Reddit(
@@ -50,11 +56,13 @@ class Reddit(api.API):
                 username=required_vars["REDDIT_USERNAME"],
             )
             self.authenticated = True
+            self.logger.debug("Successfully authenticated with Reddit API")
         except Exception as e:
             from reddacted.utils.exceptions import handle_exception
             handle_exception(e, "Authentication Failed")
 
     def parse_listing(self, subreddit, article, limit=100, **kwargs):
+        self.logger.debug(f"Parsing listing for subreddit={subreddit}, article={article}, limit={limit}")
         """Parses a listing and extracts the comments from it.
 
        :param subreddit: a subreddit
@@ -63,16 +71,20 @@ class Reddit(api.API):
        :return: a list of comments from an article.
        """
         submission = self.reddit.submission(id=article)
+        self.logger.debug(f"Retrieved submission: title='{submission.title}'")
+        self.logger.debug("Expanding 'more comments' links")
         submission.comments.replace_more(limit=None)
         comments = []
         
         for comment in submission.comments.list():
-            comments.append({
+            comment_data = {
                 'text': comment.body.rstrip(),
                 'upvotes': comment.ups,
                 'downvotes': comment.downs,
                 'permalink': comment.permalink
-            })
+            }
+            self.logger.debug(f"Processing comment: ups={comment.ups}, downs={comment.downs}, text_preview='{comment.body[:50]}...'")
+            comments.append(comment_data)
             
         return comments[:limit] if limit else comments
 
