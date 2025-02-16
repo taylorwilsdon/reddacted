@@ -104,7 +104,7 @@ class Reddit(api.API):
                         if action == 'delete':
                             comment.delete()
                         elif action == 'update':
-                            comment.edit("r/reddacted")
+                            comment.edit("This comment has been reddacted to preserve online privacy - see r/reddacted for more info")
                         results['success'] += 1
                     except Exception as e:
                         results['failures'] += 1
