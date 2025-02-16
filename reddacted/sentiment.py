@@ -524,7 +524,18 @@ class Sentiment():
                     ))
             # LLM Findings panel
             llm_content = []
-            if result.llm_findings:
+            if isinstance(result.llm_findings, dict) and "error" in result.llm_findings:
+                # Handle error case
+                error_msg = result.llm_findings["error"]
+                llm_content.extend([
+                    Text("❌ LLM Analysis Failed", style="bold red"),
+                    Text.assemble(("Error: ", "bold red"), (error_msg, "red")),
+                    Text("\nPlease check:", style="yellow"),
+                    Text("• Your OpenAI API key is valid", style="yellow"),
+                    Text("• You have sufficient API credits", style="yellow"),
+                    Text("• The API service is available", style="yellow")
+                ])
+            elif result.llm_findings:
                 # Helper function to safely extract detail text
                 def format_detail(detail):
                     if isinstance(detail, dict):

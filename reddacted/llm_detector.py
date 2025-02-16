@@ -45,7 +45,12 @@ class LLMDetector:
         try:
             client = openai.AsyncOpenAI(**self.client_config)
         except openai.AuthenticationError as e:
-            raise ValueError("Invalid API key") from e
+            error_msg = str(e)
+            if "Incorrect API key provided" in error_msg:
+                # Extract the redacted key if present
+                key_preview = error_msg.split("provided: ")[1].split(".")[0] if "provided: " in error_msg else "UNKNOWN"
+                raise ValueError(f"Invalid API key (provided: {key_preview})") from e
+            raise ValueError("Authentication failed - please check your API key") from e
         except openai.APIError as e:
             raise ConnectionError(f"API error: {e.message}") from e
 
@@ -110,7 +115,19 @@ class LLMDetector:
         except Exception as e:
             logger.error_with_context("AI analysis failed")
             logger.error_with_context(f"Batch LLM analysis failed: {str(e)}")
-            return [(0.0, {"error": str(e)})] * len(texts)
+            error_msg = str(e)
+            if isinstance(e, ValueError) and "Invalid API key" in error_msg:
+                # Format a user-friendly error message
+                return [(0.0, {
+                    "error": "Authentication Failed",
+                    "details": error_msg,
+                    "help": "Please check your OpenAI API key configuration"
+                })] * len(texts)
+            return [(0.0, {
+                "error": "LLM Analysis Failed",
+                "details": error_msg,
+                "help": "Please try again or contact support if the issue persists"
+            })] * len(texts)
 
     async def analyze_text(self, text: str) -> Tuple[float, Dict[str, Any]]:
         """
