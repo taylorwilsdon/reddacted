@@ -20,7 +20,13 @@ from reddacted.api.reddit import Reddit
 from reddacted.pii_detector import PIIDetector
 from reddacted.llm_detector import LLMDetector
 
+import contextlib
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
+
+_COMMENT_ANALYSIS_HEADERS = {
+    'User-agent': "reddacted"
+}
 
 
 @dataclass
@@ -62,12 +68,19 @@ class Sentiment():
             self.api = Scraper()
             self.score = 0
             self.sentiment = neutral_sentiment
-            self.headers = {'User-agent': "reddacted"}
+            self.headers = _COMMENT_ANALYSIS_HEADERS
             self.authEnable = False
             self.pii_enabled = pii_enabled
             self.pii_detector = PIIDetector() if pii_enabled else None
             self.pii_only = pii_only
             self.limit = limit
+            
+            # Initialize analysis pipeline
+            self.analysis_pipeline = []
+            if self.pii_enabled:
+                self.analysis_pipeline.append(self._analyze_pii)
+            if self.llm_detector:
+                self.analysis_pipeline.append(self._analyze_llm)
         except Exception as e:
             handle_exception(e, "Failed to initialize Sentiment analyzer")
             raise
@@ -253,6 +266,50 @@ class Sentiment():
             logging.error("No comments found")
             return 0.0, []
 
+    def _create_progress(self):
+        """Unified progress context manager"""
+        return Progress(
+            SpinnerColumn(spinner_name="dots"),
+            TextColumn("[bold blue]{task.description}"),
+            TimeElapsedColumn(),
+            transient=True
+        )
+
+    async def _analyze_pii(self, result, progress):
+        """PII analysis handler"""
+        with progress_context(progress, "🔍 PII Analysis") as p:
+            pii_risk, pii_matches = self.pii_detector.get_pii_risk_score(result.text)
+            return result._replace(
+                pii_risk_score=pii_risk,
+                pii_matches=pii_matches
+            )
+
+    async def _analyze_llm(self, result, progress):
+        """LLM analysis handler"""
+        with progress_context(progress, "🤖 LLM Analysis") as p:
+            llm_risk, findings = await self.llm_detector.analyze_text(result.text)
+            updated_result = result._replace(
+                llm_risk_score=llm_risk,
+                llm_findings=findings
+            )
+            
+            if findings and findings.get('has_pii'):
+                updated_result = updated_result._replace(
+                    pii_risk_score=max(result.pii_risk_score, llm_risk)
+                )
+            
+            return updated_result
+
+    @staticmethod
+    def progress_context(progress, description):
+        """Helper context manager for progress tracking"""
+        task = progress.add_task(description, visible=False)
+        try:
+            progress.update(task, visible=True)
+            yield progress
+        finally:
+            progress.update(task, visible=False)
+
     def _get_sentiment(self, score):
         """Obtains the sentiment using a sentiment score.
 
@@ -418,6 +475,16 @@ class Sentiment():
             )
 
         return table
+
+    def get_user_sentiment(self, username, output_file=None, sort='new', time_filter='all'):
+        """Backwards compatibility method for user sentiment analysis"""
+        return self.get_sentiment('user', username, output_file=output_file, 
+                                sort=sort, time_filter=time_filter)
+
+    def get_listing_sentiment(self, subreddit, article, output_file=None):
+        """Backwards compatibility method for listing sentiment analysis"""
+        return self.get_sentiment('listing', f"{subreddit}/{article}", 
+                                output_file=output_file)
 
     def _print_comments(self, comments, url):
         """Prints out analysis of user comments.
@@ -603,6 +670,38 @@ class Sentiment():
             task = progress.add_task("", total=1, visible=False)
             progress.console.print(Group(*panels))
             progress.update(task, advance=1)
+
+    def _get_comments(self, source_type, identifier, **kwargs):
+        """Unified comment fetching method"""
+        fetch_method = {
+            'user': self.api.parse_user,
+            'listing': self.api.parse_listing
+        }[source_type]
+        
+        return fetch_method(
+            identifier,
+            headers=self.headers,
+            limit=self.limit,
+            **kwargs
+        )
+
+    def _run_analysis_flow(self, comments):
+        """Centralized analysis execution"""
+        if asyncio.get_event_loop().is_running():
+            future = asyncio.ensure_future(self._analyze(comments))
+            return asyncio.get_event_loop().run_until_complete(future)
+        return asyncio.run(self._analyze(comments))
+
+    def get_sentiment(self, source_type, identifier, output_file=None, **kwargs):
+        """Unified sentiment analysis entry point"""
+        comments = self._get_comments(source_type, identifier, **kwargs)
+        self.score, self.results = self._run_analysis_flow(comments)
+        self.sentiment = self._get_sentiment(self.score)
+
+        if output_file:
+            self._generate_output_file(output_file, comments, identifier)
+        else:
+            self._print_comments(comments, identifier)
 
     def _print_config(self, auth_enabled, pii_enabled, llm_config):
         progress = Progress(
