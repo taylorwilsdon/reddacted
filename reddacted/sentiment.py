@@ -277,7 +277,7 @@ class Sentiment():
 
     async def _analyze_pii(self, result, progress):
         """PII analysis handler"""
-        with progress_context(progress, "🔍 PII Analysis") as p:
+        with self.progress_context(progress, "🔍 PII Analysis") as p:
             pii_risk, pii_matches = self.pii_detector.get_pii_risk_score(result.text)
             return result._replace(
                 pii_risk_score=pii_risk,
@@ -286,7 +286,7 @@ class Sentiment():
 
     async def _analyze_llm(self, result, progress):
         """LLM analysis handler"""
-        with progress_context(progress, "🤖 LLM Analysis") as p:
+        with self.progress_context(progress, "🤖 LLM Analysis") as p:
             llm_risk, findings = await self.llm_detector.analyze_text(result.text)
             updated_result = result._replace(
                 llm_risk_score=llm_risk,
@@ -725,7 +725,7 @@ class Sentiment():
                 ("LLM Analysis", format_status(llm_config is not None, llm_config['model'] if llm_config else "Disabled")),
                 ("PII-Only Filter", format_status(self.pii_only, "Active", "Inactive")),
                 ("Comment Limit", Text(f"{self.limit if self.limit else 'Unlimited'}", style="cyan")),
-                ("Sort Preference", Text(f"{sort if 'sort' in locals() else 'new'}", style="cyan"))
+                ("Sort Preference", Text("new", style="cyan"))
             ]
 
             panels = []
