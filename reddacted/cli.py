@@ -249,7 +249,8 @@ class CLI(App):
                 --local-llm      Local LLM endpoint URL
                 --openai-base    Custom OpenAI API base URL
                 --model          Model name to use (default: gpt-4)
-                
+
+
                 Common Options:
                 --output-file    Save detailed analysis to file
                 --enable-auth    Use Reddit API authentication
