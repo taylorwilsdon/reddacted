@@ -70,10 +70,10 @@ class Sentiment():
         self.debug = debug
         if debug:
             logger.setLevel(logging.DEBUG)
-            logger.info("Debug logging enabled")
+            logger.debug_with_context("Debug logging enabled")
         else:
             logger.setLevel(logging.INFO)
-        logger.debug("Initializing Sentiment Analyzer")
+        logger.debug_with_context("Initializing Sentiment Analyzer")
 
         # Initialize necessary variables
         self.llm_detector = None  # Initialize llm_detector early
