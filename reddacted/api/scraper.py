@@ -1,41 +1,7 @@
-import logging
-import sys
 from types import BuiltinMethodType
 import requests
-from functools import wraps
-
 from reddacted.api import api
-from reddacted.utils.exceptions import handle_exception
-
-def log_context(func):
-    """Decorator to add context information to log messages"""
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        # Get the calling context once
-        context = f"[{__name__}:{func.__name__}:{sys._getframe().f_lineno}]"
-        
-        # Create a wrapper logger that prepends context
-        original_debug = self.logger.debug
-        original_error = self.logger.error
-        
-        def debug_with_context(msg, *args, **kwargs):
-            original_debug(f"{context} {msg}", *args, **kwargs)
-            
-        def error_with_context(msg, *args, **kwargs):
-            original_error(f"{context} {msg}", *args, **kwargs)
-        
-        # Temporarily replace logger methods
-        self.logger.debug = debug_with_context
-        self.logger.error = error_with_context
-        
-        try:
-            return func(self, *args, **kwargs)
-        finally:
-            # Restore original logger methods
-            self.logger.debug = original_debug
-            self.logger.error = original_error
-    
-    return wrapper
+from reddacted.utils.logging import get_logger, with_logging
 
 class Scraper(api.API):
     """The Reddit Class obtains data to perform sentiment analysis by
@@ -47,9 +13,9 @@ class Scraper(api.API):
 
     def __init__(self):
         """Initialize Scraper with logging"""
-        self.logger = logging.getLogger(__name__)
+        self.logger = get_logger(__name__)
 
-    @log_context
+    @with_logging(get_logger(__name__))
     def parse_listing(self, subreddit, article, limit=100, **kwargs):
         """Parses a listing and extracts the comments from it.
 
@@ -97,7 +63,7 @@ class Scraper(api.API):
         self.logger.debug(f"Returning {len(comments)} processed comments")
         return comments
 
-    @log_context
+    @with_logging(get_logger(__name__))
     def parse_user(self, username, limit=100, sort='new', time_filter='all', **kwargs):
         """Parses a listing and extracts the comments from it.
 
