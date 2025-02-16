@@ -160,17 +160,26 @@ class User(Command):
         return parser
 
     def take_action(self, parsed_args):
-        llm_config = CLI()._configure_llm(parsed_args, console)
-        limit = None if parsed_args.limit == 0 else parsed_args.limit
+        try:
+            llm_config = CLI()._configure_llm(parsed_args, console)
+            limit = None if parsed_args.limit == 0 else parsed_args.limit
 
-        sent = Sentiment(
-            auth_enabled=parsed_args.enable_auth,
-            pii_enabled=not parsed_args.disable_pii,
-            llm_config=llm_config,
-            pii_only=parsed_args.pii_only,
-            limit=limit
-        )
-        sent.get_user_sentiment(parsed_args.username, parsed_args.output_file)
+            sent = Sentiment(
+                auth_enabled=parsed_args.enable_auth,
+                pii_enabled=not parsed_args.disable_pii,
+                llm_config=llm_config,
+                pii_only=parsed_args.pii_only,
+                limit=limit
+            )
+            sent.get_user_sentiment(parsed_args.username, parsed_args.output_file)
+        except AttributeError as e:
+            from reddacted.utils.exceptions import handle_exception
+            handle_exception(e, f"Error processing user '{parsed_args.username}' in User.take_action()")
+            raise
+        except Exception as e:
+            from reddacted.utils.exceptions import handle_exception
+            handle_exception(e, f"Unexpected error analyzing user '{parsed_args.username}'")
+            raise
 
 
 class CLI(App):
