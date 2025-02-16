@@ -8,7 +8,7 @@ from reddacted.utils.exceptions import handle_exception
 logger = get_logger(__name__)
 import re
 import asyncio
-import sys
+
 from dataclasses import dataclass
 from typing import List, Dict, Any
 from rich.panel import Panel
@@ -22,7 +22,7 @@ from reddacted.api.reddit import Reddit
 from reddacted.pii_detector import PIIDetector
 from reddacted.llm_detector import LLMDetector
 from reddacted.utils.exceptions import handle_exception
-import contextlib
+
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 # Configure logging format
@@ -55,7 +55,7 @@ neutral_sentiment = "😐"
 
 class Sentiment():
     """Performs the LLM PII & sentiment analysis on a given set of Reddit Objects."""
-    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, debug=False, limit=100):
+    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, limit=100):
         """Initialize Sentiment Analysis with optional PII detection
         
         Args:
@@ -67,12 +67,6 @@ class Sentiment():
             limit (int): Maximum number of comments to analyze
         """
         # Set up logging
-        self.debug = debug
-        if debug:
-            logger.setLevel(logging.DEBUG)
-            logger.debug_with_context("Debug logging enabled")
-        else:
-            logger.setLevel(logging.INFO)
         logger.debug_with_context("Initializing Sentiment Analyzer")
 
         # Initialize necessary variables
@@ -101,7 +95,7 @@ class Sentiment():
             logger.debug_with_context("Analysis pipeline initialized")
         except Exception as e:
             handle_exception(e, "Failed to initialize Sentiment analyzer")
-            self.logger.exception("Failed to initialize Sentiment analyzer")
+            logger.error_with_context("Failed to initialize Sentiment analyzer")
             raise
         # Initialize LLM detector if config provided
         if llm_config and pii_enabled:
@@ -150,7 +144,7 @@ class Sentiment():
         :param article: an article associated with the subreddit
         :param output_file (optional): file to output relevant data.
         """
-        self.logger.debug(f"get_listing_sentiment called with subreddit={subreddit}, article={article}, output_file={output_file}")
+        logger.debug_with_context(f"get_listing_sentiment called with subreddit={subreddit}, article={article}, output_file={output_file}")
         comments = self.api.parse_listing(subreddit,
                                           article,
                                           headers=self.headers,
@@ -279,7 +273,7 @@ class Sentiment():
                 return 0.0, []
     def _create_progress(self):
         """Unified progress context manager"""
-        self.logger.debug("Creating progress context")
+        logger.debug_with_context("Creating progress context")
         return Progress(
             SpinnerColumn(spinner_name="dots"),
             TextColumn("[bold blue]{task.description}"),
@@ -325,7 +319,7 @@ class Sentiment():
         :param score: the sentiment score.
         :return: sentiment from score.
         """
-        self.logger.debug(f"Calculating sentiment for score {score}")
+        logger.debug_with_context(f"Calculating sentiment for score {score}")
         if score == 0:
             return neutral_sentiment
         elif score > 0:
@@ -334,7 +328,7 @@ class Sentiment():
             return sad_sentiment
     def _generate_output_file(self, filename, comments, url):
         """Outputs a file containing a detailed sentiment and PII analysis per sentence."""
-        self.logger.debug(f"Generating output file '{filename}' for URL '{url}'")
+        logger.debug_with_context(f"Generating output file '{filename}' for URL '{url}'")
         # First get all results at once to show proper progress
         with Progress(
             SpinnerColumn(spinner_name="dots"),
@@ -443,7 +437,7 @@ class Sentiment():
 
     def _generate_summary_table(self, filtered_results: List[AnalysisResult]) -> Table:
         """Generate summary table with selection indicators"""
-        self.logger.debug("Generating summary table")
+        logger.debug_with_context("Generating summary table")
         table = Table(
             title="[bold]Comments Requiring Action[/]",
             header_style="bold magenta",
@@ -456,7 +450,7 @@ class Sentiment():
         table.add_column("Upvotes", width=8)
         table.add_column("ID", width=8)
         for result in filtered_results:
-            self.logger.debug(f"Adding comment ID {result.comment_id} to summary table")
+            logger.debug_with_context(f"Adding comment ID {result.comment_id} to summary table")
             # Determine risk level styling
             risk_style = "red" if result.pii_risk_score > 0.5 else "yellow" if result.pii_risk_score > 0.2 else "green"
             risk_text = Text(f"{result.pii_risk_score:.0%}", style=risk_style)
@@ -474,12 +468,12 @@ class Sentiment():
         return table
     def get_user_sentiment(self, username, output_file=None, sort='new', time_filter='all'):
         """Backwards compatibility method for user sentiment analysis"""
-        self.logger.debug("get_user_sentiment (backwards compatibility) called")
+        logger.debug_with_context("get_user_sentiment (backwards compatibility) called")
         return self.get_sentiment('user', username, output_file=output_file, 
                                 sort=sort, time_filter=time_filter)
     def get_listing_sentiment(self, subreddit, article, output_file=None):
         """Backwards compatibility method for listing sentiment analysis"""
-        self.logger.debug("get_listing_sentiment (backwards compatibility) called")
+        logger.debug_with_context("get_listing_sentiment (backwards compatibility) called")
         return self.get_sentiment('listing', f"{subreddit}/{article}", 
                                 output_file=output_file)
     def _print_comments(self, comments, url):
@@ -487,7 +481,7 @@ class Sentiment():
         :param: comments: the parsed contents to analyze.
         :param: url: the url being parsed.
         """
-        self.logger.debug(f"Printing comments analysis for URL '{url}'")
+        logger.debug_with_context(f"Printing comments analysis for URL '{url}'")
         def should_show_result(result):
             if not self.pii_only:
                 return True
@@ -517,7 +511,7 @@ class Sentiment():
         # Filter results if pii_only is enabled
         filtered_results = [r for r in self.results if should_show_result(r)]
         if hasattr(self, 'pii_only') and self.pii_only and not filtered_results:
-            self.logger.info("No comments with high PII risk found.")
+            logger.info_with_context("No comments with high PII risk found.")
             print("No comments with high PII risk found.")
             return
         panels = []
@@ -592,7 +586,7 @@ class Sentiment():
                             detail_text = format_detail(detail)
                             llm_content.append(Text(f"  • {detail_text}", style="cyan"))
                         except Exception as e:
-                            self.logger.debug(f"Error formatting LLM detail: {str(e)}")
+                            logger.debug_with_context(f"Error formatting LLM detail: {str(e)}")
                             llm_content.append(Text("  • [Malformed finding]", style="red dim"))
                 if result.llm_findings.get('risk_factors'):
                     llm_content.append(Text("\nRisk Factors:", style="bold"))
@@ -653,7 +647,7 @@ class Sentiment():
             progress.update(task, advance=1)
     def _get_comments(self, source_type, identifier, **kwargs):
         """Unified comment fetching method"""
-        self.logger.debug(f"Fetching comments for {source_type} '{identifier}'")
+        logger.debug_with_context(f"Fetching comments for {source_type} '{identifier}'")
         fetch_method = {
             'user': self.api.parse_user,
             'listing': self.api.parse_listing
@@ -667,7 +661,7 @@ class Sentiment():
         )
     def _run_analysis_flow(self, comments):
         """Centralized analysis execution"""
-        self.logger.debug("Running analysis flow")
+        logger.debug_with_context("Running analysis flow")
         if asyncio.get_event_loop().is_running():
             future = asyncio.ensure_future(self._analyze(comments))
             return asyncio.get_event_loop().run_until_complete(future)
@@ -675,7 +669,7 @@ class Sentiment():
     @with_logging(logger)
     def get_sentiment(self, source_type, identifier, output_file=None, **kwargs):
         """Unified sentiment analysis entry point"""
-        self.logger.debug(f"get_sentiment called with source_type={source_type}, identifier={identifier}")
+        logger.debug_with_context(f"get_sentiment called with source_type={source_type}, identifier={identifier}")
         comments = self._get_comments(source_type, identifier, **kwargs)
         self.score, self.results = self._run_analysis_flow(comments)
         self.sentiment = self._get_sentiment(self.score)
@@ -684,7 +678,7 @@ class Sentiment():
         else:
             self._print_comments(comments, identifier)
     def _print_config(self, auth_enabled, pii_enabled, llm_config):
-        self.logger.debug("Printing active configuration")
+        logger.debug_with_context("Printing active configuration")
         progress = Progress(
             SpinnerColumn(spinner_name="dots"),
             TextColumn("[bold blue]{task.description}"),
