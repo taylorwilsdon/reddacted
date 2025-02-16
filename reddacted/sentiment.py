@@ -25,6 +25,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO  # Set default level to INFO
 )
+# Set urllib3 logger to INFO by default
+logging.getLogger('urllib3').setLevel(logging.INFO)
 
 _COMMENT_ANALYSIS_HEADERS = {
     'User-agent': "reddacted"
