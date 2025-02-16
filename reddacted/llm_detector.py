@@ -1,11 +1,13 @@
 import json
 import asyncio
-import logging
 from typing import Tuple, Dict, Any, List
 import openai
+from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.exceptions import handle_exception
 
-httpx_logger = logging.getLogger("httpx")
-httpx_logger.setLevel(logging.WARNING)
+logger = get_logger(__name__)
+# Reduce noise from httpx
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 class LLMDetector:

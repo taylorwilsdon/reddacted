@@ -1,12 +1,12 @@
-import logging
 from types import BuiltinMethodType
 import time
 import os
 import praw
 from reddacted.api import api
+from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.exceptions import handle_exception
 
-# Configure logging
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class AuthenticationRequiredError(Exception):
@@ -23,8 +23,7 @@ class Reddit(api.API):
     """
 
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
-        self.logger.debug("Initializing Reddit API client")
+        """Initialize Reddit API client"""
         self.authenticated = False
 
         # Check for all required credentials first
@@ -61,6 +60,7 @@ class Reddit(api.API):
             from reddacted.utils.exceptions import handle_exception
             handle_exception(e, "Authentication Failed")
 
+    @with_logging(logger)
     def parse_listing(self, subreddit, article, limit=100, **kwargs):
         self.logger.debug(f"Parsing listing for subreddit={subreddit}, article={article}, limit={limit}")
         """Parses a listing and extracts the comments from it.
@@ -155,6 +155,7 @@ class Reddit(api.API):
         return self._process_comments(comment_ids, 'update', batch_size)
 
 
+    @with_logging(logger)
     def parse_user(self, username, limit=100, sort='new', time_filter='all', **kwargs):
         """Parses a listing and extracts the comments from it.
 
@@ -193,10 +194,5 @@ class Reddit(api.API):
                 
             return comments
         except Exception as e:
-            from reddacted.utils.exceptions import handle_exception
-            handle_exception(
-                e,
-                f"Failed to fetch comments for user '{username}'",
-                debug=True
-            )
-            raise
+            handle_exception(e, f"Failed to fetch comments for user '{username}'", debug=True)
+            return []
