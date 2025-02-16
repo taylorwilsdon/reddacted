@@ -76,7 +76,7 @@ class Scraper(api.API):
         url = f"https://www.reddit.com/user/{username}.json?limit={limit}&sort={sort}"
         if sort in ['top', 'controversial']:
             url += f"&t={time_filter}"
-        print (url)
+        self.logger.debug(f"Reddact is scraping {url}...")
         headers = kwargs.get('headers')
         try:
             response = requests.get(url, headers = headers)
@@ -103,5 +103,5 @@ class Scraper(api.API):
                             'downvotes': data["downs"],
                             'permalink': data["permalink"]
                         })
-
+        self.logger.debug(f"Reddact is scraping {url}...")
         return comments
