@@ -108,6 +108,12 @@ class Listing(Command):
                             help='Only show comments that contain PII (0 < score < 1.0)')
         parser.add_argument('--limit', type=int, default=100,
                             help='Maximum number of comments to analyze (default: 100, use 0 for unlimited)')
+        parser.add_argument('--sort', type=str, choices=['hot', 'top', 'new'], default='new',
+                            help='Sort method for comments (default: new)')
+        parser.add_argument('--time', type=str, 
+                           choices=['all', 'day', 'hour', 'month', 'week', 'year'],
+                           default='all',
+                           help='Time filter for comments (default: all)')
         return parser
 
     def take_action(self, args):
@@ -183,7 +189,12 @@ class User(Command):
                 pii_only=parsed_args.pii_only,
                 limit=limit
             )
-            sent.get_user_sentiment(parsed_args.username, parsed_args.output_file)
+            sent.get_user_sentiment(
+                parsed_args.username, 
+                parsed_args.output_file,
+                sort=parsed_args.sort,
+                time_filter=parsed_args.time
+            )
         except AttributeError as e:
             from reddacted.utils.exceptions import handle_exception
             handle_exception(

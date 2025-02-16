@@ -85,13 +85,14 @@ class Sentiment():
             self.api = Reddit()
         self._print_config(auth_enabled, pii_enabled, llm_config)
 
-    def get_user_sentiment(self, username, output_file=None):
+    def get_user_sentiment(self, username, output_file=None, sort='new', time_filter='all'):
         """Obtains the sentiment for a user's comments.
 
         :param username: name of user to search
         :param output_file (optional): file to output relevant data.
         """
-        comments = self.api.parse_user(username, headers=self.headers, limit=self.limit)
+        comments = self.api.parse_user(username, headers=self.headers, limit=self.limit, 
+                                     sort=sort, time_filter=time_filter)
         if asyncio.get_event_loop().is_running():
             future = asyncio.ensure_future(self._analyze(comments))
             self.score, self.results = asyncio.get_event_loop().run_until_complete(future)
