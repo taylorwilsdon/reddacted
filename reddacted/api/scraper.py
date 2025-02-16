@@ -5,10 +5,6 @@ import requests
 from reddacted.api import api
 from reddacted.utils.exceptions import handle_exception
 
-# Configure logging
-logger = logging.getLogger(__name__)
-
-
 class Scraper(api.API):
     """The Reddit Class obtains data to perform sentiment analysis by
     scraping the Reddit json endpoint.
@@ -16,6 +12,10 @@ class Scraper(api.API):
     It allows an unauthenticated user to obtain data to analyze various
     reddit objects.
     """
+
+    def __init__(self):
+        """Initialize Scraper with logging"""
+        self.logger = logging.getLogger(__name__)
 
     def parse_listing(self, subreddit, article, limit=100, **kwargs):
         """Parses a listing and extracts the comments from it.
@@ -33,7 +33,7 @@ class Scraper(api.API):
             response = requests.get(url, headers=headers)
             self.logger.debug(f"Response status code: {response.status_code}")
         except Exception as e:
-            logging.error("Error obtaining article information: %s" % e)
+            self.logger.error("Error obtaining article information: %s" % e)
             return []
 
         comments = []
@@ -81,7 +81,7 @@ class Scraper(api.API):
         try:
             response = requests.get(url, headers = headers)
         except Exception as e:
-            logging.error("Error obtaining user information: %s" % e)
+            self.logger.error("Error obtaining user information: %s" % e)
             return []
 
         comments = []
