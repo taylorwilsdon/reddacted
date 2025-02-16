@@ -1,4 +1,5 @@
 import logging
+import sys
 from types import BuiltinMethodType
 import requests
 
@@ -24,24 +25,24 @@ class Scraper(api.API):
        :param article: an article associated with the subreddit
        :return: a list of comments from an article.
        """
-        self.logger.debug(f"Parsing listing for subreddit={subreddit}, article={article}, limit={limit}")
+        self.logger.debug(f"[{__name__}:{sys._getframe().f_code.co_name}:{sys._getframe().f_lineno}] Parsing listing for subreddit={subreddit}, article={article}, limit={limit}")
         url = f"https://www.reddit.com/r/{subreddit}/{article}.json?limit={limit}"
         headers = kwargs.get('headers')
-        self.logger.debug(f"Request URL: {url}")
-        self.logger.debug(f"Request headers: {headers}")
+        self.logger.debug(f"[{__name__}:{sys._getframe().f_code.co_name}:{sys._getframe().f_lineno}] Request URL: {url}")
+        self.logger.debug(f"[{__name__}:{sys._getframe().f_code.co_name}:{sys._getframe().f_lineno}] Request headers: {headers}")
         try:
             response = requests.get(url, headers=headers)
-            self.logger.debug(f"Response status code: {response.status_code}")
+            self.logger.debug(f"[{__name__}:{sys._getframe().f_code.co_name}:{sys._getframe().f_lineno}] Response status code: {response.status_code}")
         except Exception as e:
-            self.logger.error("Error obtaining article information: %s" % e)
+            self.logger.error(f"[{__name__}:{sys._getframe().f_code.co_name}:{sys._getframe().f_lineno}] Error obtaining article information: {e}")
             return []
 
         comments = []
         json_resp = response.json()
-        self.logger.debug(f"Retrieved {len(json_resp)} top-level JSON objects")
+        self.logger.debug(f"[{__name__}:{sys._getframe().f_code.co_name}:{sys._getframe().f_lineno}] Retrieved {len(json_resp)} top-level JSON objects")
 
         for top in range(0, len(json_resp)):
-            self.logger.debug(f"Processing top-level object {top+1}/{len(json_resp)}")
+            self.logger.debug(f"[{__name__}:{sys._getframe().f_code.co_name}:{sys._getframe().f_lineno}] Processing top-level object {top+1}/{len(json_resp)}")
             if json_resp[top]["data"]["children"]:
                 children = json_resp[top]["data"]["children"]
                 for child in range(0, len(children)):
@@ -58,10 +59,10 @@ class Scraper(api.API):
                                 'downvotes': data["downs"],
                                 'permalink': data["permalink"]
                             }
-                            self.logger.debug(f"Added comment: ups={data['ups']}, downs={data['downs']}, text_preview='{comment_text[:50]}...'")
+                            self.logger.debug(f"[{__name__}:{sys._getframe().f_code.co_name}:{sys._getframe().f_lineno}] Added comment: ups={data['ups']}, downs={data['downs']}, text_preview='{comment_text[:50]}...'")
                             comments.append(comment_data)
 
-        self.logger.debug(f"Returning {len(comments)} processed comments")
+        self.logger.debug(f"[{__name__}:{sys._getframe().f_code.co_name}:{sys._getframe().f_lineno}] Returning {len(comments)} processed comments")
         return comments
 
     def parse_user(self, username, limit=100, sort='new', time_filter='all', **kwargs):
@@ -76,12 +77,12 @@ class Scraper(api.API):
         url = f"https://www.reddit.com/user/{username}.json?limit={limit}&sort={sort}"
         if sort in ['top', 'controversial']:
             url += f"&t={time_filter}"
-        self.logger.debug(f"Reddact is scraping {url}...")
+        self.logger.debug(f"[{__name__}:{sys._getframe().f_code.co_name}:{sys._getframe().f_lineno}] Reddact is scraping {url}...")
         headers = kwargs.get('headers')
         try:
             response = requests.get(url, headers = headers)
         except Exception as e:
-            self.logger.error("Error obtaining user information: %s" % e)
+            self.logger.error(f"[{__name__}:{sys._getframe().f_code.co_name}:{sys._getframe().f_lineno}] Error obtaining user information: {e}")
             return []
 
         comments = []
