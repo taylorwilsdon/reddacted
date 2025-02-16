@@ -200,6 +200,8 @@ class User(BaseAnalyzeCommand):
 class CLI(App):
     def __init__(self):
         command_manager = CommandManager('reddacted.analysis')
+        command_manager.add_command('listing', Listing)
+        command_manager.add_command('user', User)
         command_manager.add_command('delete', DeleteComments)
         command_manager.add_command('update', UpdateComments)
         
