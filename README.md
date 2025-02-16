@@ -71,12 +71,10 @@ reddacted user <username> [--output-file analysis.txt] [--enable-auth]
 reddacted listing <subreddit> <article> [--output-file results.csv]
 ```
 
-https://github.com/user-attachments/assets/10934119-95f5-4f62-b8e0-ebb883fbd57b
+https://github.com/user-attachments/assets/177f865b-7a4e-424d-854a-d4285a322b1a
 
 
 ## 💡 FAQ
-
-
 
 ## Support & Community
 Join our subreddit: [r/reddacted](https://reddit.com/r/reddacted)
