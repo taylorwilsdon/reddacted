@@ -380,6 +380,7 @@ def main(argv=sys.argv[1:]):
     try:
         # Configure logging based on debug flag
         log_level = logging.DEBUG if "--debug" in argv else logging.INFO
+        global logger
         logger = get_logger(__name__, level=log_level)
         
         app = CLI()
