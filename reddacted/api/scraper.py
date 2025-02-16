@@ -22,7 +22,6 @@ class Scraper(api.API):
        """
         url = f"https://www.reddit.com/r/{subreddit}/{article}.json?limit={limit}"
         headers = kwargs.get('headers')
-
         try:
             response = requests.get(url, headers = headers)
         except Exception as e:
@@ -64,6 +63,7 @@ class Scraper(api.API):
         url = f"https://www.reddit.com/user/{username}.json?limit={limit}&sort={sort}"
         if sort in ['top', 'controversial']:
             url += f"&t={time_filter}"
+        print (url)
         headers = kwargs.get('headers')
         try:
             response = requests.get(url, headers = headers)
