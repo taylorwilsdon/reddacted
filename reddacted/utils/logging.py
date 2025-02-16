@@ -4,6 +4,12 @@ from functools import wraps
 from typing import Callable, Any
 from reddacted.utils.exceptions import handle_exception
 
+def set_global_logging_level(level: int) -> None:
+    """Set the global logging level for all loggers"""
+    logging.getLogger().setLevel(level)
+    for logger_name in logging.root.manager.loggerDict:
+        logging.getLogger(logger_name).setLevel(level)
+
 def get_logger(name: str, level: int = logging.INFO) -> logging.Logger:
     """Get a logger with consistent formatting"""
     logger = logging.getLogger(name)

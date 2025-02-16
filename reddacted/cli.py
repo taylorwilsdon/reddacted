@@ -1,6 +1,7 @@
 import sys
 import getpass
 import logging
+from typing import Optional, Dict, Any
 
 from cliff.app import App
 from cliff.commandmanager import CommandManager
@@ -200,6 +201,12 @@ class User(BaseAnalyzeCommand):
 
 class CLI(App):
     def __init__(self):
+        from reddacted.utils.logging import set_global_logging_level
+        
+        # Set debug logging if flag is present
+        if '--debug' in sys.argv:
+            set_global_logging_level(logging.DEBUG)
+        
         command_manager = CommandManager('reddacted.analysis')
         command_manager.add_command('listing', Listing)
         command_manager.add_command('user', User)
