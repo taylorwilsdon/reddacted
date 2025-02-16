@@ -167,7 +167,7 @@ class Reddit(api.API):
        :raises: prawcore.exceptions.NotFound if user doesn't exist
        :raises: prawcore.exceptions.Forbidden if user is private/banned
        """
-        print(f"{sort} sort val from parse_user in reddit.py")
+        logger.debug(f"Using sort method: {sort}")
         try:
             redditor = self.reddit.redditor(username)
             comments = []

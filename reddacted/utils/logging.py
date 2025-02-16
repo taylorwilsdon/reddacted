@@ -5,7 +5,6 @@ from typing import Callable, Any
 from reddacted.utils.exceptions import handle_exception
 
 def get_logger(name: str) -> logging.Logger:
-    print('hi get logger call')
     """Get a logger with consistent formatting"""
     logger = logging.getLogger(name)
     

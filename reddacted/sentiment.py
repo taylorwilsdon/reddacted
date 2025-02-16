@@ -79,13 +79,13 @@ class Sentiment():
         self.llm_detector = None  # Initialize llm_detector early
         try:
             self.api = Scraper()
-            self.logger.debug("Initialized Scraper API")
+            logger.debug_with_context("Initialized Scraper API")
             self.score = 0
             self.sentiment = neutral_sentiment
             self.headers = _COMMENT_ANALYSIS_HEADERS
             self.authEnable = False
             self.pii_enabled = pii_enabled
-            self.logger.debug(f"PII detection enabled: {self.pii_enabled}")
+            logger.debug_with_context(f"PII detection enabled: {self.pii_enabled}")
             self.pii_detector = PIIDetector() if pii_enabled else None
             self.pii_only = pii_only
             self.limit = limit
@@ -96,7 +96,7 @@ class Sentiment():
                 self.analysis_pipeline.append(self._analyze_pii)
             if self.llm_detector:
                 self.analysis_pipeline.append(self._analyze_llm)
-            self.logger.debug("Analysis pipeline initialized")
+            logger.debug_with_context("Analysis pipeline initialized")
         except Exception as e:
             handle_exception(e, "Failed to initialize Sentiment analyzer")
             self.logger.exception("Failed to initialize Sentiment analyzer")
