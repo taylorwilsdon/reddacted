@@ -40,6 +40,11 @@ reddacted user yourusername \
 - Session-based authentication if you choose - it is optional unless you want to delete
 - Keep your nonsense comments with lots of upvotes and good vibes without unintentionally doxing yourself someday off in the future when you run for mayor.
 
+
+
+https://github.com/user-attachments/assets/db088d58-2f53-4513-95cc-d4b70397ff82
+
+
 https://github.com/user-attachments/assets/395958e8-1e2e-415b-bca2-9c48cf98e9a1
 
 ## Installation
