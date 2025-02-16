@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
 from os import environ
 from reddacted.utils.logging import get_logger, with_logging
 from reddacted.utils.exceptions import handle_exception
