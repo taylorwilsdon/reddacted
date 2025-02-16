@@ -28,7 +28,10 @@ console = Console()
 
 class ModifyComments(Command):
     """Base class for comment modification commands"""
-    
+
+    def get_description(self):
+        return self.__doc__ or ''
+
     def get_parser(self, prog_name):
         parser = super(ModifyComments, self).get_parser(prog_name)
         parser.add_argument(
@@ -395,13 +398,6 @@ def main(argv=sys.argv[1:]):
     try:
         app = CLI()
         
-        if len(argv) > 0:
-            suggestion = suggest_command(argv[0])
-            if suggestion:
-                console = Console()
-                console.print(Panel(suggestion, title="[bold yellow]Command Helper[/]"))
-                return 1
-                
         return app.run(argv)
     except Exception as e:
         from reddacted.utils.exceptions import handle_exception
