@@ -17,6 +17,7 @@ from reddacted.api.scraper import Scraper
 from reddacted.api.reddit import Reddit
 from reddacted.pii_detector import PIIDetector
 from reddacted.llm_detector import LLMDetector
+from reddacted.utils.exceptions import handle_exception
 import contextlib
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
@@ -25,8 +26,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO  # Set default level to INFO
 )
-# Set urllib3 logger to INFO by default
-logging.getLogger('urllib3').setLevel(logging.INFO)
 
 _COMMENT_ANALYSIS_HEADERS = {
     'User-agent': "reddacted"
@@ -63,15 +62,17 @@ class Sentiment():
             debug (bool): Enable debug logging
             limit (int): Maximum number of comments to analyze
         """
-        from reddacted.utils.exceptions import handle_exception
         # Set up logging
         self.debug = debug
         self.logger = logging.getLogger(__name__)
         if self.debug:
-            logging.getLogger().setLevel(logging.DEBUG)  # Set root logger to DEBUG
+            logging.getLogger().setLevel(logging.DEBUG)  # Set root & urllib logger to DEBUG
+            logging.getLogger('urllib3').setLevel(logging.DEBUG)
             self.logger.setLevel(logging.DEBUG)
+            self.logger.info("Debug logging enabled")
         else:
-            logging.getLogger().setLevel(logging.INFO)  # Set root logger to INFO
+            logging.getLogger().setLevel(logging.INFO)  # Set root & urllib logger to INFO
+            logging.getLogger('urllib3').setLevel(logging.INFO)
             self.logger.setLevel(logging.INFO)
         self.logger.debug("Initializing Sentiment Analyzer")
 
