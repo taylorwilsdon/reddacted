@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging  # Moved to top
 from os import environ
-
-import logging
 import re
 import asyncio
 import sys
@@ -14,20 +13,19 @@ from rich.console import Group
 from rich.text import Text
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
-
 from reddacted.api.scraper import Scraper
 from reddacted.api.reddit import Reddit
 from reddacted.pii_detector import PIIDetector
 from reddacted.llm_detector import LLMDetector
-
 import contextlib
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
+# Configure logging format
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 _COMMENT_ANALYSIS_HEADERS = {
     'User-agent': "reddacted"
 }
-
 
 @dataclass
 class AnalysisResult:
@@ -43,15 +41,12 @@ class AnalysisResult:
     downvotes: int = 0
     llm_risk_score: float = 0.0
     llm_findings: Dict[str, Any] = None
-
 happy_sentiment = "😁"
 sad_sentiment = "😕"
 neutral_sentiment = "😐"
 
-
 class Sentiment():
     """Performs the LLM PII & sentiment analysis on a given set of Reddit Objects."""
-
     def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, debug=False, limit=100):
         """Initialize Sentiment Analysis with optional PII detection
         
@@ -64,103 +59,114 @@ class Sentiment():
             limit (int): Maximum number of comments to analyze
         """
         from reddacted.utils.exceptions import handle_exception
+        # Set up logging
+        self.debug = debug
+        self.logger = logging.getLogger(__name__)
+        if self.debug:
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel(logging.INFO)
+        self.logger.debug("Initializing Sentiment Analyzer")
+
+        # Initialize necessary variables
+        self.llm_detector = None  # Initialize llm_detector early
         try:
             self.api = Scraper()
+            self.logger.debug("Initialized Scraper API")
             self.score = 0
             self.sentiment = neutral_sentiment
             self.headers = _COMMENT_ANALYSIS_HEADERS
             self.authEnable = False
             self.pii_enabled = pii_enabled
+            self.logger.debug(f"PII detection enabled: {self.pii_enabled}")
             self.pii_detector = PIIDetector() if pii_enabled else None
             self.pii_only = pii_only
             self.limit = limit
-            
+
             # Initialize analysis pipeline
             self.analysis_pipeline = []
             if self.pii_enabled:
                 self.analysis_pipeline.append(self._analyze_pii)
             if self.llm_detector:
                 self.analysis_pipeline.append(self._analyze_llm)
+            self.logger.debug("Analysis pipeline initialized")
         except Exception as e:
             handle_exception(e, "Failed to initialize Sentiment analyzer")
+            self.logger.exception("Failed to initialize Sentiment analyzer")
             raise
-
         # Initialize LLM detector if config provided
-        self.llm_detector = None
         if llm_config and pii_enabled:
+            self.logger.debug("Initializing LLM Detector")
             self.llm_detector = LLMDetector(
                 api_key=llm_config.get('api_key'),
                 api_base=llm_config.get('api_base'),
                 model=llm_config.get('model', 'gpt-4o-mini')
             )
-
+            self.logger.debug("LLM Detector initialized")
+        else:
+            self.logger.debug("LLM Detector not initialized (llm_config not provided or PII detection disabled)")
         if auth_enabled:
+            self.logger.debug("Authentication enabled, initializing Reddit API")
             self.api = Reddit()
+            self.logger.debug("Reddit API initialized")
+        else:
+            self.logger.debug("Authentication not enabled")
         self._print_config(auth_enabled, pii_enabled, llm_config)
-
     def get_user_sentiment(self, username, output_file=None, sort='new', time_filter='all'):
         """Obtains the sentiment for a user's comments.
-
         :param username: name of user to search
         :param output_file (optional): file to output relevant data.
         """
-        print(f"sort {sort}")
+        self.logger.debug(f"get_user_sentiment called with username={username}, output_file={output_file}, sort={sort}, time_filter={time_filter}")
         comments = self.api.parse_user(username, headers=self.headers, limit=self.limit, 
                                      sort=sort, time_filter=time_filter)
+        self.logger.debug(f"Retrieved {len(comments)} comments for user '{username}'")
         if asyncio.get_event_loop().is_running():
             future = asyncio.ensure_future(self._analyze(comments))
             self.score, self.results = asyncio.get_event_loop().run_until_complete(future)
         else:
             self.score, self.results = asyncio.run(self._analyze(comments))
         self.sentiment = self._get_sentiment(self.score)
-
         user_id = f"/user/{username}"
-
         if output_file:
             self._generate_output_file(output_file, comments, user_id)
         else:
              self._print_comments(comments, user_id)
-
     def get_listing_sentiment(self, subreddit, article, output_file=None):
         """Obtains the sentiment for a listing's comments.
-
         :param subreddit: a subreddit
         :param article: an article associated with the subreddit
         :param output_file (optional): file to output relevant data.
         """
+        self.logger.debug(f"get_listing_sentiment called with subreddit={subreddit}, article={article}, output_file={output_file}")
         comments = self.api.parse_listing(subreddit,
                                           article,
                                           headers=self.headers,
                                           limit=self.limit)
+        self.logger.debug(f"Retrieved {len(comments)} comments for listing '/r/{subreddit}/comments/{article}'")
         if asyncio.get_event_loop().is_running():
             future = asyncio.ensure_future(self._analyze(comments))
             self.score, self.results = asyncio.get_event_loop().run_until_complete(future)
         else:
             self.score, self.results = asyncio.run(self._analyze(comments))
         self.sentiment = self._get_sentiment(self.score)
-
         article_id = f"/r/{subreddit}/comments/{article}"
-
         if output_file:
             self._generate_output_file(output_file, comments, article_id)
         else:
              self._print_comments(comments, article_id)
-
     async def _analyze(self, comments):
         """Analyzes comments for both sentiment and PII content.
-
         :param comments: comments to perform analysis on.
         :return: tuple of (sentiment_score, list of AnalysisResult objects)
         """
+        self.logger.debug("Starting _analyze function")
         sentiment_analyzer = SentimentIntensityAnalyzer()
         final_score = 0
         results = []
-
         cleanup_regex = re.compile('<.*?>')
-
         total_comments = len(comments)
-        print(f"📊 Retrieved {total_comments} comments to analyze")
-
+        self.logger.info(f"📊 Retrieved {total_comments} comments to analyze")
         progress = Progress(
             SpinnerColumn(spinner_name="dots"),
             TextColumn("[bold blue]{task.description}"),
@@ -171,121 +177,115 @@ class Sentiment():
             main_task = progress.add_task(f"💭 Processing comments...", total=total_comments)
             pii_task = progress.add_task("🔍 PII Analysis", visible=False, total=1)
             llm_task = progress.add_task("🤖 LLM Analysis", visible=False, total=1)
-
             for i, comment_data in enumerate(comments, 1):
-                clean_comment = re.sub(cleanup_regex, '', str(comment_data['text']))
-                progress.update(main_task, description=f"💭 Processing comment {i}/{total_comments}")
-
-                # Sentiment analysis
-                all_scores = sentiment_analyzer.polarity_scores(clean_comment)
-                score = all_scores['compound']
-                final_score += score
-
-                # PII analysis
-                pii_risk_score, pii_matches = 0.0, []
-
-                if self.pii_enabled:
-                    progress.update(pii_task, visible=True)
-                    progress.update(pii_task, description=f"🔍 Scanning comment {i} for PII")
-                    pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment)
-                    progress.update(pii_task, visible=False)
-
-                    # Store comment for batch processing
-                    if not hasattr(self, '_llm_batch'):
-                        self._llm_batch = []
-                        self._llm_batch_indices = []
-                        self._pending_results = []
-
-                    self._llm_batch.append(clean_comment)
-                    self._llm_batch_indices.append(len(self._pending_results))
-
-                    # Create result with combined risk score
-                    result = AnalysisResult(
-                        comment_id=str(i),
-                        sentiment_score=score,
-                        sentiment_emoji=self._get_sentiment(score),
-                        pii_risk_score=pii_risk_score,  # Initial PII score
-                        pii_matches=pii_matches,
-                        text=clean_comment,
-                        upvotes=comment_data['upvotes'],
-                        downvotes=comment_data['downvotes'],
-                        permalink=comment_data['permalink'],
-                        llm_risk_score=0.0,
-                        llm_findings=None
-                    )
-                    self._pending_results.append(result)
-
-                    # Process batch when full or at end
-                    if len(self._llm_batch) >= 10 or i == total_comments:
-                        logging.debug(f"\nProcessing LLM batch of {len(self._llm_batch)} items")
-                        progress.update(llm_task, visible=True)
-                        progress.update(llm_task, description="🤖 LLM analysis in progress...")
-                        batch_results = await self.llm_detector.analyze_batch(self._llm_batch)
-                        progress.update(llm_task, description="✅ LLM analysis complete")
-                        logging.debug(f"LLM batch_results: {batch_results}")
-                        progress.update(llm_task, visible=False)
-
-                        # Update pending results with batch results
-                        for batch_idx, (risk_score, findings) in zip(self._llm_batch_indices, batch_results):
-                            result = self._pending_results[batch_idx]
-                            # Always set LLM results regardless of PII detection
-                            result.llm_risk_score = risk_score
-                            result.llm_findings = findings
-
-                            # Update PII risk score if LLM found PII
-                            if findings and findings.get('has_pii'):
-                                result.pii_risk_score = max(result.pii_risk_score, risk_score)
-
-                            # Add this result to final results immediately
-                            results.append(result)
-                            logging.debug("Added result to final results")
-
-                        # Clear batch
-                        self._llm_batch = []
-                        self._llm_batch_indices = []
-                        self._pending_results = []
-
-                # Only append results directly if not using LLM
-                if not self.llm_detector:
-                    results.append(AnalysisResult(
-                        sentiment_score=score,
-                        sentiment_emoji=self._get_sentiment(score),
-                        pii_risk_score=pii_risk_score,
-                        pii_matches=pii_matches,
-                        text=clean_comment,
-                        llm_risk_score=0.0,
-                        llm_findings=None
-                    ))
-
-                progress.update(main_task, advance=1)
-
-        try:
-            rounded_final = round(final_score/len(comments), 4)
-            return rounded_final, results
-        except ZeroDivisionError:
-            logging.error("No comments found")
-            return 0.0, []
-
+                try:
+                    clean_comment = re.sub(cleanup_regex, '', str(comment_data['text']))
+                    progress.update(main_task, description=f"💭 Processing comment {i}/{total_comments}")
+                    # Sentiment analysis
+                    all_scores = sentiment_analyzer.polarity_scores(clean_comment)
+                    score = all_scores['compound']
+                    final_score += score
+                    # PII analysis
+                    pii_risk_score, pii_matches = 0.0, []
+                    if self.pii_enabled:
+                        progress.update(pii_task, visible=True)
+                        progress.update(pii_task, description=f"🔍 Scanning comment {i} for PII")
+                        pii_risk_score, pii_matches = self.pii_detector.get_pii_risk_score(clean_comment)
+                        progress.update(pii_task, visible=False)
+                        # Store comment for batch processing
+                        if not hasattr(self, '_llm_batch'):
+                            self._llm_batch = []
+                            self._llm_batch_indices = []
+                            self._pending_results = []
+                        self._llm_batch.append(clean_comment)
+                        self._llm_batch_indices.append(len(self._pending_results))
+                        # Create result with combined risk score
+                        result = AnalysisResult(
+                            comment_id=str(i),
+                            sentiment_score=score,
+                            sentiment_emoji=self._get_sentiment(score),
+                            pii_risk_score=pii_risk_score,  # Initial PII score
+                            pii_matches=pii_matches,
+                            text=clean_comment,
+                            upvotes=comment_data['upvotes'],
+                            downvotes=comment_data['downvotes'],
+                            permalink=comment_data['permalink'],
+                            llm_risk_score=0.0,
+                            llm_findings=None
+                        )
+                        self._pending_results.append(result)
+                        # Process batch when full or at end
+                        if len(self._llm_batch) >= 10 or i == total_comments:
+                            self.logger.debug(f"Processing LLM batch of {len(self._llm_batch)} items")
+                            progress.update(llm_task, visible=True)
+                            progress.update(llm_task, description="🤖 LLM analysis in progress...")
+                            batch_results = await self.llm_detector.analyze_batch(self._llm_batch)
+                            progress.update(llm_task, description="✅ LLM analysis complete")
+                            self.logger.debug(f"LLM batch_results: {batch_results}")
+                            progress.update(llm_task, visible=False)
+                            # Update pending results with batch results
+                            for batch_idx, (risk_score, findings) in zip(self._llm_batch_indices, batch_results):
+                                result = self._pending_results[batch_idx]
+                                # Always set LLM results regardless of PII detection
+                                result.llm_risk_score = risk_score
+                                result.llm_findings = findings
+                                # Update PII risk score if LLM found PII
+                                if findings and findings.get('has_pii'):
+                                    result.pii_risk_score = max(result.pii_risk_score, risk_score)
+                                # Add this result to final results immediately
+                                results.append(result)
+                                self.logger.debug("Added result to final results")
+                            # Clear batch
+                            self._llm_batch = []
+                            self._llm_batch_indices = []
+                            self._pending_results = []
+                    # Only append results directly if not using LLM
+                    if not self.llm_detector:
+                        results.append(AnalysisResult(
+                            comment_id=str(i),
+                            sentiment_score=score,
+                            sentiment_emoji=self._get_sentiment(score),
+                            pii_risk_score=pii_risk_score,
+                            pii_matches=pii_matches,
+                            text=clean_comment,
+                            upvotes=comment_data['upvotes'],
+                            downvotes=comment_data['downvotes'],
+                            permalink=comment_data['permalink'],
+                            llm_risk_score=0.0,
+                            llm_findings=None
+                        ))
+                    progress.update(main_task, advance=1)
+                except Exception as e:
+                    self.logger.exception(f"Error processing comment {i}: {e}")
+                    continue
+            try:
+                rounded_final = round(final_score/len(comments), 4)
+                self.logger.debug(f"Final sentiment score calculated: {rounded_final}")
+                return rounded_final, results
+            except ZeroDivisionError:
+                self.logger.error("No comments found")
+                return 0.0, []
     def _create_progress(self):
         """Unified progress context manager"""
+        self.logger.debug("Creating progress context")
         return Progress(
             SpinnerColumn(spinner_name="dots"),
             TextColumn("[bold blue]{task.description}"),
             TimeElapsedColumn(),
             transient=True
         )
-
     async def _analyze_pii(self, result, progress):
         """PII analysis handler"""
+        self.logger.debug("Starting _analyze_pii")
         with self.progress_context(progress, "🔍 PII Analysis") as p:
             pii_risk, pii_matches = self.pii_detector.get_pii_risk_score(result.text)
             return result._replace(
                 pii_risk_score=pii_risk,
                 pii_matches=pii_matches
             )
-
     async def _analyze_llm(self, result, progress):
         """LLM analysis handler"""
+        self.logger.debug("Starting _analyze_llm")
         with self.progress_context(progress, "🤖 LLM Analysis") as p:
             llm_risk, findings = await self.llm_detector.analyze_text(result.text)
             updated_result = result._replace(
@@ -299,7 +299,6 @@ class Sentiment():
                 )
             
             return updated_result
-
     @staticmethod
     def progress_context(progress, description):
         """Helper context manager for progress tracking"""
@@ -309,22 +308,21 @@ class Sentiment():
             yield progress
         finally:
             progress.update(task, visible=False)
-
     def _get_sentiment(self, score):
         """Obtains the sentiment using a sentiment score.
-
         :param score: the sentiment score.
         :return: sentiment from score.
         """
+        self.logger.debug(f"Calculating sentiment for score {score}")
         if score == 0:
             return neutral_sentiment
         elif score > 0:
             return happy_sentiment
         else:
             return sad_sentiment
-
     def _generate_output_file(self, filename, comments, url):
         """Outputs a file containing a detailed sentiment and PII analysis per sentence."""
+        self.logger.debug(f"Generating output file '{filename}' for URL '{url}'")
         # First get all results at once to show proper progress
         with Progress(
             SpinnerColumn(spinner_name="dots"),
@@ -340,14 +338,12 @@ class Sentiment():
                 target.write(f"- **Overall Sentiment**: {self.sentiment}\n")
                 target.write(f"- **Comments Analyzed**: {len(comments)}\n\n")
                 target.write("---\n\n")
-
                 # Initialize summary statistics
                 total_pii_comments = 0
                 total_llm_pii_comments = 0
                 max_risk_score = 0.0
                 riskiest_comment = None
                 sentiment_scores = []
-
                 def should_show_result(result):
                     if not self.pii_only:
                         return True
@@ -358,7 +354,6 @@ class Sentiment():
                                   result.llm_findings.get('has_pii', False) and
                                   result.llm_findings.get('confidence', 0.0) > 0.0)
                     return has_pattern_pii or has_llm_pii
-
                 comment_count = 1
                 for result in self.results:  # Use pre-computed results
                     progress.update(progress_task, description=f"📝 Writing comment {comment_count}/{len(comments)}")
@@ -367,20 +362,17 @@ class Sentiment():
                         comment_count += 1
                         progress.update(progress_task, advance=1)
                         continue
-
                     target.write(f"## Comment {comment_count}\n\n")
                     target.write(f"**Text**: {result.text}\n\n")
                     target.write(f"- Sentiment Score: `{result.sentiment_score:.2f}` {result.sentiment_emoji}\n")
                     target.write(f"- PII Risk Score: `{result.pii_risk_score:.2f}`\n")
                     target.write(f"- Votes: ⬆️ `{result.upvotes}` ⬇️ `{result.downvotes}`\n")
-
                     # PII Matches Section
                     if result.pii_matches:
                         target.write("### Pattern-based PII Detected\n")
                         for pii in result.pii_matches:
                             target.write(f"- **{pii.type}** (confidence: {pii.confidence:.2f})\n")
                         target.write("\n")
-
                     # LLM Findings Section
                     if result.llm_findings:
                         target.write("### LLM Privacy Analysis\n")
@@ -394,7 +386,6 @@ class Sentiment():
                             if reasoning := result.llm_findings.get('reasoning'):
                                 target.write(f"\n#### Reasoning\n{reasoning}\n")
                         target.write("\n")
-
                     target.write("---\n\n")
                     # Update summary stats
                     sentiment_scores.append(result.sentiment_score)
@@ -405,10 +396,8 @@ class Sentiment():
                     if result.pii_risk_score > max_risk_score:
                         max_risk_score = result.pii_risk_score
                         riskiest_comment = result.text[:100] + "..." if len(result.text) > 100 else result.text
-
                     comment_count += 1
                     progress.update(progress_task, advance=1)
-
                 # Add summary section to file
                 target.write("\n# Summary\n\n")
                 target.write(f"- Total Comments Analyzed: {len(comments)}\n")
@@ -419,7 +408,6 @@ class Sentiment():
                 if riskiest_comment:
                     target.write(f"- Riskiest Comment Preview: '{riskiest_comment}'\n")
                 target.write("\n✅ Analysis complete\n")
-
             # Add console completion message
             progress.console.print(
                 Panel(
@@ -441,24 +429,22 @@ class Sentiment():
                 )
             )
 
-
     def _generate_summary_table(self, filtered_results: List[AnalysisResult]) -> Table:
         """Generate summary table with selection indicators"""
+        self.logger.debug("Generating summary table")
         table = Table(
             title="[bold]Comments Requiring Action[/]",
             header_style="bold magenta",
             box=None
         )
-
         # Add columns with style parameters directly
         table.add_column("Risk", justify="right", width=8)
         table.add_column("Sentiment", width=12)
         table.add_column("Comment Preview", width=75)
         table.add_column("Upvotes", width=8)
         table.add_column("ID", width=8)
-
         for result in filtered_results:
-            print(result)
+            self.logger.debug(f"Adding comment ID {result.comment_id} to summary table")
             # Determine risk level styling
             risk_style = "red" if result.pii_risk_score > 0.5 else "yellow" if result.pii_risk_score > 0.2 else "green"
             risk_text = Text(f"{result.pii_risk_score:.0%}", style=risk_style)
@@ -473,25 +459,23 @@ class Sentiment():
                 Text(f"{result.upvotes} / {result.downvotes}"),
                 result.comment_id,
             )
-
         return table
-
     def get_user_sentiment(self, username, output_file=None, sort='new', time_filter='all'):
         """Backwards compatibility method for user sentiment analysis"""
+        self.logger.debug("get_user_sentiment (backwards compatibility) called")
         return self.get_sentiment('user', username, output_file=output_file, 
                                 sort=sort, time_filter=time_filter)
-
     def get_listing_sentiment(self, subreddit, article, output_file=None):
         """Backwards compatibility method for listing sentiment analysis"""
+        self.logger.debug("get_listing_sentiment (backwards compatibility) called")
         return self.get_sentiment('listing', f"{subreddit}/{article}", 
                                 output_file=output_file)
-
     def _print_comments(self, comments, url):
         """Prints out analysis of user comments.
-
         :param: comments: the parsed contents to analyze.
         :param: url: the url being parsed.
         """
+        self.logger.debug(f"Printing comments analysis for URL '{url}'")
         def should_show_result(result):
             if not self.pii_only:
                 return True
@@ -502,9 +486,7 @@ class Sentiment():
                           result.llm_findings.get('has_pii', False) and
                           result.llm_findings.get('confidence', 0.0) > 0.0)
             return has_pattern_pii or has_llm_pii
-
         total_comments = len(comments)
-
         # Create overall stats panel
         stats_panel = Panel(
             Group(
@@ -520,13 +502,12 @@ class Sentiment():
             title="[bold]Sentiment Analysis Summary[/]",
             border_style="blue"
         )
-
         # Filter results if pii_only is enabled
         filtered_results = [r for r in self.results if should_show_result(r)]
         if hasattr(self, 'pii_only') and self.pii_only and not filtered_results:
+            self.logger.info("No comments with high PII risk found.")
             print("No comments with high PII risk found.")
             return
-
         panels = []
         for i, result in enumerate(filtered_results, 1):
             # Basic info panel
@@ -559,7 +540,6 @@ class Sentiment():
                     (f"{result.downvotes}", "red")
                 )
             )
-
             # PII Matches panel
             pii_content = []
             if result.pii_matches:
@@ -569,7 +549,6 @@ class Sentiment():
                         (f"{pii.type}: ", "bold"),
                         (f"({pii.confidence:.2f})", "dim")
                     ))
-
             # LLM Findings panel
             llm_content = []
             if result.llm_findings:
@@ -583,7 +562,6 @@ class Sentiment():
                             or str(detail)
                         )
                     return str(detail)
-
                 llm_content.extend([
                     Text.assemble(
                         ("Risk Score: ", "dim"),
@@ -595,7 +573,6 @@ class Sentiment():
                          "red" if result.llm_findings.get('has_pii') else "green")
                     )
                 ])
-
                 if result.llm_findings.get('details'):
                     llm_content.append(Text("Findings:", style="bold"))
                     for detail in result.llm_findings['details']:
@@ -603,41 +580,35 @@ class Sentiment():
                             detail_text = format_detail(detail)
                             llm_content.append(Text(f"  • {detail_text}", style="cyan"))
                         except Exception as e:
-                            logging.debug(f"Error formatting LLM detail: {str(e)}")
+                            self.logger.debug(f"Error formatting LLM detail: {str(e)}")
                             llm_content.append(Text("  • [Malformed finding]", style="red dim"))
                 if result.llm_findings.get('risk_factors'):
                     llm_content.append(Text("\nRisk Factors:", style="bold"))
                     for factor in result.llm_findings['risk_factors']:
                         llm_content.append(Text(f"  • {factor}", style="yellow"))
-
             # Create sub-panels
             sub_panels = [Panel(basic_info, title="[bold]Basic Info[/]", border_style="blue")]
-
             if pii_content:
                 sub_panels.append(Panel(
                     Group(*pii_content),
                     title="[bold]Pattern PII[/]",
                     border_style="yellow"
                 ))
-
             if llm_content:
                 sub_panels.append(Panel(
                     Group(*llm_content),
                     title="[bold]LLM Analysis[/]",
                     border_style="magenta"
                 ))
-
             # Add sentiment analysis summary panel
             if i == 1:  # Only add to first comment
                 sub_panels.append(stats_panel)
-
             # Combine sub-panels into a main panel for this comment
             panels.append(Panel(
                 Columns(sub_panels),
                 title=f"[bold]Comment {i}[/]",
                 border_style="cyan"
             ))
-
         # Add summary table
         summary_table = self._generate_summary_table(filtered_results)
         panels.append(Panel(summary_table,
@@ -645,7 +616,6 @@ class Sentiment():
             border_style="green",
             padding=(1, 4)
         ))
-
         # Add action confirmation prompt
         action_text = Group(
             Text("Available actions for high-risk comments:", style="bold yellow"),
@@ -659,7 +629,6 @@ class Sentiment():
                 title="[bold]Actions[/]"
             )
         )
-
         # Print all panels
         with Progress(
             SpinnerColumn(spinner_name="dots"),
@@ -670,9 +639,9 @@ class Sentiment():
             task = progress.add_task("", total=1, visible=False)
             progress.console.print(Group(*panels))
             progress.update(task, advance=1)
-
     def _get_comments(self, source_type, identifier, **kwargs):
         """Unified comment fetching method"""
+        self.logger.debug(f"Fetching comments for {source_type} '{identifier}'")
         fetch_method = {
             'user': self.api.parse_user,
             'listing': self.api.parse_listing
@@ -684,26 +653,25 @@ class Sentiment():
             limit=self.limit,
             **kwargs
         )
-
     def _run_analysis_flow(self, comments):
         """Centralized analysis execution"""
+        self.logger.debug("Running analysis flow")
         if asyncio.get_event_loop().is_running():
             future = asyncio.ensure_future(self._analyze(comments))
             return asyncio.get_event_loop().run_until_complete(future)
         return asyncio.run(self._analyze(comments))
-
     def get_sentiment(self, source_type, identifier, output_file=None, **kwargs):
         """Unified sentiment analysis entry point"""
+        self.logger.debug(f"get_sentiment called with source_type={source_type}, identifier={identifier}")
         comments = self._get_comments(source_type, identifier, **kwargs)
         self.score, self.results = self._run_analysis_flow(comments)
         self.sentiment = self._get_sentiment(self.score)
-
         if output_file:
             self._generate_output_file(output_file, comments, identifier)
         else:
             self._print_comments(comments, identifier)
-
     def _print_config(self, auth_enabled, pii_enabled, llm_config):
+        self.logger.debug("Printing active configuration")
         progress = Progress(
             SpinnerColumn(spinner_name="dots"),
             TextColumn("[bold blue]{task.description}"),
@@ -713,12 +681,10 @@ class Sentiment():
         with progress:
             task = progress.add_task("", total=1, visible=False)
             progress.console.print("\n[bold cyan]Active Configuration[/]")
-
             def format_status(enabled, true_text="Enabled", false_text="Disabled"):
                 return Text.assemble(
                     (true_text if enabled else false_text, "green" if enabled else "red")
                 )
-
             config_table = [
                 ("Authentication", format_status(auth_enabled)),
                 ("PII Detection", format_status(pii_enabled)),
@@ -727,7 +693,6 @@ class Sentiment():
                 ("Comment Limit", Text(f"{self.limit if self.limit else 'Unlimited'}", style="cyan")),
                 ("Sort Preference", Text("new", style="cyan"))
             ]
-
             panels = []
             panels.append(
                 Panel.fit(
@@ -736,7 +701,6 @@ class Sentiment():
                     border_style="blue"
                 )
             )
-
             if auth_enabled:
                 auth_table = [
                     ("REDDIT_USERNAME", environ.get("REDDIT_USERNAME", "[red]Not Set[/]")),
@@ -749,6 +713,5 @@ class Sentiment():
                         border_style="yellow"
                     )
                 )
-
             progress.console.print(Columns(panels))
             progress.update(task, advance=1)
