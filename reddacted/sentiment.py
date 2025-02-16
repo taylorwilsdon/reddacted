@@ -88,13 +88,7 @@ class Sentiment():
                                     f"pii_only={pii_only}, "
                                     f"limit={limit}")
 
-            # Initialize analysis pipeline
-            self.analysis_pipeline = []
-            if self.pii_enabled:
-                self.analysis_pipeline.append(self._analyze_pii)
-            if self.llm_detector:
-                self.analysis_pipeline.append(self._analyze_llm)
-            logger.debug_with_context("Analysis pipeline initialized")
+            logger.debug_with_context("Sentiment analyzer initialized")
         except Exception as e:
             handle_exception(e, "Failed to initialize Sentiment analyzer")
             logger.error_with_context("Failed to initialize Sentiment analyzer")
@@ -119,19 +113,6 @@ class Sentiment():
             logger.debug_with_context("Authentication not enabled")
         self._print_config(auth_enabled, pii_enabled, llm_config)
 
-    @with_logging(logger)
-    def get_user_sentiment(self, username, output_file=None, sort='new', time_filter='all'):
-        """Backwards compatibility method for user sentiment analysis"""
-        logger.debug_with_context("get_user_sentiment called")
-        return self.get_sentiment('user', username, output_file=output_file,
-                                sort=sort, time_filter=time_filter)
-
-    @with_logging(logger)
-    def get_listing_sentiment(self, subreddit, article, output_file=None):
-        """Backwards compatibility method for listing sentiment analysis"""
-        logger.debug_with_context("get_listing_sentiment called")
-        return self.get_sentiment('listing', f"{subreddit}/{article}",
-                                output_file=output_file)
 
     @with_logging(logger)
     async def _analyze(self, comments):
@@ -256,44 +237,6 @@ class Sentiment():
             transient=True
         )
 
-    @with_logging(logger)
-    async def _analyze_pii(self, result, progress):
-        """PII analysis handler"""
-        logger.debug_with_context("Starting _analyze_pii")
-        with self.progress_context(progress, "🔍 PII Analysis") as p:
-            pii_risk, pii_matches = self.pii_detector.get_pii_risk_score(result.text)
-            return result._replace(
-                pii_risk_score=pii_risk,
-                pii_matches=pii_matches
-            )
-
-    @with_logging(logger)
-    async def _analyze_llm(self, result, progress):
-        """LLM analysis handler"""
-        logger.debug_with_context("Starting _analyze_llm")
-        with self.progress_context(progress, "🤖 LLM Analysis") as p:
-            llm_risk, findings = await self.llm_detector.analyze_text(result.text)
-            updated_result = result._replace(
-                llm_risk_score=llm_risk,
-                llm_findings=findings
-            )
-
-            if findings and findings.get('has_pii'):
-                updated_result = updated_result._replace(
-                    pii_risk_score=max(result.pii_risk_score, llm_risk)
-                )
-
-            return updated_result
-
-    @staticmethod
-    def progress_context(progress, description):
-        """Helper context manager for progress tracking"""
-        task = progress.add_task(description, visible=False)
-        try:
-            progress.update(task, visible=True)
-            yield progress
-        finally:
-            progress.update(task, visible=False)
 
     @with_logging(logger)
     def _get_sentiment(self, score):
