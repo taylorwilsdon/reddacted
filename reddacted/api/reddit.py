@@ -79,7 +79,8 @@ class Reddit(api.API):
                 'text': comment.body.rstrip(),
                 'upvotes': comment.ups,
                 'downvotes': comment.downs,
-                'permalink': comment.permalink
+                'permalink': comment.permalink,
+                'id': comment.id
             }
             logger.debug_with_context(f"Processing comment: ups={comment.ups}, downs={comment.downs}, text_preview='{comment.body[:50]}...'")
             comments.append(comment_data)
@@ -195,7 +196,8 @@ class Reddit(api.API):
                     'text': comment.body.rstrip(),
                     'upvotes': comment.ups,
                     'downvotes': comment.downs,
-                    'permalink': comment.permalink
+                    'permalink': comment.permalink,
+                    'id': comment.id
                 })
                 
             return comments

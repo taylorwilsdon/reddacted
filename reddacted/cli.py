@@ -99,7 +99,7 @@ class UpdateComments(ModifyComments):
         details.append(f"[cyan]Processed:[/] {results['processed']}")
         details.append(f"[green]Successful:[/] {results['success']}")
         details.append(f"[red]Failed:[/] {results['failures']}\n")
-        
+
         if results.get('successful_ids'):
             details.append("[green]Successfully Updated Comments:[/]")
             for comment_id in results['successful_ids']:

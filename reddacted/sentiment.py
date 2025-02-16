@@ -162,7 +162,7 @@ class Sentiment():
                         self._llm_batch_indices.append(len(self._pending_results))
                         # Create result with combined risk score
                         result = AnalysisResult(
-                            comment_id=str(i),
+                            comment_id=comment_data['id'],
                             sentiment_score=score,
                             sentiment_emoji=self._get_sentiment(score),
                             pii_risk_score=pii_risk_score,  # Initial PII score
@@ -203,7 +203,7 @@ class Sentiment():
                     # Only append results directly if not using LLM
                     if not self.llm_detector:
                         results.append(AnalysisResult(
-                            comment_id=str(i),
+                            comment_id=comment_data['id'],
                             sentiment_score=score,
                             sentiment_emoji=self._get_sentiment(score),
                             pii_risk_score=pii_risk_score,
@@ -603,17 +603,17 @@ class Sentiment():
         # Add action confirmation prompt with ready-to-use commands
         high_risk_comments = [r for r in filtered_results if r.pii_risk_score > 0.5 or 
                             (r.llm_findings and r.llm_findings.get('has_pii', False))]
-        comment_ids = [r.permalink for r in high_risk_comments]
+        comment_ids = [r.comment_id for r in high_risk_comments]
         
         action_text = Group(
             Text("Ready-to-use commands for high-risk comments:", style="bold yellow"),
             Text.assemble(
                 ("Delete comments:\n", "bold red"),
-                ("reddacted listing delete " + " ".join(comment_ids), "italic red")
+                ("reddacted delete " + " ".join(comment_ids), "italic red")
             ),
             Text.assemble(
-                ("\nUpdate/reddact comments:\n", "bold blue"),
-                ("reddacted listing update " + " ".join(comment_ids), "italic blue")
+                ("\nReddact (edit) comments:\n", "bold blue"),
+                ("reddacted update " + " ".join(comment_ids), "italic blue")
             ) if comment_ids else Text("No high-risk comments found", style="green")
         )
         panels.append(
