@@ -57,7 +57,7 @@ NEUTRAL_SENTIMENT = "😐"
 
 class Sentiment():
     """Performs the LLM PII & sentiment analysis on a given set of Reddit Objects."""
-    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, limit=100):
+    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, sort='New', limit=100):
         """Initialize Sentiment Analysis with optional PII detection
 
         Args:
@@ -82,10 +82,12 @@ class Sentiment():
             self.pii_enabled = pii_enabled
             self.pii_detector = PIIDetector() if pii_enabled else None
             self.pii_only = pii_only
+            self.sort = sort
             self.limit = limit
             logger.debug_with_context("Initialized with configuration: "
                                     f"pii_enabled={pii_enabled}, "
                                     f"pii_only={pii_only}, "
+                                    f"sort={sort}, "
                                     f"limit={limit}")
 
             logger.debug_with_context("Sentiment analyzer initialized")
@@ -126,7 +128,6 @@ class Sentiment():
         results = []
         cleanup_regex = re.compile('<.*?>')
         total_comments = len(comments)
-        logger.info_with_context(f"📊 Retrieved {total_comments} comments to analyze")
         progress = Progress(
             SpinnerColumn(spinner_name="dots"),
             TextColumn("[bold blue]{task.description}"),
@@ -134,7 +135,7 @@ class Sentiment():
             transient=True
         )
         with progress:
-            main_task = progress.add_task(f"💭 Processing comments...", total=total_comments)
+            main_task = progress.add_task(f"Received {total_comments} comments, processing...", total=total_comments)
             pii_task = progress.add_task("🔍 PII Analysis", visible=False, total=1)
             llm_task = progress.add_task("🤖 LLM Analysis", visible=False, total=1)
             for i, comment_data in enumerate(comments, 1):
@@ -194,7 +195,7 @@ class Sentiment():
                                     result.pii_risk_score = max(result.pii_risk_score, risk_score)
                                 # Add this result to final results immediately
                                 results.append(result)
-                                logger.debug_with_context("Added result to final results")
+                                logger.debug_with_context(f"Added result to {i} final results")
                             # Clear batch
                             self._llm_batch = []
                             self._llm_batch_indices = []
@@ -417,7 +418,7 @@ class Sentiment():
                 ("LLM Analysis", format_status(llm_config is not None, llm_config['model'] if llm_config else "Disabled")),
                 ("PII-Only Filter", format_status(self.pii_only, "Active", "Inactive")),
                 ("Comment Limit", Text(f"{self.limit if self.limit else 'Unlimited'}", style="cyan")),
-                ("Sort Preference", Text("new", style="cyan"))
+                ("Sort Preference", Text(f"{self.sort if self.sort else 'New'}", style="cyan"))
             ]
             panels = []
             panels.append(

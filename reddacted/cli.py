@@ -139,8 +139,9 @@ class Listing(BaseAnalyzeCommand):
         sent = Sentiment(
             auth_enabled=args.enable_auth,
             pii_enabled=not args.disable_pii,
-            llm_config=llm_config,
             pii_only=args.pii_only,
+            llm_config=llm_config,
+            sort=args.sort,
             limit=limit
         )
         sent.get_sentiment('listing', f"{args.subreddit}/{args.article}", output_file=args.output_file)
@@ -179,6 +180,7 @@ class User(BaseAnalyzeCommand):
                 pii_enabled=not parsed_args.disable_pii,
                 llm_config=llm_config,
                 pii_only=parsed_args.pii_only,
+                sort=parsed_args.sort,
                 limit=limit
             )
             sent.get_sentiment(

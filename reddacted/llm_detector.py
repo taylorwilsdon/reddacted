@@ -7,10 +7,8 @@ from reddacted.utils.logging import get_logger, with_logging
 from reddacted.utils.exceptions import handle_exception
 
 logger = get_logger(__name__)
-# Reduce noise from httpx
-logging.getLogger("httpx").setLevel(logging.WARNING)
 
-
+@with_logging(logger)
 class LLMDetector:
     """Uses LLM to detect potential PII and personal information in text"""
 
@@ -64,8 +62,8 @@ class LLMDetector:
                         ],
                         temperature=0.1
                     )
-                    logger.debug(f"Using API base: {client.base_url}")
-                    logger.debug(f"Using model: {self.model}")
+                    logger.debug_with_context(f"Using API base: {client.base_url}")
+                    logger.debug_with_context(f"Using model: {self.model}")
                     tasks.append(task)
 
                 batch_responses = await asyncio.gather(*tasks)
@@ -73,7 +71,7 @@ class LLMDetector:
                 for response in batch_responses:
                     try:
                         raw_response = response.choices[0].message.content.strip()
-                        logger.debug(f"\n🤖 Raw LLM Response:\n{raw_response}\n")
+                        logger.debug_with_context(f"\n🤖 Raw LLM Response:\n{raw_response}\n")
                         try:
                             # First attempt direct parse, sometimes stupid LLM messes up formatting
                             analysis = json.loads(raw_response)
@@ -89,8 +87,8 @@ class LLMDetector:
                         confidence = float(analysis.get('confidence', 0.0))
                         has_pii = analysis.get('has_pii', False)
 
-                        logger.debug(f"Parsed confidence: {confidence}")
-                        logger.debug(f"Parsed has_pii: {has_pii}")
+                        logger.debug_with_context(f"Parsed confidence: {confidence}")
+                        logger.debug_with_context(f"Parsed has_pii: {has_pii}")
 
                         if has_pii:
                             risk_score = confidence
