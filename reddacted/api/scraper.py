@@ -16,7 +16,7 @@ class Scraper(api.API):
 
     def __init__(self):
         """Initialize Scraper"""
-        self.logger = logger  # Use module logger
+        pass
 
     @with_logging(logger)
     def parse_listing(self, subreddit, article, limit=100, **kwargs):
@@ -26,24 +26,24 @@ class Scraper(api.API):
        :param article: an article associated with the subreddit
        :return: a list of comments from an article.
        """
-        self.logger.debug(f"Parsing listing for subreddit={subreddit}, article={article}, limit={limit}")
+        logger.debug_with_context(f"Parsing listing for subreddit={subreddit}, article={article}, limit={limit}")
         url = f"https://www.reddit.com/r/{subreddit}/{article}.json?limit={limit}"
         headers = kwargs.get('headers')
-        self.logger.debug(f"Request URL: {url}")
-        self.logger.debug(f"Request headers: {headers}")
+        logger.debug_with_context(f"Request URL: {url}")
+        logger.debug_with_context(f"Request headers: {headers}")
         try:
             response = requests.get(url, headers=headers)
-            self.logger.debug(f"Response status code: {response.status_code}")
+            logger.debug_with_context(f"Response status code: {response.status_code}")
         except Exception as e:
             handle_exception(e, "Error obtaining article information", debug=True)
             return []
 
         comments = []
         json_resp = response.json()
-        self.logger.debug(f"Retrieved {len(json_resp)} top-level JSON objects")
+        logger.debug_with_context(f"Retrieved {len(json_resp)} top-level JSON objects")
 
         for top in range(0, len(json_resp)):
-            self.logger.debug(f"Processing top-level object {top+1}/{len(json_resp)}")
+            logger.debug_with_context(f"Processing top-level object {top+1}/{len(json_resp)}")
             if json_resp[top]["data"]["children"]:
                 children = json_resp[top]["data"]["children"]
                 for child in range(0, len(children)):
@@ -60,10 +60,10 @@ class Scraper(api.API):
                                 'downvotes': data["downs"],
                                 'permalink': data["permalink"]
                             }
-                            self.logger.debug(f"Added comment: ups={data['ups']}, downs={data['downs']}, text_preview='{comment_text[:50]}...'")
+                            logger.debug_with_context(f"Added comment: ups={data['ups']}, downs={data['downs']}, text_preview='{comment_text[:50]}...'")
                             comments.append(comment_data)
 
-        self.logger.debug(f"Returning {len(comments)} processed comments")
+        logger.debug_with_context(f"Returning {len(comments)} processed comments")
         return comments
 
     @with_logging(logger)
@@ -79,7 +79,7 @@ class Scraper(api.API):
         url = f"https://www.reddit.com/user/{username}.json?limit={limit}&sort={sort}"
         if sort in ['top', 'controversial']:
             url += f"&t={time_filter}"
-        self.logger.debug(f"Completed scraping for user {username}")
+        logger.debug_with_context(f"Completed scraping for user {username}")
         headers = kwargs.get('headers')
         try:
             response = requests.get(url, headers = headers)
@@ -106,5 +106,5 @@ class Scraper(api.API):
                             'downvotes': data["downs"],
                             'permalink': data["permalink"]
                         })
-        self.logger.debug(f"Reddact is scraping {url}...")
+        logger.debug_with_context(f"Reddact is scraping {url}...")
         return comments
