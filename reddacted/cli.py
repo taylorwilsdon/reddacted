@@ -160,6 +160,7 @@ class User(BaseAnalyzeCommand):
             AttributeError: If required arguments are missing
             Exception: For other unexpected errors
         """
+        print(' user class')
         try:
             llm_config = CLI()._configure_llm(parsed_args, console)
             limit = None if parsed_args.limit == 0 else parsed_args.limit

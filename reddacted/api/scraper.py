@@ -26,6 +26,7 @@ class Scraper(api.API):
        :param article: an article associated with the subreddit
        :return: a list of comments from an article.
        """
+        print('parse_listing')
         logger.debug_with_context(f"Parsing listing for subreddit={subreddit}, article={article}, limit={limit}")
         url = f"https://www.reddit.com/r/{subreddit}/{article}.json?limit={limit}"
         headers = kwargs.get('headers')
@@ -76,6 +77,7 @@ class Scraper(api.API):
        :param time_filter: Time filter for 'top' ('all', 'day', 'hour', 'month', 'week', 'year')
        :return: a list of comments from a user.
        """
+        print('parse_user')
         url = f"https://www.reddit.com/user/{username}.json?limit={limit}&sort={sort}"
         if sort in ['top', 'controversial']:
             url += f"&t={time_filter}"

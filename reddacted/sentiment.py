@@ -67,6 +67,7 @@ class Sentiment():
             limit (int): Maximum number of comments to analyze
         """
         # Set up logging
+        print('init sentiment')
         self.debug = debug
         self.logger = logger  # Use module logger
         if debug:
