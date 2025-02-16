@@ -52,13 +52,18 @@ class Scraper(api.API):
 
         return comments
 
-    def parse_user(self, username, limit=100, **kwargs):
+    def parse_user(self, username, limit=100, sort='new', time_filter='all', **kwargs):
         """Parses a listing and extracts the comments from it.
 
        :param username: a user
+       :param limit: maximum number of comments to return
+       :param sort: Sort method ('hot', 'new', 'controversial', 'top')
+       :param time_filter: Time filter for 'top' ('all', 'day', 'hour', 'month', 'week', 'year')
        :return: a list of comments from a user.
        """
-        url = f"https://www.reddit.com/user/{username}.json?limit={limit}"
+        url = f"https://www.reddit.com/user/{username}.json?limit={limit}&sort={sort}"
+        if sort in ['top', 'controversial']:
+            url += f"&t={time_filter}"
         headers = kwargs.get('headers')
         try:
             response = requests.get(url, headers = headers)

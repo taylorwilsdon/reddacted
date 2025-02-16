@@ -143,11 +143,13 @@ class Reddit(api.API):
         return self._process_comments(comment_ids, 'update', batch_size)
 
 
-    def parse_user(self, username, limit=100, **kwargs):
+    def parse_user(self, username, limit=100, sort='new', time_filter='all', **kwargs):
         """Parses a listing and extracts the comments from it.
 
        :param username: a user
        :param limit: maximum number of comments to return (None for unlimited)
+       :param sort: Sort method ('hot', 'new', 'controversial', 'top')
+       :param time_filter: Time filter for 'top' ('all', 'day', 'hour', 'month', 'week', 'year')
        :return: a list of comments from a user.
        :raises: prawcore.exceptions.NotFound if user doesn't exist
        :raises: prawcore.exceptions.Forbidden if user is private/banned
@@ -156,7 +158,19 @@ class Reddit(api.API):
             redditor = self.reddit.redditor(username)
             comments = []
             
-            for comment in redditor.comments.new(limit=limit):
+            # Get the appropriate comment listing based on sort
+            if sort == 'hot':
+                comment_listing = redditor.comments.hot(limit=limit)
+            elif sort == 'new':
+                comment_listing = redditor.comments.new(limit=limit)
+            elif sort == 'controversial':
+                comment_listing = redditor.comments.controversial(limit=limit, time_filter=time_filter)
+            elif sort == 'top':
+                comment_listing = redditor.comments.top(limit=limit, time_filter=time_filter)
+            else:
+                comment_listing = redditor.comments.new(limit=limit)  # default to new
+            
+            for comment in comment_listing:
                 comments.append({
                     'text': comment.body.rstrip(),
                     'upvotes': comment.ups,
