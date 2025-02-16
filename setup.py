@@ -37,7 +37,7 @@ setup(
         'console_scripts': [
             'reddacted = reddacted.cli:main'
         ],
-        'reddit.sentiment': [
+        'reddacted.analyze': [
             'listing = reddacted.cli:Listing',
             'user = reddacted.cli:User'
         ],

@@ -13,7 +13,7 @@ class AuthenticationRequiredError(Exception):
     """Raised when authentication is required but not configured"""
     pass
 
-
+@with_logging(logger)
 class Reddit(api.API):
     """The Reddit Class obtains data to perform sentiment analysis on
     using the Reddit API.

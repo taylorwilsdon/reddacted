@@ -25,12 +25,6 @@ from reddacted.utils.exceptions import handle_exception
 
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-# Configure logging format
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO  # Set default level to INFO
-)
-
 _COMMENT_ANALYSIS_HEADERS = {
     'User-agent': "reddacted"
 }

@@ -10,11 +10,17 @@ from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.columns import Columns
-from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.logging import get_logger, with_logging, set_global_logging_level
 from reddacted.utils.exceptions import handle_exception
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
 import requests
+
+# Configure logging format
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO  # Set default level to INFO
+)
 
 logger = get_logger(__name__)
 console = Console()
@@ -198,14 +204,13 @@ class User(BaseAnalyzeCommand):
             )
             raise
 
-
 class CLI(App):
     def __init__(self):
-        from reddacted.utils.logging import set_global_logging_level
-        
         # Set debug logging if flag is present
         if '--debug' in sys.argv:
             set_global_logging_level(logging.DEBUG)
+        else:
+            set_global_logging_level(logging.INFO)
         
         command_manager = CommandManager('reddacted.analysis')
         command_manager.add_command('listing', Listing)
@@ -252,7 +257,6 @@ class CLI(App):
     def _configure_llm(self, args, console):
         """Centralized LLM configuration handler"""
         logger.debug("Configuring LLM settings")
-        llm_config = None
         if args.disable_pii:
             return None
 
