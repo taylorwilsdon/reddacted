@@ -625,7 +625,8 @@ class Sentiment():
                 ("PII Detection", format_status(pii_enabled)),
                 ("LLM Analysis", format_status(llm_config is not None, llm_config['model'] if llm_config else "Disabled")),
                 ("PII-Only Filter", format_status(self.pii_only, "Active", "Inactive")),
-                ("Comment Limit", Text(f"{self.limit if self.limit else 'Unlimited'}", style="cyan"))
+                ("Comment Limit", Text(f"{self.limit if self.limit else 'Unlimited'}", style="cyan")),
+                ("Sort Preference", Text(f"{sort if 'sort' in locals() else 'new'}", style="cyan"))
             ]
 
             panels = []
