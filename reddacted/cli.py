@@ -62,11 +62,27 @@ class DeleteComments(ModifyComments):
 
     def take_action(self, parsed_args):
         results = self.process_comments(parsed_args, 'delete')
+        
+        # Create detailed results panel
+        details = []
+        details.append(f"[cyan]Processed:[/] {results['processed']}")
+        details.append(f"[green]Successful:[/] {results['success']}")
+        details.append(f"[red]Failed:[/] {results['failures']}\n")
+        
+        if results.get('successful_ids'):
+            details.append("[green]Successfully Deleted Comments:[/]")
+            for comment_id in results['successful_ids']:
+                details.append(f"  • [dim]t1_{comment_id}[/]")
+        
+        if results.get('failed_ids'):
+            details.append("\n[red]Failed to Delete Comments:[/]")
+            for comment_id in results['failed_ids']:
+                details.append(f"  • [dim]t1_{comment_id}[/]")
+        
         console.print(Panel(
-            f"Processed: {results['processed']}\n"
-            f"Successful: {results['success']}\n"
-            f"Failed: {results['failures']}",
-            title="[bold red]Delete Results[/]"
+            "\n".join(details),
+            title="[bold red]Delete Results[/]",
+            expand=False
         ))
 
 class UpdateComments(ModifyComments):
@@ -77,11 +93,27 @@ class UpdateComments(ModifyComments):
 
     def take_action(self, parsed_args):
         results = self.process_comments(parsed_args, 'update')
+        
+        # Create detailed results panel
+        details = []
+        details.append(f"[cyan]Processed:[/] {results['processed']}")
+        details.append(f"[green]Successful:[/] {results['success']}")
+        details.append(f"[red]Failed:[/] {results['failures']}\n")
+        
+        if results.get('successful_ids'):
+            details.append("[green]Successfully Updated Comments:[/]")
+            for comment_id in results['successful_ids']:
+                details.append(f"  • [dim]t1_{comment_id}[/]")
+        
+        if results.get('failed_ids'):
+            details.append("\n[red]Failed to Update Comments:[/]")
+            for comment_id in results['failed_ids']:
+                details.append(f"  • [dim]t1_{comment_id}[/]")
+        
         console.print(Panel(
-            f"Processed: {results['processed']}\n"
-            f"Successful: {results['success']}\n"
-            f"Failed: {results['failures']}",
-            title="[bold blue]Update Results[/]"
+            "\n".join(details),
+            title="[bold blue]Update Results[/]",
+            expand=False
         ))
 
 
