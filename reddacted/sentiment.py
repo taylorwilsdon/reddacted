@@ -344,7 +344,12 @@ class Sentiment():
                     target.write(f"- Riskiest Comment Preview: '{riskiest_comment}'\n")
                 target.write("\n✅ Analysis complete\n")
             # Add console completion message
-            progress.console.print(
+            # Add completion message with file info and action panel
+            high_risk_comments = [r for r in self.results if r.pii_risk_score > 0.5 or 
+                                (r.llm_findings and r.llm_findings.get('has_pii', False))]
+            comment_ids = [r.comment_id for r in high_risk_comments]
+            
+            completion_group = Group(
                 Panel(
                     Text.assemble(
                         ("📄 Report saved to ", "bold blue"),
@@ -361,8 +366,24 @@ class Sentiment():
                     title="[bold green]Analysis Complete[/]",
                     border_style="green",
                     padding=(1, 4)
+                ),
+                Panel.fit(
+                    Group(
+                        Text("Ready-to-use commands for high-risk comments:", style="bold yellow"),
+                        Text.assemble(
+                            ("Delete comments:\n", "bold red"),
+                            ("reddacted delete " + " ".join(comment_ids), "italic red")
+                        ),
+                        Text.assemble(
+                            ("\nReddact (edit) comments:\n", "bold blue"),
+                            ("reddacted update " + " ".join(comment_ids), "italic blue")
+                        ) if comment_ids else Text("No high-risk comments found", style="green")
+                    ),
+                    border_style="yellow",
+                    title="[bold]Actions[/]"
                 )
-            ),
+            )
+            progress.console.print(completion_group)
 
 
     @with_logging(logger)
