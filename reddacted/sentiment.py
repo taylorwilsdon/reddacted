@@ -78,7 +78,7 @@ class Sentiment():
             self.score = 0
             self.sentiment = NEUTRAL_SENTIMENT
             self.headers = _COMMENT_ANALYSIS_HEADERS
-            self.authEnable = False
+            self.auth_enabled = auth_enabled
             self.pii_enabled = pii_enabled
             self.pii_detector = PIIDetector() if pii_enabled else None
             self.pii_only = pii_only
@@ -451,7 +451,7 @@ class Sentiment():
                     border_style="blue"
                 )
             )
-            print(f"authenabled {auth_enabled}")
+            logger.debug_with_context(f"Authentication enabled: {auth_enabled}")
             if auth_enabled:
                 auth_table = [
                     ("REDDIT_USERNAME", environ.get("REDDIT_USERNAME", "[red]Not Set[/]")),
