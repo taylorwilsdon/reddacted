@@ -74,15 +74,12 @@ class UpdateComments(ModifyComments):
         ))
 
 
-class Listing(Command):
-
-    def get_description(self):
-        return 'Analyze sentiment and detect PII in a Reddit post and its comments'
-
+class BaseAnalyzeCommand(Command):
+    """Base class for Reddit analysis commands with common arguments"""
+    
     def get_parser(self, prog_name):
-        parser = super(Listing, self).get_parser(prog_name)
-        parser.add_argument('subreddit', help='The subreddit.')
-        parser.add_argument('article', help='The id of the article.')
+        parser = super(BaseAnalyzeCommand, self).get_parser(prog_name)
+        # Common arguments for both Listing and User commands
         parser.add_argument('--output-file', '-o',
                             help='Outputs a file with information on each '
                                  'sentence of the post, as well as the final '
@@ -116,6 +113,17 @@ class Listing(Command):
                            help='Time filter for comments (default: all)')
         return parser
 
+
+class Listing(BaseAnalyzeCommand):
+    def get_description(self):
+        return 'Analyze sentiment and detect PII in a Reddit post and its comments'
+
+    def get_parser(self, prog_name):
+        parser = super(Listing, self).get_parser(prog_name)
+        parser.add_argument('subreddit', help='The subreddit.')
+        parser.add_argument('article', help='The id of the article.')
+        return parser
+
     def take_action(self, args):
         llm_config = CLI()._configure_llm(args, console)
         limit = None if args.limit == 0 else args.limit
@@ -130,39 +138,13 @@ class Listing(Command):
         sent.get_listing_sentiment(args.subreddit, args.article, args.output_file)
 
 
-class User(Command):
-
+class User(BaseAnalyzeCommand):
     def get_description(self):
         return 'Analyze sentiment and detect PII in a Reddit user\'s comment history'
 
     def get_parser(self, prog_name):
         parser = super(User, self).get_parser(prog_name)
         parser.add_argument('username', help='The name of the user.')
-        parser.add_argument('--output-file', '-o',
-                            help='Outputs a file with information on each '
-                                 'sentence of the post, as well as the final '
-                                 'score.')
-        parser.add_argument('--enable-auth', '-a', action='store_true',
-                            help='Enable reddit api authentication by '
-                            'using the environment variables '
-                            'REDDIT_USERNAME '
-                            'REDDIT_PASSWORD '
-                            'REDDIT_CLIENT_ID '
-                            'REDDIT_CLIENT_SECRET')
-        parser.add_argument('--disable-pii', '-p', action='store_true',
-                            help='Disable PII detection in the analysis')
-        parser.add_argument('--openai-key', type=str,
-                            help='OpenAI API key for LLM-based analysis')
-        parser.add_argument('--local-llm', type=str,
-                            help='URL for local LLM endpoint (OpenAI compatible)')
-        parser.add_argument('--openai-base', type=str,
-                            help='Optional OpenAI API base URL')
-        parser.add_argument('--model', type=str,
-                            help='OpenAI or local LLM model to use')
-        parser.add_argument('--pii-only', action='store_true',
-                            help='Only show comments that contain PII (0 < score < 1.0)')
-        parser.add_argument('--limit', type=int, default=100,
-                            help='Maximum number of comments to analyze (default: 100, use 0 for unlimited)')
         return parser
 
     def take_action(self, parsed_args):
