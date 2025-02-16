@@ -110,7 +110,7 @@ class LLMDetector:
             return results
 
         except Exception as e:
-            logger.error("AI analysis failed")
+            logger.error_with_context("AI analysis failed")
             logger.error_with_context(f"Batch LLM analysis failed: {str(e)}")
             return [(0.0, {"error": str(e)})] * len(texts)
 

@@ -131,7 +131,7 @@ class Sentiment():
         logger.debug_with_context(f"get_user_sentiment called with username={username}, output_file={output_file}, sort={sort}, time_filter={time_filter}")
         comments = self.api.parse_user(username, headers=self.headers, limit=self.limit, 
                                      sort=sort, time_filter=time_filter)
-        self.logger.debug(f"Retrieved {len(comments)} comments for user '{username}'")
+        logger.debug_with_context(f"Retrieved {len(comments)} comments for user '{username}'")
         if asyncio.get_event_loop().is_running():
             future = asyncio.ensure_future(self._analyze(comments))
             self.score, self.results = asyncio.get_event_loop().run_until_complete(future)
@@ -155,7 +155,7 @@ class Sentiment():
                                           article,
                                           headers=self.headers,
                                           limit=self.limit)
-        self.logger.debug(f"Retrieved {len(comments)} comments for listing '/r/{subreddit}/comments/{article}'")
+        logger.debug_with_context(f"Retrieved {len(comments)} comments for listing '/r/{subreddit}/comments/{article}'")
         if asyncio.get_event_loop().is_running():
             future = asyncio.ensure_future(self._analyze(comments))
             self.score, self.results = asyncio.get_event_loop().run_until_complete(future)
@@ -172,13 +172,13 @@ class Sentiment():
         :param comments: comments to perform analysis on.
         :return: tuple of (sentiment_score, list of AnalysisResult objects)
         """
-        self.logger.debug("Starting _analyze function")
+        logger.debug_with_context("Starting _analyze function")
         sentiment_analyzer = SentimentIntensityAnalyzer()
         final_score = 0
         results = []
         cleanup_regex = re.compile('<.*?>')
         total_comments = len(comments)
-        self.logger.info(f"📊 Retrieved {total_comments} comments to analyze")
+        logger.info_with_context(f"📊 Retrieved {total_comments} comments to analyze")
         progress = Progress(
             SpinnerColumn(spinner_name="dots"),
             TextColumn("[bold blue]{task.description}"),
@@ -228,12 +228,12 @@ class Sentiment():
                         self._pending_results.append(result)
                         # Process batch when full or at end
                         if len(self._llm_batch) >= 10 or i == total_comments:
-                            self.logger.debug(f"Processing LLM batch of {len(self._llm_batch)} items")
+                            logger.debug_with_context(f"Processing LLM batch of {len(self._llm_batch)} items")
                             progress.update(llm_task, visible=True)
                             progress.update(llm_task, description="🤖 LLM analysis in progress...")
                             batch_results = await self.llm_detector.analyze_batch(self._llm_batch)
                             progress.update(llm_task, description="✅ LLM analysis complete")
-                            self.logger.debug(f"LLM batch_results: {batch_results}")
+                            logger.debug_with_context(f"LLM batch_results: {batch_results}")
                             progress.update(llm_task, visible=False)
                             # Update pending results with batch results
                             for batch_idx, (risk_score, findings) in zip(self._llm_batch_indices, batch_results):
@@ -246,7 +246,7 @@ class Sentiment():
                                     result.pii_risk_score = max(result.pii_risk_score, risk_score)
                                 # Add this result to final results immediately
                                 results.append(result)
-                                self.logger.debug("Added result to final results")
+                                logger.debug_with_context("Added result to final results")
                             # Clear batch
                             self._llm_batch = []
                             self._llm_batch_indices = []
@@ -268,14 +268,14 @@ class Sentiment():
                         ))
                     progress.update(main_task, advance=1)
                 except Exception as e:
-                    self.logger.exception(f"Error processing comment {i}: {e}")
+                    logger.error_with_context(f"Error processing comment {i}: {e}")
                     continue
             try:
                 rounded_final = round(final_score/len(comments), 4)
-                self.logger.debug(f"Final sentiment score calculated: {rounded_final}")
+                logger.debug_with_context(f"Final sentiment score calculated: {rounded_final}")
                 return rounded_final, results
             except ZeroDivisionError:
-                self.logger.error("No comments found")
+                logger.error_with_context("No comments found")
                 return 0.0, []
     def _create_progress(self):
         """Unified progress context manager"""
@@ -288,7 +288,7 @@ class Sentiment():
         )
     async def _analyze_pii(self, result, progress):
         """PII analysis handler"""
-        self.logger.debug("Starting _analyze_pii")
+        logger.debug_with_context("Starting _analyze_pii")
         with self.progress_context(progress, "🔍 PII Analysis") as p:
             pii_risk, pii_matches = self.pii_detector.get_pii_risk_score(result.text)
             return result._replace(
@@ -297,7 +297,7 @@ class Sentiment():
             )
     async def _analyze_llm(self, result, progress):
         """LLM analysis handler"""
-        self.logger.debug("Starting _analyze_llm")
+        logger.debug_with_context("Starting _analyze_llm")
         with self.progress_context(progress, "🤖 LLM Analysis") as p:
             llm_risk, findings = await self.llm_detector.analyze_text(result.text)
             updated_result = result._replace(
