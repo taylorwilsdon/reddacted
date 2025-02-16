@@ -40,7 +40,9 @@ reddacted user yourusername \
 - Session-based authentication if you choose - it is optional unless you want to delete
 - Keep your nonsense comments with lots of upvotes and good vibes without unintentionally doxing yourself someday off in the future when you run for mayor.
 
-
+```
+reddacted user taylorwilsdon --limit 3
+```
 https://github.com/user-attachments/assets/db088d58-2f53-4513-95cc-d4b70397ff82
 
 
@@ -73,6 +75,8 @@ https://github.com/user-attachments/assets/10934119-95f5-4f62-b8e0-ebb883fbd57b
 
 
 ## 💡 FAQ
+
+
 
 ## Support & Community
 Join our subreddit: [r/reddacted](https://reddit.com/r/reddacted)
