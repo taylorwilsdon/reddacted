@@ -102,6 +102,8 @@ class Reddit(api.API):
             'processed': 0,
             'success': 0,
             'failures': 0,
+            'successful_ids': [],
+            'failed_ids': [],
             'errors': []
         }
 
@@ -115,12 +117,16 @@ class Reddit(api.API):
                             logger.debug(f"Deleting comment ID {comment}")
                             print(f'would have comment.deleted() {comment}')
                             # comment.delete()
+                            results['successful_ids'].append(comment_id)
+                            results['success'] += 1
                         elif action == 'update':
                             logger.debug(f"Updating comment ID {comment}")
                             comment.edit("This comment has been reddacted to preserve online privacy - see r/reddacted for more info")
-                        results['success'] += 1
+                            results['successful_ids'].append(comment_id)
+                            results['success'] += 1
                     except Exception as e:
                         results['failures'] += 1
+                        results['failed_ids'].append(comment_id)
                         results['errors'].append({
                             'comment_id': comment_id,
                             'error': str(e)
