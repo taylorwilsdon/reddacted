@@ -21,7 +21,10 @@ import contextlib
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 # Configure logging format
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO  # Set default level to INFO
+)
 
 _COMMENT_ANALYSIS_HEADERS = {
     'User-agent': "reddacted"
@@ -63,8 +66,10 @@ class Sentiment():
         self.debug = debug
         self.logger = logging.getLogger(__name__)
         if self.debug:
+            logging.getLogger().setLevel(logging.DEBUG)  # Set root logger to DEBUG
             self.logger.setLevel(logging.DEBUG)
         else:
+            logging.getLogger().setLevel(logging.INFO)  # Set root logger to INFO
             self.logger.setLevel(logging.INFO)
         self.logger.debug("Initializing Sentiment Analyzer")
 
