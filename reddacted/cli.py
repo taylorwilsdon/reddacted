@@ -10,6 +10,7 @@ from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.columns import Columns
 from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.exceptions import handle_exception
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
 import requests
@@ -180,7 +181,6 @@ class User(BaseAnalyzeCommand):
                 time_filter=parsed_args.time
             )
         except AttributeError as e:
-            from reddacted.utils.exceptions import handle_exception
             handle_exception(
                 e,
                 f"Missing or invalid arguments for user '{parsed_args.username}'\n" +
@@ -189,7 +189,6 @@ class User(BaseAnalyzeCommand):
             )
             raise
         except Exception as e:
-            from reddacted.utils.exceptions import handle_exception
             handle_exception(
                 e,
                 f"Failed to analyze user '{parsed_args.username}'\n" +
@@ -378,11 +377,6 @@ def suggest_command(input_command):
 
 def main(argv=sys.argv[1:]):
     try:
-        # Configure logging based on debug flag
-        log_level = logging.DEBUG if "--debug" in argv else logging.INFO
-        global logger
-        logger = get_logger(__name__, level=log_level)
-        
         app = CLI()
         
         if len(argv) > 0:
