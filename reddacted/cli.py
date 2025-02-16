@@ -199,42 +199,42 @@ class User(BaseAnalyzeCommand):
 
 class CLI(App):
     def __init__(self):
-        command_manager = CommandManager('reddit.sentiment')
+        command_manager = CommandManager('reddacted.analysis')
         command_manager.add_command('delete', DeleteComments)
         command_manager.add_command('update', UpdateComments)
         
         super(CLI, self).__init__(
             version=1.0,
             description="""
-Reddit Sentiment & PII Analysis Tool
+                Reddit LLM PII & Sentiment Analysis Tool
 
-Commands:
-  listing     Analyze a Reddit post and its comments
-  user        Analyze a user's comment history
-  delete      Delete comments by ID
-  update      Replace comment content with r/reddacted
-  
-Authentication:
-  Set these environment variables for Reddit API access:
-    REDDIT_USERNAME
-    REDDIT_PASSWORD
-    REDDIT_CLIENT_ID
-    REDDIT_CLIENT_SECRET
+                Commands:
+                listing     Analyze a Reddit post and its comments
+                user        Analyze a user's comment history
+                delete      Delete comments by ID
+                update      Replace comment content with r/reddacted
+                
+                Authentication:
+                Set these environment variables for Reddit API access:
+                    REDDIT_USERNAME
+                    REDDIT_PASSWORD
+                    REDDIT_CLIENT_ID
+                    REDDIT_CLIENT_SECRET
 
-LLM Configuration:
-  --openai-key     OpenAI API key
-  --local-llm      Local LLM endpoint URL
-  --openai-base    Custom OpenAI API base URL
-  --model          Model name to use (default: gpt-4)
-  
-Common Options:
-  --output-file    Save detailed analysis to file
-  --enable-auth    Use Reddit API authentication
-  --disable-pii    Skip PII detection
-  --pii-only       Show only comments with PII
-  --limit          Max comments to analyze (0=unlimited)
-  --batch-size     Comments per batch for delete/update
-""",
+                LLM Configuration:
+                --openai-key     OpenAI API key
+                --local-llm      Local LLM endpoint URL
+                --openai-base    Custom OpenAI API base URL
+                --model          Model name to use (default: gpt-4)
+                
+                Common Options:
+                --output-file    Save detailed analysis to file
+                --enable-auth    Use Reddit API authentication
+                --disable-pii    Skip PII detection
+                --pii-only       Show only comments with PII
+                --limit          Max comments to analyze (0=unlimited)
+                --batch-size     Comments per batch for delete/update
+                """,
             command_manager=command_manager,
             deferred_help=True,)
 
