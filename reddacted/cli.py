@@ -8,13 +8,12 @@ from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.columns import Columns
-
+from reddacted.utils.logging import get_logger, with_logging
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
-
 import requests
 
-
+logger = get_logger(__name__)
 console = Console()
 
 
@@ -147,6 +146,7 @@ class User(BaseAnalyzeCommand):
         parser.add_argument('username', help='The name of the user.')
         return parser
 
+    @with_logging(logger)
     def take_action(self, parsed_args):
         """Execute the user analysis command
         
@@ -160,7 +160,7 @@ class User(BaseAnalyzeCommand):
             AttributeError: If required arguments are missing
             Exception: For other unexpected errors
         """
-        print(' user class')
+        logger.debug("Executing user analysis command")
         try:
             llm_config = CLI()._configure_llm(parsed_args, console)
             limit = None if parsed_args.limit == 0 else parsed_args.limit
@@ -241,8 +241,10 @@ class CLI(App):
             command_manager=command_manager,
             deferred_help=True,)
 
+    @with_logging(logger)
     def _configure_llm(self, args, console):
         """Centralized LLM configuration handler"""
+        logger.debug("Configuring LLM settings")
         llm_config = None
         if args.disable_pii:
             return None

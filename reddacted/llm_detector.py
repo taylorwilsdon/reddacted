@@ -111,7 +111,7 @@ class LLMDetector:
 
         except Exception as e:
             logger.error("AI analysis failed")
-            print(f"Batch LLM analysis failed: {str(e)}")
+            logger.error(f"Batch LLM analysis failed: {str(e)}")
             return [(0.0, {"error": str(e)})] * len(texts)
 
     async def analyze_text(self, text: str) -> Tuple[float, Dict[str, Any]]:
@@ -123,5 +123,5 @@ class LLMDetector:
             results = await self.analyze_batch([text])
             return results[0]
         except Exception as e:
-            print(f"LLM analysis failed: {str(e)}")
+            logger.error(f"LLM analysis failed: {str(e)}")
             return 0.0, {"error": str(e)}

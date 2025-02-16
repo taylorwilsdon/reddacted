@@ -96,7 +96,7 @@ class Reddit(api.API):
         :param batch_size: Number of comments to process per batch
         :return: Dict with results and statistics
         """
-        print('_process_comments fired')
+        logger.debug("Starting _process_comments")
         if not self.authenticated:
             raise AuthenticationRequiredError(f"Full authentication required for comment {action}")
 

@@ -67,17 +67,11 @@ class Sentiment():
             limit (int): Maximum number of comments to analyze
         """
         # Set up logging
-        print('init sentiment')
         self.debug = debug
-        self.logger = logger  # Use module logger
         if debug:
-            logging.getLogger().setLevel(logging.DEBUG)
-            logging.getLogger('urllib3').setLevel(logging.DEBUG)
             logger.setLevel(logging.DEBUG)
             logger.info("Debug logging enabled")
         else:
-            logging.getLogger().setLevel(logging.INFO)
-            logging.getLogger('urllib3').setLevel(logging.INFO)
             logger.setLevel(logging.INFO)
         logger.debug("Initializing Sentiment Analyzer")
 
