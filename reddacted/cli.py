@@ -215,9 +215,11 @@ class CLI(App):
         else:
             set_global_logging_level(logging.INFO)
         
-        command_manager = CommandManager('reddacted.analysis')
+        command_manager = CommandManager('reddacted.commands')
+        # Analysis commands
         command_manager.add_command('listing', Listing)
         command_manager.add_command('user', User)
+        # Modification commands  
         command_manager.add_command('delete', DeleteComments)
         command_manager.add_command('update', UpdateComments)
         
