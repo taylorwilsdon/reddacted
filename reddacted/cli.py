@@ -309,8 +309,8 @@ class CLI(App):
         console.print("[yellow]LLM required for PII detection[/]")
         llm_choice = Prompt.ask(
             "Choose LLM provider",
-            choices=["openai", "local"],
-            default="openai"
+            choices=["local", "openai"],
+            default="local"
         )
 
         if llm_choice == "openai":
