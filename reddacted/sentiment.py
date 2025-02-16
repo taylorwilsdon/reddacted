@@ -301,6 +301,7 @@ class Sentiment():
                     target.write(f"- Sentiment Score: `{result.sentiment_score:.2f}` {result.sentiment_emoji}\n")
                     target.write(f"- PII Risk Score: `{result.pii_risk_score:.2f}`\n")
                     target.write(f"- Votes: ⬆️ `{result.upvotes}` ⬇️ `{result.downvotes}`\n")
+                    target.write(f"- Comement ID: `{result.comment_id}`\n\n")
                     # PII Matches Section
                     if result.pii_matches:
                         target.write("### Pattern-based PII Detected\n")
@@ -361,7 +362,8 @@ class Sentiment():
                     border_style="green",
                     padding=(1, 4)
                 )
-            )
+            ),
+
 
     @with_logging(logger)
     def _generate_summary_table(self, filtered_results: List[AnalysisResult]) -> Table:
