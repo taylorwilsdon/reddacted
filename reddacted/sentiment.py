@@ -609,11 +609,11 @@ class Sentiment():
             Text("Ready-to-use commands for high-risk comments:", style="bold yellow"),
             Text.assemble(
                 ("Delete comments:\n", "bold red"),
-                ((comment_ids, 'delete'), "italic red")
+                ("reddacted listing delete " + " ".join(comment_ids), "italic red")
             ),
             Text.assemble(
                 ("\nUpdate/reddact comments:\n", "bold blue"),
-                ((comment_ids, 'update'), "italic blue")
+                ("reddacted listing update " + " ".join(comment_ids), "italic blue")
             ) if comment_ids else Text("No high-risk comments found", style="green")
         )
         panels.append(
