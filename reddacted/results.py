@@ -4,6 +4,7 @@
 # Standard library
 import logging
 import os
+from itertools import zip_longest
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
@@ -209,22 +210,44 @@ class ResultsFormatter:
         sort: str
     ) -> Panel:
         """Creates a panel displaying the features configuration."""
+        # Create a table with two columns
+        features_table = Table(
+            show_header=False,
+            box=None,
+            padding=(0, 2),
+            collapse_padding=True,
+            expand=True
+        )
+        features_table.add_column("Left", ratio=1, justify="left")
+        features_table.add_column("Right", ratio=1, justify="left")
+        
+        # Define all config items
         config_items = [
-            ("Authentication", self._format_status(auth_enabled)),
-            ("PII Detection", self._format_status(pii_enabled)),
-            (
-                "LLM Analysis", 
-                Text(llm_config['model'], style="green") if llm_config else self._format_status(False)
-            ),
-            ("PII-Only Filter", self._format_status(pii_only, "Active", "Inactive")),
-            ("Comment Limit", Text(f"{limit}" if limit else "Unlimited", style="cyan")),
-            ("Sort Preference", Text(f"{sort}" if sort else "New", style="cyan"))
+            ("🔐 Authentication", self._format_status(auth_enabled)),
+            ("🔍 PII Detection", self._format_status(pii_enabled)),
+            ("🤖 LLM Analysis", Text(llm_config['model'], style="green") if llm_config else self._format_status(False)),
+            ("🎯 PII-Only Filter", self._format_status(pii_only, "Active", "Inactive")),
+            ("📊 Comment Limit", Text(f"{limit}" if limit else "Unlimited", style="cyan")),
+            ("📑 Sort Preference", Text(f"{sort}" if sort else "New", style="cyan"))
         ]
-        config_texts = [Text.assemble(f"{k}: ", v) for k, v in config_items]
+        
+        # Split items into two columns
+        mid_point = (len(config_items) + 1) // 2
+        left_items = config_items[:mid_point]
+        right_items = config_items[mid_point:]
+        
+        # Create formatted text for each column
+        for left, right in zip_longest(left_items, right_items, fillvalue=None):
+            left_text = Text.assemble(f"{left[0]}: ", left[1]) if left else Text("")
+            right_text = Text.assemble(f"{right[0]}: ", right[1]) if right else Text("")
+            features_table.add_row(left_text, right_text)
+            
         return Panel(
-            Group(*config_texts),
+            features_table,
             title="[bold]Features[/]",
-            border_style="blue"
+            border_style="blue",
+            padding=(1, 1),
+            expand=True
         )
 
     def _create_auth_panel(self) -> Panel:
