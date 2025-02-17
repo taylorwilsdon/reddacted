@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 # Third-party
 from rich.panel import Panel
+from rich import box
 from rich.columns import Columns
 from rich.console import Group
 from rich.text import Text
@@ -277,9 +278,10 @@ class ResultsFormatter:
         # Create metrics table
         metrics_table = Table(
             show_header=False,
-            box=None,
+            box=box.SIMPLE,
             padding=(0, 2),
-            collapse_padding=True
+            collapse_padding=True,
+            expand=True
         )
         metrics_table.add_column("Icon", justify="right", style="bold")
         metrics_table.add_column("Label", style="bold")
@@ -389,12 +391,13 @@ class ResultsFormatter:
 
     def _create_llm_panel(self, result: AnalysisResult) -> Panel:
         """Creates a panel displaying LLM analysis findings."""
-        # Create metrics table similar to basic info panel
+        # Create metrics table
         metrics_table = Table(
             show_header=False,
-            box=None,
+            box=box.SIMPLE,
             padding=(0, 2),
-            collapse_padding=True
+            collapse_padding=True,
+            expand=True
         )
         metrics_table.add_column("Icon", justify="right", style="bold")
         metrics_table.add_column("Label", style="bold")
