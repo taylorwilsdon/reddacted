@@ -5,18 +5,10 @@
 import asyncio
 import logging
 import re
-from dataclasses import dataclass
-from os import environ
-from typing import List, Dict, Any, Optional, Tuple, Union, ContextManager
+from typing import List, Dict, Any, Optional, Tuple
 
 # Third-party
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from rich.panel import Panel
-from rich.columns import Columns
-from rich.console import Group
-from rich.text import Text
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 # Local
 from reddacted.utils.logging import get_logger, with_logging
@@ -25,28 +17,13 @@ from reddacted.api.scraper import Scraper
 from reddacted.api.reddit import Reddit
 from reddacted.pii_detector import PIIDetector
 from reddacted.llm_detector import LLMDetector
+from reddacted.results import ResultsFormatter, AnalysisResult
 
 logger = get_logger(__name__)
 
 _COMMENT_ANALYSIS_HEADERS = {
     'User-agent': "reddacted"
 }
-
-
-@dataclass
-class AnalysisResult:
-    """Holds the results of both sentiment and PII analysis"""
-    comment_id: str
-    sentiment_score: float
-    sentiment_emoji: str
-    pii_risk_score: float
-    pii_matches: List[Any]
-    permalink: str
-    text: str
-    upvotes: int = 0
-    downvotes: int = 0
-    llm_risk_score: float = 0.0
-    llm_findings: Optional[Dict[str, Any]] = None
 
 
 # Sentiment constants
