@@ -360,6 +360,102 @@ class ResultsFormatter:
             )
         return str(detail)
 
+    def _write_comment_details(self, target, result, comment_count):
+        """Write detailed analysis for a single comment"""
+        target.write(f"## Comment {comment_count}\n\n")
+        target.write(f"**Text**: {result.text}\n\n")
+        target.write(f"- Sentiment Score: `{result.sentiment_score:.2f}` {result.sentiment_emoji}\n")
+        target.write(f"- PII Risk Score: `{result.pii_risk_score:.2f}`\n")
+        target.write(f"- Votes: ⬆️ `{result.upvotes}` ⬇️ `{result.downvotes}`\n")
+        target.write(f"- Comment ID: `{result.comment_id}`\n\n")
+
+        if result.pii_matches:
+            target.write("### Pattern-based PII Detected\n")
+            for pii in result.pii_matches:
+                target.write(f"- **{pii.type}** (confidence: {pii.confidence:.2f})\n")
+            target.write("\n")
+
+        if result.llm_findings:
+            target.write("### LLM Privacy Analysis\n")
+            target.write(f"- **Risk Score**: `{result.llm_risk_score:.2f}`\n")
+            if isinstance(result.llm_findings, dict):
+                target.write(f"- **PII Detected**: {'Yes' if result.llm_findings.get('has_pii') else 'No'}\n")
+                if details := result.llm_findings.get('details'):
+                    target.write("\n#### Findings\n")
+                    for detail in details:
+                        target.write(f"- {detail}\n")
+                if reasoning := result.llm_findings.get('reasoning'):
+                    target.write(f"\n#### Reasoning\n{reasoning}\n")
+            target.write("\n")
+        target.write("---\n\n")
+
+    def _update_summary_stats(self, result, sentiment_scores):
+        """Update running summary statistics"""
+        sentiment_scores.append(result.sentiment_score)
+        if result.pii_risk_score > 0:
+            self.total_pii_comments = getattr(self, 'total_pii_comments', 0) + 1
+        if result.llm_risk_score > 0:
+            self.total_llm_pii_comments = getattr(self, 'total_llm_pii_comments', 0) + 1
+
+    def _write_summary_section(self, target, comments, sentiment_scores, 
+                             total_pii_comments, total_llm_pii_comments,
+                             max_risk_score, riskiest_comment):
+        """Write the summary section of the report"""
+        target.write("\n# Summary\n\n")
+        target.write(f"- Total Comments Analyzed: {len(comments)}\n")
+        target.write(f"- Comments with PII Detected: {total_pii_comments} ({total_pii_comments/len(comments):.1%})\n")
+        target.write(f"- Comments with LLM Privacy Risks: {total_llm_pii_comments} ({total_llm_pii_comments/len(comments):.1%})\n")
+        target.write(f"- Average Sentiment Score: {sum(sentiment_scores)/len(sentiment_scores):.2f}\n")
+        target.write(f"- Highest PII Risk Score: {max_risk_score:.2f}\n")
+        if riskiest_comment:
+            target.write(f"- Riskiest Comment Preview: '{riskiest_comment}'\n")
+        target.write("✅ Analysis complete\n")
+
+    def _print_completion_message(self, filename, comments, results):
+        """Print completion message with file info and action panel"""
+        high_risk_comments = [r for r in results if r.pii_risk_score > 0.5 or 
+                            (r.llm_findings and r.llm_findings.get('has_pii', False))]
+        comment_ids = [r.comment_id for r in high_risk_comments]
+        
+        completion_group = Group(
+            Panel(
+                Text.assemble(
+                    ("📄 Report saved to ", "bold blue"),
+                    (f"{filename}\n", "bold yellow"),
+                    ("🗒️  Total comments: ", "bold blue"),
+                    (f"{len(comments)}\n", "bold cyan"),
+                    ("🔐 PII detected in: ", "bold blue"),
+                    (f"{self.total_pii_comments} ", "bold red"),
+                    (f"({self.total_pii_comments/len(comments):.1%})\n", "dim"),
+                    ("🤖 LLM findings in: ", "bold blue"),
+                    (f"{self.total_llm_pii_comments} ", "bold magenta"),
+                    (f"({self.total_llm_pii_comments/len(comments):.1%})", "dim")
+                ),
+                title="[bold green]Analysis Complete[/]",
+                border_style="green",
+                padding=(1, 4)
+            ),
+            Panel.fit(
+                Group(
+                    Text("Ready-to-use commands for high-risk comments:", style="bold yellow"),
+                    Text.assemble(
+                        ("Delete comments:\n", "bold red"),
+                        ("reddacted delete " + " ".join(comment_ids), "italic red")
+                    ),
+                    Text.assemble(
+                        ("\nReddact (edit) comments:\n", "bold blue"),
+                        ("reddacted update " + " ".join(comment_ids), "italic blue")
+                    ) if comment_ids else Text("No high-risk comments found", style="green")
+                ),
+                border_style="yellow",
+                title="[bold]Actions[/]"
+            )
+        )
+        with self.create_progress() as progress:
+            task = progress.add_task("", total=1, visible=False)
+            progress.console.print(completion_group)
+            progress.update(task, advance=1)
+
     def _create_summary_panel(self, summary_table):
         return Panel(
             summary_table,
