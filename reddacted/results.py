@@ -328,42 +328,71 @@ class ResultsFormatter:
 
     def _create_llm_panel(self, result: AnalysisResult) -> Panel:
         """Creates a panel displaying LLM analysis findings."""
-        llm_contents = []
+        # Create metrics table similar to basic info panel
+        metrics_table = Table(
+            show_header=False,
+            box=None,
+            padding=(0, 2),
+            collapse_padding=True
+        )
+        metrics_table.add_column("Icon", justify="right", style="bold")
+        metrics_table.add_column("Label", style="bold")
+        metrics_table.add_column("Value", justify="left")
+
         if isinstance(result.llm_findings, dict) and "error" in result.llm_findings:
-            llm_contents.extend(self._create_llm_error_content(result.llm_findings["error"]))
-        else:
-            llm_contents.extend(self._create_llm_analysis_content(result))
-        return Panel(
-            Group(*llm_contents),
-            title="[bold]LLM Analysis[/]",
-            border_style="magenta"
+            error_group = self._create_llm_error_content(result.llm_findings["error"])
+            return Panel(error_group, title="[bold]LLM Analysis[/]", border_style="red")
+        
+        # Risk score styling
+        risk_style = "red bold" if result.llm_risk_score > 0.5 else "green bold"
+        pii_style = "red bold" if result.llm_findings.get('has_pii', False) else "green bold"
+        
+        # Add main metrics rows
+        metrics_table.add_row(
+            "🎯",
+            "Risk Score:",
+            f"[{risk_style}]{result.llm_risk_score:>6.2f}[/]"
+        )
+        metrics_table.add_row(
+            "🔍",
+            "PII Detected:",
+            f"[{pii_style}]{'Yes' if result.llm_findings.get('has_pii') else 'No':>6}[/]"
         )
 
-    def _create_llm_error_content(self, error_msg: str) -> List[Text]:
-        """Creates content for LLM analysis errors."""
-        return [
-            Text("❌ LLM Analysis Failed", style="bold red"),
-            Text(f"Error: {error_msg}", style="red"),
-            Text("Please check your OpenAI API key and ensure you have sufficient credits.", style="yellow")
-        ]
+        # Create content groups
+        content_groups = [metrics_table]
 
-    def _create_llm_analysis_content(self, result: AnalysisResult) -> List[Text]:
-        """Creates content for LLM analysis findings."""
-        risk_style = "red" if result.llm_risk_score > 0.5 else "green"
-        llm_contents = [
-            Text(f"Risk Score: [{risk_style}]{result.llm_risk_score:.2f}[/]"),
-            Text(f"PII Detected: [{'red' if result.llm_findings.get('has_pii') else 'green'}]{'Yes' if result.llm_findings.get('has_pii') else 'No'}[/]")
-        ]
+        # Add findings if present
         if details := result.llm_findings.get('details'):
-            llm_contents.append(Text("Findings:", style="bold"))
-            for detail in details:
-                detail_text = self._format_llm_detail(detail)
-                llm_contents.append(Text(f"• {detail_text}", style="cyan"))
+            findings_table = Table(show_header=False, box=None, padding=(0, 2))
+            findings_table.add_column(style="cyan")
+            content_groups.extend([
+                Text("\n📋 Findings:", style="bold"),
+                *[Text(f"  • {self._format_llm_detail(detail)}", style="cyan") for detail in details]
+            ])
+
+        # Add risk factors if present
         if risk_factors := result.llm_findings.get('risk_factors'):
-            llm_contents.append(Text("Risk Factors:", style="bold"))
-            for factor in risk_factors:
-                llm_contents.append(Text(f"• {factor}", style="yellow"))
-        return llm_contents
+            content_groups.extend([
+                Text("\n⚠️ Risk Factors:", style="bold"),
+                *[Text(f"  • {factor}", style="yellow") for factor in risk_factors]
+            ])
+
+        return Panel(
+            Group(*content_groups),
+            title="[bold]LLM Analysis[/]",
+            border_style="magenta",
+            padding=(1, 1)
+        )
+
+    def _create_llm_error_content(self, error_msg: str) -> Group:
+        """Creates content for LLM analysis errors."""
+        error_table = Table(show_header=False, box=None, padding=(0, 2))
+        error_table.add_column(style="red")
+        error_table.add_row("❌ LLM Analysis Failed")
+        error_table.add_row(f"Error: {error_msg}")
+        error_table.add_row("Please check your OpenAI API key and ensure you have sufficient credits.")
+        return Group(error_table)
 
     def _format_llm_detail(self, detail: Any) -> str:
         """Formats LLM detail information."""
