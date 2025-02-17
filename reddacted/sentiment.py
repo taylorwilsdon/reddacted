@@ -127,7 +127,10 @@ class Sentiment():
             for i, comment_data in enumerate(comments, 1):
                 try:
                     clean_comment = re.sub(cleanup_regex, '', str(comment_data['text']))
-                    progress.update(main_task, description=f"💭 Processing comment {i}/{total_comments}")
+                    progress.update(
+                        main_task,
+                        description=f"[bold blue]💭 Processing comment[/] [cyan]{i}[/]/[cyan]{total_comments}[/]"
+                    )
                     # Sentiment analysis
                     all_scores = sentiment_analyzer.polarity_scores(clean_comment)
                     score = all_scores['compound']
@@ -163,12 +166,17 @@ class Sentiment():
                         self._pending_results.append(result)
                         # Process batch when full or at end
                         if len(self._llm_batch) >= 10 or i == total_comments:
-                            logger.debug_with_context(f"Processing LLM batch of {len(self._llm_batch)} items")
+                            batch_size = len(self._llm_batch)
                             progress.update(llm_task, visible=True)
-                            progress.update(llm_task, description="🤖 LLM analysis in progress...")
+                            progress.update(
+                                llm_task,
+                                description=f"[bold blue]🤖 Processing LLM batch[/] ([cyan]{batch_size}[/] items)"
+                            )
                             batch_results = await self.llm_detector.analyze_batch(self._llm_batch)
-                            progress.update(llm_task, description="✅ LLM analysis complete")
-                            logger.debug_with_context(f"LLM batch_results: {batch_results}")
+                            progress.update(
+                                llm_task,
+                                description=f"[bold green]✅ LLM batch complete[/] ([cyan]{batch_size}[/] items analyzed)"
+                            )
                             progress.update(llm_task, visible=False)
                             # Update pending results with batch results
                             for batch_idx, (risk_score, findings) in zip(self._llm_batch_indices, batch_results):
