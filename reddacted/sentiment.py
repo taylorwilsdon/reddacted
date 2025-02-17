@@ -97,7 +97,9 @@ class Sentiment():
             logger.debug_with_context("Reddit API initialized")
         else:
             logger.debug_with_context("Authentication not enabled")
-        self._print_config(auth_enabled, pii_enabled, llm_config)
+        self.formatter = ResultsFormatter()
+        self.formatter.print_config(auth_enabled, pii_enabled, llm_config, 
+                                  self.pii_only, self.limit, self.sort)
 
 
     @with_logging(logger)
@@ -225,9 +227,6 @@ class Sentiment():
         else:
             return SAD_SENTIMENT
 
-    def __init__(self):
-        """Initialize the results formatter"""
-        self.formatter = ResultsFormatter()
 
     @with_logging(logger)
     def _get_comments(self, source_type: str, identifier: str, **kwargs) -> List[Dict[str, Any]]:
