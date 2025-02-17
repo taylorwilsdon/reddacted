@@ -269,19 +269,49 @@ class ResultsFormatter:
 
     def _create_basic_info_panel(self, result: AnalysisResult) -> Panel:
         """Creates a panel displaying basic comment information."""
-        sentiment_style = "bold yellow"
+        # Create metrics table
+        metrics_table = Table(
+            show_header=False,
+            box=None,
+            padding=(0, 2),
+            collapse_padding=True
+        )
+        metrics_table.add_column("Icon", justify="right", style="bold")
+        metrics_table.add_column("Label", style="bold")
+        metrics_table.add_column("Value", justify="left")
+        
+        # Risk score styling
         risk_score_style = "red bold" if result.pii_risk_score > 0.5 else "green bold"
+        
+        # Add rows with proper spacing and alignment
+        metrics_table.add_row(
+            "🎭", 
+            "Sentiment:",
+            f"[cyan bold]{result.sentiment_score:>6.2f}[/] {result.sentiment_emoji}"
+        )
+        metrics_table.add_row(
+            "🔒",
+            "Privacy Risk:",
+            f"[{risk_score_style}]{result.pii_risk_score:>6.2f}[/]"
+        )
+        metrics_table.add_row(
+            "📊",
+            "Votes:",
+            f"[green]⬆️ {result.upvotes:>3}[/] [dim]/[/] [red]⬇️ {result.downvotes:>3}[/]"
+        )
+
+        # Combine comment text and metrics
         basic_info = Group(
             Text(result.text, style="white"),
-            Text("━" * 50, style="dim"),
-            Text(f"🎭 Sentiment Score: [cyan bold]{result.sentiment_score:.2f}[/] {result.sentiment_emoji}", style="bold"),
-            Text(f"🔒 Privacy Risk Score: [{risk_score_style}]{result.pii_risk_score:.2f}[/]", style="bold"),
-            Text(f"📊 Votes: [green]{result.upvotes}[/] / [red]{result.downvotes}[/]", style="bold")
+            Text("─" * 50, style="dim"),
+            metrics_table
         )
+        
         return Panel(
             basic_info,
             title="[bold]Basic Info[/]",
-            border_style="blue"
+            border_style="blue",
+            padding=(1, 1)
         )
 
     def _create_pii_panel(self, result: AnalysisResult) -> Panel:
