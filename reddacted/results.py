@@ -176,10 +176,9 @@ class ResultsFormatter:
             preview = (result.text[:67] + "...") if len(result.text) > 70 else result.text
             preview = f"[link={permalink}]{preview}[/link]"
             # Format votes based on whether they're positive or negative
-            vote_display = (
-                f"[green]⬆️ {result.upvotes}[/]" if result.upvotes > result.downvotes else
-                f"[red]⬇️ {result.downvotes}[/]" if result.downvotes > result.upvotes else
-                f"[dim]0[/]"
+            vote_display  = (f"[green]⬆️ {result.upvotes:>3}[/]" if result.upvotes > result.downvotes else
+            f"[red]⬇️ {result.downvotes:>3}[/]" if result.downvotes > result.upvotes else
+            f"[dim]0[/]"
             )
             
             table.add_row(
