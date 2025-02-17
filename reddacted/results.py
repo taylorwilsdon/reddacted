@@ -46,20 +46,24 @@ class ResultsFormatter:
     @with_logging(logger)
     def create_progress(self) -> Progress:
         """Creates a unified progress context manager"""
-        return Progress(
-            SpinnerColumn(spinner_name="dots"),
-            TextColumn("[bold blue]{task.description}"),
-            TimeElapsedColumn(),
-            transient=True
-        )
+        if not hasattr(self, '_progress'):
+            self._progress = Progress(
+                SpinnerColumn(spinner_name="dots"),
+                TextColumn("[bold blue]{task.description}"),
+                TimeElapsedColumn(),
+                transient=True
+            )
+        return self._progress
 
     @with_logging(logger)
     def generate_output_file(self, filename: str, comments: List[Dict[str, Any]], 
                            url: str, results: List[AnalysisResult], 
                            overall_score: float, overall_sentiment: str) -> None:
         """Outputs a file containing a detailed sentiment and PII analysis per sentence."""
-        with self.create_progress() as progress:
-            progress_task = progress.add_task("📝 Generating analysis report...", total=len(comments))
+        progress = self.create_progress()
+        progress_task = progress.add_task("📝 Generating analysis report...", total=len(comments))
+        
+        try:
 
             with open(filename, 'w+') as target:
                 target.write(f"# Analysis Report for '{url}'\n\n")
@@ -97,15 +101,19 @@ class ResultsFormatter:
                                          total_pii_comments, total_llm_pii_comments,
                                          max_risk_score, riskiest_comment)
 
-            self._print_completion_message(filename, comments, results)
+            self._print_completion_message(filename, comments, results, progress)
+        finally:
+            progress.stop()
 
     @with_logging(logger)
     def print_config(self, auth_enabled: bool, pii_enabled: bool, 
                     llm_config: Optional[Dict[str, Any]], 
                     pii_only: bool, limit: int, sort: str) -> None:
         """Prints the active configuration"""
-        with self.create_progress() as progress:
-            task = progress.add_task("", total=1, visible=False)
+        progress = self.create_progress()
+        task = progress.add_task("", total=1, visible=False)
+        
+        try:
             progress.console.print("\n[bold cyan]Active Configuration[/]")
             
             config_table = self._create_config_table(auth_enabled, pii_enabled, 
@@ -117,6 +125,8 @@ class ResultsFormatter:
                 
             progress.console.print(Columns(panels))
             progress.update(task, advance=1)
+        finally:
+            progress.stop()
 
     @with_logging(logger)
     def print_comments(self, comments: List[Dict[str, Any]], url: str, 
@@ -140,10 +150,14 @@ class ResultsFormatter:
         panels.append(self._create_summary_panel(summary_table))
         panels.append(self._create_action_panel(filtered_results))
 
-        with self.create_progress() as progress:
-            task = progress.add_task("", total=1, visible=False)
+        progress = self.create_progress()
+        task = progress.add_task("", total=1, visible=False)
+        
+        try:
             progress.console.print(Group(*panels))
             progress.update(task, advance=1)
+        finally:
+            progress.stop()
 
     def _should_show_result(self, result: AnalysisResult) -> bool:
         """Determines if a result should be shown based on PII detection settings"""
@@ -413,12 +427,13 @@ class ResultsFormatter:
             target.write(f"- Riskiest Comment Preview: '{riskiest_comment}'\n")
         target.write("✅ Analysis complete\n")
 
-    def _print_completion_message(self, filename, comments, results):
+    def _print_completion_message(self, filename, comments, results, progress):
         """Print completion message with file info and action panel"""
         high_risk_comments = [r for r in results if r.pii_risk_score > 0.5 or 
                             (r.llm_findings and r.llm_findings.get('has_pii', False))]
         comment_ids = [r.comment_id for r in high_risk_comments]
         
+        task = progress.add_task("", total=1, visible=False)
         completion_group = Group(
             Panel(
                 Text.assemble(
@@ -453,10 +468,8 @@ class ResultsFormatter:
                 title="[bold]Actions[/]"
             )
         )
-        with self.create_progress() as progress:
-            task = progress.add_task("", total=1, visible=False)
-            progress.console.print(completion_group)
-            progress.update(task, advance=1)
+        progress.console.print(completion_group)
+        progress.update(task, advance=1)
 
     def _create_summary_panel(self, summary_table):
         return Panel(
