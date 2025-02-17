@@ -159,25 +159,34 @@ class ResultsFormatter:
         table = Table(
             title="[bold]Comments Requiring Action[/]",
             header_style="bold magenta",
-            box=None
+            box=None,
+            padding=(0, 1),
+            collapse_padding=True
         )
-        table.add_column("Risk", justify="right", width=8)
-        table.add_column("Sentiment", width=12)
-        table.add_column("Comment Preview", width=75)
-        table.add_column("Votes", width=10)
-        table.add_column("ID", width=8)
+        table.add_column("Risk", justify="right", style="bold", width=10)
+        table.add_column("Sentiment", justify="center", width=15)
+        table.add_column("Comment Preview", width=70)
+        table.add_column("Votes", justify="right", width=12)
+        table.add_column("ID", justify="left", width=10)
         for result in filtered_results:
             risk_style = self._get_risk_style(result.pii_risk_score)
             risk_text = Text(f"{result.pii_risk_score:.0%}", style=risk_style)
             permalink = f"https://reddit.com{result.permalink}"
             preview = (result.text[:67] + "...") if len(result.text) > 70 else result.text
             preview = f"[link={permalink}]{preview}[/link]"
+            # Format votes based on whether they're positive or negative
+            vote_display = (
+                f"[green]⬆️ {result.upvotes}[/]" if result.upvotes > result.downvotes else
+                f"[red]⬇️ {result.downvotes}[/]" if result.downvotes > result.upvotes else
+                f"[dim]0[/]"
+            )
+            
             table.add_row(
                 risk_text,
-                Text(f"{result.sentiment_emoji} {result.sentiment_score:.2f}"),
+                Text(f"{result.sentiment_emoji} {result.sentiment_score:.2f}", justify="center"),
                 preview,
-                Text(f"⬆️ {result.upvotes} / ⬇️ {result.downvotes}"),
-                result.comment_id,
+                Text(vote_display, justify="right"),
+                result.comment_id
             )
         return table
 
@@ -318,10 +327,16 @@ class ResultsFormatter:
             "Privacy Risk:",
             f"[{risk_score_style}]{result.pii_risk_score:>6.2f}[/]"
         )
+        # Format votes based on whether they're positive or negative
+        vote_display = (
+            f"[green]⬆️ {result.upvotes:>3}[/]" if result.upvotes > result.downvotes else
+            f"[red]⬇️ {result.downvotes:>3}[/]" if result.downvotes > result.upvotes else
+            f"[dim]0[/]"
+        )
         metrics_table.add_row(
             "📊",
             "Votes:",
-            f"[green]⬆️ {result.upvotes:>3}[/] [dim]/[/] [red]⬇️ {result.downvotes:>3}[/]"
+            vote_display
         )
 
         # Combine comment text and metrics
