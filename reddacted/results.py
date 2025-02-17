@@ -40,6 +40,8 @@ class ResultsFormatter:
     
     def __init__(self):
         self.logger = get_logger(__name__)
+        self.total_pii_comments = 0
+        self.total_llm_pii_comments = 0
 
     @with_logging(logger)
     def create_progress(self) -> Progress:
