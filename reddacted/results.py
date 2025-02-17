@@ -164,11 +164,11 @@ class ResultsFormatter:
             padding=(0, 1),
             collapse_padding=True
         )
-        table.add_column("Risk", justify="right", style="bold", width=10)
+        table.add_column("Risk", justify="center", style="bold", width=10)
         table.add_column("Sentiment", justify="center", width=15)
-        table.add_column("Comment Preview", width=70)
-        table.add_column("Votes", justify="right", width=12)
-        table.add_column("ID", justify="left", width=10)
+        table.add_column("Comment Preview", width=75)
+        table.add_column("Votes", justify="center", width=10)
+        table.add_column("ID", justify="center", width=10)
         for result in filtered_results:
             risk_style = self._get_risk_style(result.pii_risk_score)
             risk_text = Text(f"{result.pii_risk_score:.0%}", style=risk_style)
@@ -176,16 +176,16 @@ class ResultsFormatter:
             preview = (result.text[:67] + "...") if len(result.text) > 70 else result.text
             preview = f"[link={permalink}]{preview}[/link]"
             # Format votes based on whether they're positive or negative
-            vote_display  = (f"[green]⬆️ {result.upvotes:>3}[/]" if result.upvotes > result.downvotes else
-            f"[red]⬇️ {result.downvotes:>3}[/]" if result.downvotes > result.upvotes else
-            f"[dim]0[/]"
+            vote_display = (
+                f"[green]⬆️ {result.upvotes:>3}[/]" if result.upvotes > result.downvotes else
+                f"[red]⬇️ {result.downvotes:>3}[/]" if result.downvotes > result.upvotes else
+                f"[dim]0[/]"
             )
-            
             table.add_row(
                 risk_text,
                 Text(f"{result.sentiment_emoji} {result.sentiment_score:.2f}", justify="center"),
                 preview,
-                Text(vote_display, justify="right"),
+                vote_display,
                 result.comment_id
             )
         return table
