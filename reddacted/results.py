@@ -243,15 +243,39 @@ class ResultsFormatter:
         sentiment: str
     ) -> Panel:
         """Creates a panel displaying the sentiment analysis summary."""
-        stats_text = Group(
-            Text(f"Analysis for: [cyan]{url}[/]"),
-            Text(f"📊 Comments analyzed: [cyan]{total_comments}[/]"),
-            Text(f"Overall Sentiment Score: [cyan bold]{score:.4f}[/] [yellow]{sentiment}[/]")
+        # Create metrics table
+        metrics_table = Table(
+            show_header=False,
+            box=None,
+            padding=(0, 2),
+            collapse_padding=True
         )
+        metrics_table.add_column("Icon", justify="right", style="bold")
+        metrics_table.add_column("Label", style="bold")
+        metrics_table.add_column("Value", justify="left")
+        
+        # Add rows with proper spacing and alignment
+        metrics_table.add_row(
+            "🔍",
+            "Analysis for:",
+            f"[link=https://reddit.com/u/{url}]{url}[/]" if url.startswith('u/') else f"[cyan]{url}[/]"
+        )
+        metrics_table.add_row(
+            "📊",
+            "Comments analyzed:",
+            f"[cyan bold]{total_comments:>4}[/]"
+        )
+        metrics_table.add_row(
+            "🎭",
+            "Overall Sentiment:",
+            f"[cyan bold]{score:>6.2f}[/] {sentiment}"
+        )
+        
         return Panel(
-            stats_text,
+            metrics_table,
             title="[bold]Sentiment Analysis Summary[/]",
-            border_style="blue"
+            border_style="blue",
+            padding=(1, 1)
         )
 
     def _create_comment_panel(self, result: AnalysisResult, index: int) -> Panel:
