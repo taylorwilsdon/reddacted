@@ -69,7 +69,7 @@ class LLMDetectorTestCases(unittest.TestCase):
         responses = [
             {"has_pii": True, "confidence": 0.9, "details": ["Contains location"], "risk_factors": ["location"]},
             {"has_pii": True, "confidence": 0.8, "details": ["Contains phone number"], "risk_factors": ["contact"]},
-            {"has_pii": False, "confidence": 0.2, "details": [], "risk_factors": []}
+            {"has_pii": False, "confidence": 0.0, "details": [], "risk_factors": []}
         ]
 
         async def mock_completion(*args, **kwargs):
@@ -111,7 +111,7 @@ class LLMDetectorTestCases(unittest.TestCase):
         self.assertEqual(results[1][0], 0.8)  # Phone number text
         self.assertEqual(results[1][1]['risk_factors'], ["contact"])
         
-        self.assertEqual(results[2][0], 0.2)  # Clean text
+        self.assertEqual(results[2][0], 0.0)  # Clean text
         self.assertEqual(results[2][1]['risk_factors'], [])
 
         # Verify API was called with correct parameters
