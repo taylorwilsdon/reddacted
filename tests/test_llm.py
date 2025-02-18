@@ -41,7 +41,7 @@ class LLMDetectorTestCases(unittest.TestCase):
         mock_client.return_value.chat.completions.create = AsyncMock(return_value=self.mock_completion)
 
         detector = LLMDetector(api_key="sk-test")
-        risk_score, details = detector.analyze_text("RaunchyRaccoon that looks a lot like Miami Springs!")
+        risk_score, details = asyncio.run(detector.analyze_text("RaunchyRaccoon that looks a lot like Miami Springs!"))
 
         self.assertEqual(risk_score, 0.85)
         self.assertEqual(details['details'], SAMPLE_RESPONSE['details'])
@@ -57,7 +57,7 @@ class LLMDetectorTestCases(unittest.TestCase):
         mock_client.side_effect = Exception("Invalid API key")
 
         detector = LLMDetector(api_key="invalid-key")
-        risk_score, details = detector.analyze_text("Sample text")
+        risk_score, details = asyncio.run(detector.analyze_text("Sample text"))
 
         self.assertEqual(risk_score, 0.0)
         self.assertIn("error", details)
@@ -91,7 +91,7 @@ class LLMDetectorTestCases(unittest.TestCase):
         mock_client.return_value.chat.completions.create = AsyncMock(return_value=bad_completion)
 
         detector = LLMDetector(api_key="sk-test")
-        risk_score, details = detector.analyze_text("Sample text")
+        risk_score, details = asyncio.run(detector.analyze_text("Sample text"))
 
         self.assertEqual(risk_score, 0.85)
         self.assertEqual(details['details'], SAMPLE_RESPONSE['details'])
