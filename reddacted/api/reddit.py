@@ -116,8 +116,7 @@ class Reddit(api.API):
                         comment = self.reddit.comment(id=comment_id)
                         if action == 'delete':
                             logger.debug(f"Deleting comment ID {comment}")
-                            print(f'would have comment.deleted() {comment}')
-                            # comment.delete()
+                            comment.delete()
                             results['successful_ids'].append(comment_id)
                             results['success'] += 1
                         elif action == 'update':
