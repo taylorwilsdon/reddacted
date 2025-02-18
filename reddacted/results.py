@@ -58,12 +58,12 @@ class ResultsFormatter:
 
     @with_logging(logger)
     def generate_output_file(
-        self, 
-        filename: str, 
-        comments: List[Dict[str, Any]], 
-        url: str, 
-        results: List[AnalysisResult], 
-        overall_score: float, 
+        self,
+        filename: str,
+        comments: List[Dict[str, Any]],
+        url: str,
+        results: List[AnalysisResult],
+        overall_score: float,
         overall_sentiment: str
     ) -> None:
         """Outputs a file containing a detailed sentiment and PII analysis per comment."""
@@ -86,7 +86,7 @@ class ResultsFormatter:
                             max_risk_score = result.pii_risk_score
                             riskiest_comment = (result.text[:100] + "...") if len(result.text) > 100 else result.text
                     self._write_summary_section(
-                        target, len(comments), sentiment_scores, 
+                        target, len(comments), sentiment_scores,
                         max_risk_score, riskiest_comment
                     )
                 self._print_completion_message(filename, comments, results, progress)
@@ -96,12 +96,12 @@ class ResultsFormatter:
 
     @with_logging(logger)
     def print_config(
-        self, 
-        auth_enabled: bool, 
-        pii_enabled: bool, 
-        llm_config: Optional[Dict[str, Any]], 
-        pii_only: bool, 
-        limit: int, 
+        self,
+        auth_enabled: bool,
+        pii_enabled: bool,
+        llm_config: Optional[Dict[str, Any]],
+        pii_only: bool,
+        limit: int,
         sort: str
     ) -> None:
         """Prints the active configuration."""
@@ -117,11 +117,11 @@ class ResultsFormatter:
 
     @with_logging(logger)
     def print_comments(
-        self, 
-        comments: List[Dict[str, Any]], 
-        url: str, 
-        results: List[AnalysisResult], 
-        overall_score: float, 
+        self,
+        comments: List[Dict[str, Any]],
+        url: str,
+        results: List[AnalysisResult],
+        overall_score: float,
         overall_sentiment: str
     ) -> None:
         """Prints out analysis of user comments."""
@@ -158,15 +158,14 @@ class ResultsFormatter:
     def _generate_summary_table(self, filtered_results: List[AnalysisResult]) -> Table:
         """Generates a summary table with selection indicators."""
         table = Table(
-            title="[bold]Comments Requiring Action[/]",
             header_style="bold magenta",
             box=None,
-            padding=(0, 1),
+            padding=(0,1),
             collapse_padding=True
         )
         table.add_column("Risk", justify="center", style="bold", width=10)
         table.add_column("Sentiment", justify="center", width=15)
-        table.add_column("Comment Preview", width=75)
+        table.add_column("Comment Preview", justify="center", width=75)
         table.add_column("Votes", justify="center", width=10)
         table.add_column("ID", justify="center", width=10)
         for result in filtered_results:
@@ -183,7 +182,7 @@ class ResultsFormatter:
             )
             table.add_row(
                 risk_text,
-                Text(f"{result.sentiment_emoji} {result.sentiment_score:.2f}", justify="center"),
+                Text(f"{result.sentiment_emoji} {result.sentiment_score:.2f}"),
                 preview,
                 vote_display,
                 result.comment_id
@@ -200,12 +199,12 @@ class ResultsFormatter:
             return "green"
 
     def _create_features_panel(
-        self, 
-        auth_enabled: bool, 
-        pii_enabled: bool, 
-        llm_config: Optional[Dict[str, Any]], 
-        pii_only: bool, 
-        limit: int, 
+        self,
+        auth_enabled: bool,
+        pii_enabled: bool,
+        llm_config: Optional[Dict[str, Any]],
+        pii_only: bool,
+        limit: int,
         sort: str
     ) -> Panel:
         """Creates a panel displaying the features configuration."""
@@ -219,7 +218,7 @@ class ResultsFormatter:
         )
         features_table.add_column("Left", ratio=1, justify="left")
         features_table.add_column("Right", ratio=1, justify="left")
-        
+
         # Define all config items
         config_items = [
             ("🔐 Authentication", self._format_status(auth_enabled)),
@@ -229,18 +228,18 @@ class ResultsFormatter:
             ("📊 Comment Limit", Text(f"{limit}" if limit else "Unlimited", style="cyan")),
             ("📑 Sort Preference", Text(f"{sort}" if sort else "New", style="cyan"))
         ]
-        
+
         # Split items into two columns
         mid_point = (len(config_items) + 1) // 2
         left_items = config_items[:mid_point]
         right_items = config_items[mid_point:]
-        
+
         # Create formatted text for each column
         for left, right in zip_longest(left_items, right_items, fillvalue=None):
             left_text = Text.assemble(f"{left[0]}: ", left[1]) if left else Text("")
             right_text = Text.assemble(f"{right[0]}: ", right[1]) if right else Text("")
             features_table.add_row(left_text, right_text)
-            
+
         return Panel(
             features_table,
             title="[bold]Features[/]",
@@ -267,10 +266,10 @@ class ResultsFormatter:
         return Text(true_text if enabled else false_text, style="green" if enabled else "red")
 
     def _create_stats_panel(
-        self, 
-        url: str, 
-        total_comments: int, 
-        score: float, 
+        self,
+        url: str,
+        total_comments: int,
+        score: float,
         sentiment: str
     ) -> Panel:
         """Creates a panel displaying the sentiment analysis summary."""
@@ -284,7 +283,7 @@ class ResultsFormatter:
         metrics_table.add_column("Icon", justify="right", style="bold")
         metrics_table.add_column("Label", style="bold")
         metrics_table.add_column("Value", justify="left")
-        
+
         # Add rows with proper spacing and alignment
         metrics_table.add_row(
             "🔍",
@@ -301,7 +300,7 @@ class ResultsFormatter:
             "Overall Sentiment:",
             f"[cyan bold]{score:>6.2f}[/] {sentiment}"
         )
-        
+
         return Panel(
             metrics_table,
             title="[bold]Sentiment Analysis Summary[/]",
@@ -334,13 +333,13 @@ class ResultsFormatter:
         metrics_table.add_column("Icon", justify="right", style="bold")
         metrics_table.add_column("Label", style="bold")
         metrics_table.add_column("Value", justify="left")
-        
+
         # Risk score styling
         risk_score_style = "red bold" if result.pii_risk_score > 0.5 else "green bold"
-        
+
         # Add rows with proper spacing and alignment
         metrics_table.add_row(
-            "🎭", 
+            "🎭",
             "Sentiment:",
             f"[cyan bold]{result.sentiment_score:>6.2f}[/] {result.sentiment_emoji}"
         )
@@ -355,11 +354,11 @@ class ResultsFormatter:
             f"[red]⬇️ {result.downvotes:>3}[/]" if result.downvotes > result.upvotes else
             f"[dim]0[/]"
         )
-        metrics_table.add_row(
-            "📊",
-            "Votes:",
-            vote_display
-        )
+        # metrics_table.add_row(
+        #     "📊",
+        #     "Votes:",
+        #     vote_display
+        # )
 
         # Combine comment text and metrics
         basic_info = Group(
@@ -367,7 +366,7 @@ class ResultsFormatter:
             Text("─" * 50, style="dim"),
             metrics_table
         )
-        
+
         return Panel(
             basic_info,
             title="[bold]Basic Info[/]",
@@ -378,7 +377,7 @@ class ResultsFormatter:
     def _create_pii_panel(self, result: AnalysisResult) -> Panel:
         """Creates a panel displaying pattern-based PII matches."""
         pii_contents = [
-            Text(f"• {pii.type} (confidence: {pii.confidence:.2f})", style="cyan") 
+            Text(f"• {pii.type} (confidence: {pii.confidence:.2f})", style="cyan")
             for pii in result.pii_matches
         ]
         return Panel(
@@ -403,11 +402,11 @@ class ResultsFormatter:
         if isinstance(result.llm_findings, dict) and "error" in result.llm_findings:
             error_group = self._create_llm_error_content(result.llm_findings["error"])
             return Panel(error_group, title="[bold]LLM Analysis[/]", border_style="red")
-        
+
         # Risk score styling
         risk_style = "red bold" if result.llm_risk_score > 0.5 else "green bold"
         pii_style = "red bold" if result.llm_findings.get('has_pii', False) else "green bold"
-        
+
         # Add main metrics rows
         metrics_table.add_row(
             "🎯",
@@ -468,7 +467,7 @@ class ResultsFormatter:
         """Creates a panel displaying the action summary."""
         return Panel(
             summary_table,
-            title="[bold]Action Summary[/]",
+            title="[bold]Output Review[/]",
             border_style="green",
             padding=(1, 4)
         )
@@ -476,7 +475,7 @@ class ResultsFormatter:
     def _create_action_panel(self, filtered_results: List[AnalysisResult]) -> Panel:
         """Creates a panel displaying actions for high-risk comments."""
         high_risk_comments = [
-            r for r in filtered_results 
+            r for r in filtered_results
             if r.pii_risk_score > 0.5 or (
                 r.llm_findings and r.llm_findings.get('has_pii', False)
             )
@@ -498,11 +497,11 @@ class ResultsFormatter:
 
     # Methods for writing to the report file
     def _write_report_header(
-        self, 
-        target, 
-        url: str, 
-        overall_score: float, 
-        overall_sentiment: str, 
+        self,
+        target,
+        url: str,
+        overall_score: float,
+        overall_sentiment: str,
         num_comments: int
     ) -> None:
         """Writes the report header."""
@@ -548,11 +547,11 @@ class ResultsFormatter:
             self.total_llm_pii_comments += 1
 
     def _write_summary_section(
-        self, 
-        target, 
-        total_comments: int, 
-        sentiment_scores: List[float], 
-        max_risk_score: float, 
+        self,
+        target,
+        total_comments: int,
+        sentiment_scores: List[float],
+        max_risk_score: float,
         riskiest_comment: str
     ) -> None:
         """Writes the summary section of the report."""
@@ -568,15 +567,15 @@ class ResultsFormatter:
         target.write("✅ Analysis complete\n")
 
     def _print_completion_message(
-        self, 
-        filename: str, 
-        comments: List[Dict[str, Any]], 
-        results: List[AnalysisResult], 
+        self,
+        filename: str,
+        comments: List[Dict[str, Any]],
+        results: List[AnalysisResult],
         progress: Progress
     ) -> None:
         """Prints completion message with file info and action panel."""
         high_risk_comments = [
-            r for r in results if r.pii_risk_score > 0.5 or 
+            r for r in results if r.pii_risk_score > 0.5 or
             (r.llm_findings and r.llm_findings.get('has_pii', False))
         ]
         comment_ids = [r.comment_id for r in high_risk_comments]

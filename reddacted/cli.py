@@ -53,7 +53,7 @@ class ModifyComments(Command):
             return api.delete_comments(comment_ids, batch_size=parsed_args.batch_size)
         elif action == 'update':
             return api.update_comments(comment_ids, batch_size=parsed_args.batch_size)
-        
+
 class DeleteComments(ModifyComments):
     """Delete specified comments"""
 
@@ -62,23 +62,23 @@ class DeleteComments(ModifyComments):
 
     def take_action(self, parsed_args):
         results = self.process_comments(parsed_args, 'delete')
-        
+
         # Create detailed results panel
         details = []
         details.append(f"[cyan]Processed:[/] {results['processed']}")
         details.append(f"[green]Successful:[/] {results['success']}")
         details.append(f"[red]Failed:[/] {results['failures']}\n")
-        
+
         if results.get('successful_ids'):
             details.append("[green]Successfully Deleted Comments:[/]")
             for comment_id in results['successful_ids']:
                 details.append(f"  • [dim]t1_{comment_id}[/]")
-        
+
         if results.get('failed_ids'):
             details.append("\n[red]Failed to Delete Comments:[/]")
             for comment_id in results['failed_ids']:
                 details.append(f"  • [dim]t1_{comment_id}[/]")
-        
+
         console.print(Panel(
             "\n".join(details),
             title="[bold red]Delete Results[/]",
@@ -93,7 +93,7 @@ class UpdateComments(ModifyComments):
 
     def take_action(self, parsed_args):
         results = self.process_comments(parsed_args, 'update')
-        
+
         # Create detailed results panel
         details = []
         details.append(f"[cyan]Processed:[/] {results['processed']}")
@@ -104,12 +104,12 @@ class UpdateComments(ModifyComments):
             details.append("[green]Successfully Updated Comments:[/]")
             for comment_id in results['successful_ids']:
                 details.append(f"  • [dim]t1_{comment_id}[/]")
-        
+
         if results.get('failed_ids'):
             details.append("\n[red]Failed to Update Comments:[/]")
             for comment_id in results['failed_ids']:
                 details.append(f"  • [dim]t1_{comment_id}[/]")
-        
+
         console.print(Panel(
             "\n".join(details),
             title="[bold blue]Update Results[/]",
@@ -119,7 +119,7 @@ class UpdateComments(ModifyComments):
 
 class BaseAnalyzeCommand(Command):
     """Base class for Reddit analysis commands with common arguments"""
-    
+
     def get_parser(self, prog_name):
         parser = super(BaseAnalyzeCommand, self).get_parser(prog_name)
         # Common arguments for both Listing and User commands
@@ -150,7 +150,7 @@ class BaseAnalyzeCommand(Command):
                             help='Maximum number of comments to analyze (default: 100, use 0 for unlimited)')
         parser.add_argument('--sort', type=str, choices=['hot', 'top', 'new'], default='new',
                             help='Sort method for comments (default: new)')
-        parser.add_argument('--time', type=str, 
+        parser.add_argument('--time', type=str,
                            choices=['all', 'day', 'hour', 'month', 'week', 'year'],
                            default='all',
                            help='Time filter for comments (default: all)')
@@ -194,13 +194,13 @@ class User(BaseAnalyzeCommand):
     @with_logging(logger)
     def take_action(self, parsed_args):
         """Execute the user analysis command
-        
+
         Args:
             parsed_args: Command line arguments
-            
+
         Returns:
             None
-            
+
         Raises:
             AttributeError: If required arguments are missing
             Exception: For other unexpected errors
@@ -221,7 +221,7 @@ class User(BaseAnalyzeCommand):
             )
             sent.get_sentiment(
                 'user',
-                parsed_args.username, 
+                parsed_args.username,
                 output_file=parsed_args.output_file,
                 sort=parsed_args.sort,
                 time_filter=parsed_args.time
@@ -250,15 +250,15 @@ class CLI(App):
             set_global_logging_level(logging.DEBUG)
         else:
             set_global_logging_level(logging.INFO)
-        
+
         command_manager = CommandManager('reddacted.commands')
         # Analysis commands
         command_manager.add_command('listing', Listing)
         command_manager.add_command('user', User)
-        # Modification commands  
+        # Modification commands
         command_manager.add_command('delete', DeleteComments)
         command_manager.add_command('update', UpdateComments)
-        
+
         super(CLI, self).__init__(
             version=1.0,
             description="""
@@ -269,7 +269,7 @@ class CLI(App):
                 user        Analyze a user's comment history
                 delete      Delete comments by ID
                 update      Replace comment content with r/reddacted
-                
+
                 Authentication:
                 Set these environment variables for Reddit API access:
                     REDDIT_USERNAME
@@ -377,7 +377,7 @@ def suggest_command(input_command):
         'delete': 'Delete comments by ID',
         'update': 'Replace comment content with r/reddacted'
     }
-    
+
     # Map common variations to actual commands
     command_map = {
         'post': 'listing',
@@ -395,30 +395,30 @@ def suggest_command(input_command):
         'modify': 'update',
         'change': 'update'
     }
-    
+
     input_command = input_command.lower()
-    
+
     # Direct command match
     if input_command in commands:
         return None
-        
+
     # Check mapped variations
     if input_command in command_map:
         actual_command = command_map[input_command]
         return (f"🤔 Ah, you probably meant '{actual_command}'! That's what we call it around here.\n"
                 f"💡 This command will: {commands[actual_command]}")
-                
+
     # Find closest match
     import difflib
     all_commands = list(commands.keys()) + list(command_map.keys())
     matches = difflib.get_close_matches(input_command, all_commands, n=1, cutoff=0.6)
-    
+
     if matches:
         matched = matches[0]
         actual = matched if matched in commands else command_map[matched]
         return (f"🎯 Close! Did you mean '{actual}'?\n"
                 f"💡 This command will: {commands[actual]}")
-    
+
     # No close match found
     return (f"🤖 Hmm, I don't recognize '{input_command}'.\n"
             "Here's what I can help you with:\n"
@@ -431,7 +431,7 @@ def suggest_command(input_command):
 def main(argv=sys.argv[1:]):
     try:
         app = CLI()
-        
+
         return app.run(argv)
     except Exception as e:
         from reddacted.utils.exceptions import handle_exception
