@@ -188,7 +188,7 @@ class User(BaseAnalyzeCommand):
 
     def get_parser(self, prog_name):
         parser = super(User, self).get_parser(prog_name)
-        parser.add_argument('username', help='The name of the user.')
+        parser.add_argument('username', nargs='?', help='The name of the user.')
         return parser
 
     @with_logging(logger)
@@ -207,6 +207,14 @@ class User(BaseAnalyzeCommand):
         """
         logger.debug("Executing user analysis command")
         try:
+            # Prompt for username if not provided
+            if not parsed_args.username:
+                parsed_args.username = Prompt.ask(
+                    "Enter Reddit username to analyze",
+                    default="spez"
+                )
+                console.print(f"[blue]Analyzing user: u/{parsed_args.username}[/]")
+
             llm_config = CLI()._configure_llm(parsed_args, console)
             limit = None if parsed_args.limit == 0 else parsed_args.limit
 
