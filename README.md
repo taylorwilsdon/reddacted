@@ -1,7 +1,9 @@
 # reddacted: AI-Powered Reddit Privacy Suite
 
 [![Privacy Shield](https://img.shields.io/badge/Privacy-100%25_Client--Side_Processing-success)](https://github.com/taylorwilsdon)
-[![AI Analysis](https://img.shields.io/badge/AI-PII_Detection-blueviolet)](https://example.com)
+[![AI Analysis](https://img.shields.io/badge/AI-PII_Detection-blueviolet)](https://github.yelpcorp.com/taylorwilsdon/reddacted)
+![GitHub License](https://img.shields.io/github/license/taylorwilsdon/reddacted)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/w/taylorwilsdon/reddacted)
 
 ## Table of Contents
 - [What is reddacted?](#what-is-reddacted)
