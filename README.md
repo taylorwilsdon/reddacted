@@ -5,21 +5,8 @@
 ![GitHub License](https://img.shields.io/github/license/taylorwilsdon/reddacted)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/taylorwilsdon/reddacted)
 
-## Table of Contents
-- [What is reddacted?](#what-is-reddacted)
-- [Installation](#installation)
-- [Using the CLI](#using-the-cli)
-- [FAQ](#faq)
-- [Support & Community](#support--community)
-- [Troubleshooting](#troubleshooting)
-- [Authentication](#authentication)
-- [Development](#development)
-- [Testing](#testing)
-- [Common Exceptions](#common-exceptions)
-
-**Next-generation digital footprint management with llm, sentiment analysis & pii detection insights into your true privacy** · *For aging engineers who care about their future political careers* 🏛️
-
 ## What is reddacted?
+**Automated, performant digital footprint analysis leveraging llms, sentiment analysis & pii detection insights into your true privacy** · *For aging engineers who care about their future political careers* 🏛️
 - Clean up your online footprint without blowing away everything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts.
 - Easy, lazy, self hosted - the way an aging former engineer with a career doing things right at the enterprise cale would clean up your dirty laundry.
 
@@ -32,6 +19,20 @@
 ⚡ **Self-Host Ready** - Local: You can use any model via Ollama, llama.cpp, vLLM or other platform capable of exposing an OpenAI-compatible endpoint. LiteLLM works just dandy. • Cloud: OpenAI-compatible endpoints
 
 📊 **Smart Cleanup** - Preserve valuable contributions while removing risky content
+
+## Table of Contents
+- [What is reddacted?](#what-is-reddacted)
+- [Installation](#installation)
+- [Using the CLI](#using-the-cli)
+- [FAQ](#faq)
+- [Support & Community](#support--community)
+- [Troubleshooting](#troubleshooting)
+- [Authentication](#authentication)
+- [Development](#development)
+- [Testing](#testing)
+- [Common Exceptions](#common-exceptions)
+
+
 ### 🔐 Can I trust this with my data?
 ```bash
 # you don't have to - read the code for yourself, only reddit is called
