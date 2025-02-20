@@ -6,19 +6,19 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/taylorwilsdon/reddacted)
 
 ## What is reddacted?
-**Automated, performant digital footprint analysis leveraging llms, sentiment analysis & pii detection insights into your true privacy** · *For aging engineers who care about their future political careers* 🏛️
-- Clean up your online footprint without blowing away everything, analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts.
-- Easy, lazy, self hosted - the way an aging former engineer with a career doing things right at the enterprise cale would clean up your dirty laundry.
+**Automated, highly performant privacy analysis leveraging llms, sentiment analysis & pii detection to provide insights into your true privacy & bulk remediation** 
 
-🛡️ **PII Detection** - Find potential personal info leaks in comments using AI/Regex
+· *For aging engineers who want to protect their future political careers* 🏛️
 
-🤫 **Sentiment Analysis** - Understand the emotional tone of your Reddit history
+🛡️ **PII Detection** - Analyze the content of comments to identify anything that might be likely to reveal PII that you may not want correlated with your anonymous username and perform sentiment analysis on the content of those posts
 
-🔒 **Zero-Trust Architecture** - Client-side execution only, no data leaves your machine unless you choose to use a hosted API. Fully compatible with all OpenAI compatible endpoints.
+🤫 **Sentiment Analysis** - Understand the emotional tone of your Reddit history, combined with upvote/downvote counts & privacy risks you can choose which posts to reddact based on a complete picture of their public perception
 
-⚡ **Self-Host Ready** - Local: You can use any model via Ollama, llama.cpp, vLLM or other platform capable of exposing an OpenAI-compatible endpoint. LiteLLM works just dandy. • Cloud: OpenAI-compatible endpoints
+🔒 **Zero-Trust Architecture** - Client-side execution only, no data leaves your machine unless you choose to use a hosted API. Fully compatible with all OpenAI compatible endpoints
 
-📊 **Smart Cleanup** - Preserve valuable contributions while removing risky content
+⚡ **Self-Host Ready** - Easy, lazy, completely local: You can use any model via Ollama, llama.cpp, vLLM or other platform capable of exposing an OpenAI-compatible endpoint. LiteLLM works just dandy. • Cloud: OpenAI-compatible endpoints
+
+📊 **Smart Cleanup** - Preserve valuable contributions while removing risky content - clean up your online footprint without blowing away everything
 
 ## Table of Contents
 - [What is reddacted?](#what-is-reddacted)
