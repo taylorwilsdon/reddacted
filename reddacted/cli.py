@@ -316,7 +316,7 @@ class CLI(App):
 
             try:
                 # Verify Ollama connection
-                response = requests.get(base_url)
+                response = requests.get(f"{base_url}/v1/models")
                 if response.status_code != 200:
                     console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
                     return None
