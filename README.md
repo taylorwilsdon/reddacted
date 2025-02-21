@@ -5,6 +5,8 @@
 ![GitHub License](https://img.shields.io/github/license/taylorwilsdon/reddacted)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/taylorwilsdon/reddacted)
 
+<img width="450" alt="image" src="https://github.com/user-attachments/assets/338fa47e-88da-4844-9728-ace17983cd83" />
+
 ## What is reddacted?
 **Automated, highly performant privacy analysis leveraging llms, sentiment analysis & pii detection to provide insights into your true privacy & bulk remediation** 
 
