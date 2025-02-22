@@ -4,6 +4,9 @@ from unittest.mock import MagicMock, patch, AsyncMock
 
 from reddacted.llm_detector import LLMDetector
 
+import asyncio
+from typing import Dict, Any, List
+
 SAMPLE_RESPONSE = {
     "has_pii": True,
     "confidence": 0.85,
@@ -11,6 +14,54 @@ SAMPLE_RESPONSE = {
     "reasoning": "Location mention could help identify author's residence",
     "risk_factors": ["geographical specificity", "local slang reference"]
 }
+
+TEST_CASES = [
+    {
+        "text": "My phone number is 555-0123",
+        "response": {
+            "has_pii": True,
+            "confidence": 0.95,
+            "details": ["Contains phone number"],
+            "risk_factors": ["contact_info"],
+            "reasoning": "Phone number present"
+        }
+    },
+    {
+        "text": "I live at 123 Main St, Springfield",
+        "response": {
+            "has_pii": True,
+            "confidence": 0.90,
+            "details": ["Contains address"],
+            "risk_factors": ["location"],
+            "reasoning": "Street address present"
+        }
+    },
+    {
+        "text": "Just a regular comment about cats",
+        "response": {
+            "has_pii": False,
+            "confidence": 0.1,
+            "details": [],
+            "risk_factors": [],
+            "reasoning": "No PII detected"
+        }
+    }
+]
+
+@pytest.fixture
+def mock_responses() -> List[Dict[str, Any]]:
+    """Fixture providing a list of test responses"""
+    return [case["response"] for case in TEST_CASES]
+
+@pytest.fixture
+def mock_texts() -> List[str]:
+    """Fixture providing a list of test texts"""
+    return [case["text"] for case in TEST_CASES]
+
+@pytest.fixture
+def mock_api_error():
+    """Fixture providing a mock API error"""
+    return Exception("API Error: Rate limit exceeded")
 
 @pytest.fixture
 def mock_openai():
@@ -33,6 +84,12 @@ def mock_completion():
     return completion
 
 class TestLLMDetector:
+    """Test suite for LLMDetector class"""
+    
+    @pytest.fixture(autouse=True)
+    def setup_method(self):
+        """Setup method run before each test"""
+        self.detector = LLMDetector(api_key="sk-test")
     @pytest.mark.asyncio
     async def test_analyze_text_success(self, mock_openai, mock_completion):
         """Test successful PII analysis with valid response"""
@@ -54,11 +111,76 @@ class TestLLMDetector:
         """Test authentication error handling"""
         mock_openai.side_effect = Exception("Invalid API key")
         
-        detector = LLMDetector(api_key="invalid-key")
-        risk_score, details = await detector.analyze_text("Sample text")
+        risk_score, details = await self.detector.analyze_text("Sample text")
         
         assert risk_score == 0.0
         assert "error" in details
+        assert "Invalid API key" in details["error"]
+
+    @pytest.mark.asyncio
+    async def test_rate_limit_handling(self, mock_openai, mock_api_error):
+        """Test handling of rate limit errors"""
+        mock_openai.side_effect = mock_api_error
+        
+        risk_score, details = await self.detector.analyze_text("Test text")
+        
+        assert risk_score == 0.0
+        assert "error" in details
+        assert "Rate limit" in details["error"]
+
+    @pytest.mark.asyncio
+    async def test_empty_text_handling(self, mock_openai, mock_completion):
+        """Test handling of empty text input"""
+        mock_openai.return_value.chat.completions.create = AsyncMock(return_value=mock_completion)
+        
+        risk_score, details = await self.detector.analyze_text("")
+        
+        assert risk_score == 0.0
+        assert "error" in details
+        assert "Empty text" in details["error"]
+
+    @pytest.mark.asyncio
+    async def test_long_text_handling(self, mock_openai, mock_completion):
+        """Test handling of very long text input"""
+        long_text = "test " * 1000  # Create a very long text
+        mock_openai.return_value.chat.completions.create = AsyncMock(return_value=mock_completion)
+        
+        risk_score, details = await self.detector.analyze_text(long_text)
+        
+        assert isinstance(risk_score, float)
+        assert "truncated" in details
+
+    @pytest.mark.asyncio
+    async def test_batch_concurrent_processing(self, mock_openai, mock_responses, mock_texts):
+        """Test concurrent processing of batch texts"""
+        mock_completions = []
+        for response in mock_responses:
+            completion = MagicMock()
+            message = MagicMock()
+            message.content = json.dumps(response)
+            choice = MagicMock()
+            choice.message = message
+            completion.choices = [choice]
+            mock_completions.append(completion)
+
+        mock_openai.return_value.chat.completions.create = AsyncMock(side_effect=mock_completions)
+        
+        results = await self.detector.analyze_batch(mock_texts)
+        
+        assert len(results) == len(mock_texts)
+        assert all(isinstance(score, float) for score, _ in results)
+        assert all(isinstance(detail, dict) for _, detail in results)
+
+    @pytest.mark.asyncio
+    async def test_batch_error_handling(self, mock_openai, mock_texts, mock_api_error):
+        """Test error handling in batch processing"""
+        mock_openai.return_value.chat.completions.create = AsyncMock(side_effect=mock_api_error)
+        
+        results = await self.detector.analyze_batch(mock_texts)
+        
+        assert len(results) == len(mock_texts)
+        assert all(score == 0.0 for score, _ in results)
+        assert all("error" in detail for _, detail in results)
 
     @patch('openai.AsyncOpenAI')
     def test_analyze_batch(self, mock_client):
