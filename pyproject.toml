@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE"}
 authors = [
-    {name = "Taylor Wilsdon", email = "taylorwilsdon@gmail.com"}
+    {name = "Taylor Wilsdon", email = "taylor@taylorwilsdon.com"}
 ]
 keywords = ["reddact", "reddacted", "reddit", "llm", "pii", "sentiment", "analysis", "nlp"]
 classifiers = [
