@@ -154,6 +154,8 @@ class BaseAnalyzeCommand(Command):
                            choices=['all', 'day', 'hour', 'month', 'week', 'year'],
                            default='all',
                            help='Time filter for comments (default: all)')
+        parser.add_argument('--text-match', type=str,
+                           help='Search for comments containing specific text (requires authentication)')
         return parser
 
 

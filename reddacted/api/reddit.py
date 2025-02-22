@@ -162,6 +162,51 @@ class Reddit(api.API):
 
 
     @with_logging(logger)
+    def search_comments(self, query: str, subreddit: str = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search for comments containing specific text.
+        
+        Args:
+            query: Text to search for
+            subreddit: Optional subreddit to limit search to
+            limit: Maximum number of results to return
+            
+        Returns:
+            List of comment dictionaries
+            
+        Raises:
+            AuthenticationRequiredError: If not authenticated
+        """
+        if not self.authenticated:
+            raise AuthenticationRequiredError("Authentication required for comment search")
+
+        logger.debug_with_context(f"Searching for '{query}' in {subreddit or 'all'}")
+        
+        try:
+            comments = []
+            search_params = {'q': query, 'limit': limit, 'type': 'comment'}
+            if subreddit:
+                results = self.reddit.subreddit(subreddit).search(**search_params)
+            else:
+                results = self.reddit.subreddit('all').search(**search_params)
+
+            for result in results:
+                if isinstance(result, praw.models.Comment):
+                    comments.append({
+                        'text': result.body.rstrip(),
+                        'upvotes': result.ups,
+                        'downvotes': result.downs,
+                        'permalink': result.permalink,
+                        'id': result.id
+                    })
+                if len(comments) >= limit:
+                    break
+                    
+            return comments
+        except Exception as e:
+            handle_exception(e, f"Failed to search for '{query}'", debug=True)
+            return []
+
+    @with_logging(logger)
     def parse_user(self, username, limit=100, sort='new', time_filter='all', **kwargs):
         """Parses a listing and extracts the comments from it.
 

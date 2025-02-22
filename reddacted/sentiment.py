@@ -240,6 +240,16 @@ class Sentiment():
     def _get_comments(self, source_type: str, identifier: str, **kwargs) -> List[Dict[str, Any]]:
         """Unified comment fetching method"""
         logger.debug_with_context(f"Fetching comments for {source_type} '{identifier}'")
+        
+        # Handle text search if specified
+        if text_match := kwargs.pop('text_match', None):
+            return self.api.search_comments(
+                query=text_match,
+                subreddit=kwargs.get('subreddit'),
+                limit=self.limit
+            )
+            
+        # Default comment fetching
         fetch_method = {
             'user': self.api.parse_user,
             'listing': self.api.parse_listing
