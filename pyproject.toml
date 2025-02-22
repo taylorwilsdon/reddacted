@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "reddacted"
-dynamic = ["version", "urls", "entry-points"]
+dynamic = ["version"]
 description = "Analyze Reddit comments for PII and perform sentiment analysis"
 readme = "README.md"
 requires-python = ">=3.11"
