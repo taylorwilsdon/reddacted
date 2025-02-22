@@ -257,5 +257,3 @@ class TestLLMDetector:
         self.assertEqual(risk_score, 0.85)
         self.assertEqual(details['details'], SAMPLE_RESPONSE['details'])
 
-if __name__ == '__main__':
-    unittest.main()
