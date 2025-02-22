@@ -165,6 +165,16 @@ class UpdateComments(ModifyComments):
 class BaseAnalyzeCommand(Command):
     """Base class for Reddit analysis commands with common arguments"""
 
+    def _check_auth_env_vars(self) -> bool:
+        """Check if all required Reddit API environment variables are set"""
+        required_vars = [
+            'REDDIT_USERNAME',
+            'REDDIT_PASSWORD', 
+            'REDDIT_CLIENT_ID',
+            'REDDIT_CLIENT_SECRET'
+        ]
+        return all(os.getenv(var) for var in required_vars)
+
     def get_parser(self, prog_name):
         parser = super(BaseAnalyzeCommand, self).get_parser(prog_name)
         # Common arguments for both Listing and User commands
@@ -366,16 +376,6 @@ class CLI(App):
                 """,
             command_manager=command_manager,
             deferred_help=True,)
-
-    def _check_auth_env_vars(self) -> bool:
-        """Check if all required Reddit API environment variables are set"""
-        required_vars = [
-            'REDDIT_USERNAME',
-            'REDDIT_PASSWORD', 
-            'REDDIT_CLIENT_ID',
-            'REDDIT_CLIENT_SECRET'
-        ]
-        return all(os.getenv(var) for var in required_vars)
 
     @with_logging(logger)
     def _configure_llm(self, args, console):
