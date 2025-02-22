@@ -55,25 +55,28 @@ https://github.com/user-attachments/assets/db088d58-2f53-4513-95cc-d4b70397ff82
 ## Installation
 
 ```bash
-# Install from public PyPi
+# Install from PyPI (recommended)
 pip install reddacted
 
-# Install globally
-pip install .
-
-# Or install from source with all dependencies
-pip install -r requirements.txt
-pip install .
+# Or install from source
+git clone https://github.com/taylorwilsdon/reddacted.git
+cd reddacted
+pip install -e ".[dev]"  # Installs with development dependencies
 ```
 
 ## Quick Start
 
 ```bash
 # Analyze a user's comments
-reddacted user spez --limit 5
+reddacted user spez --limit 5 --local-llm "localhost:11434"
 
 # Analyze a specific post
-reddacted listing r/privacy abc123 --limit 10
+reddacted listing r/privacy abc123 --limit 10 --local-llm "localhost:11434"
+```
+
+Note: The examples above use a local LLM. For cloud-based analysis, omit the --local-llm flag and configure your OpenAI API key:
+```bash
+export OPENAI_API_KEY="your-api-key"
 ```
 
 ## 💡 FAQ
