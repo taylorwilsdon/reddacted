@@ -41,7 +41,7 @@ NEUTRAL_SENTIMENT = "😐"
 
 class Sentiment():
     """Performs the LLM PII & sentiment analysis on a given set of Reddit Objects."""
-    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, sort='New', limit=100):
+    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, sort='New', limit=100, skip_text=None):
         """Initialize Sentiment Analysis with optional PII detection
 
         Args:
@@ -51,11 +51,13 @@ class Sentiment():
             pii_only (bool): Only show comments with PII detected
             debug (bool): Enable debug logging
             limit (int): Maximum number of comments to analyze
+            skip_text (str): Text pattern to skip during analysis
         """
         # Set up logging
         logger.debug_with_context("Initializing Sentiment Analyzer")
 
         # Initialize necessary variables
+        self.skip_text = skip_text
         self.llm_detector = None  # Initialize llm_detector early
         try:
             self.api = Scraper()
@@ -127,6 +129,12 @@ class Sentiment():
             for i, comment_data in enumerate(comments, 1):
                 try:
                     clean_comment = re.sub(cleanup_regex, '', str(comment_data['text']))
+                    
+                    # Skip already reddacted comments
+                    if self.skip_text and self.skip_text in clean_comment:
+                        logger.debug_with_context(f"Skipping already reddacted comment {i}")
+                        progress.update(main_task, advance=1)
+                        continue
                     progress.update(
                         main_task,
                         description=f"[bold blue]💭 Processing comment[/] [cyan]{i}[/]/[cyan]{total_comments}[/]"
