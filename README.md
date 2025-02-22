@@ -116,22 +116,32 @@ pip show reddacted
 
 ## Authentication
 
-Before running an commands, in order to ensure that we are able to use the reddit API consecutively, we should authenticate with reddit. In order to do this the following is required:
+Before running any commands that require authentication, you'll need to set up your Reddit API credentials. Here's how:
 
-- **Reddit Account**: You can sign up at [https://www.reddit.com/account/register/](https://www.reddit.com/account/register/)
-- **Reddit App**: Click on the **are you a developer? create an app...** button at the bottom of [https://www.reddit.com/prefs/apps](https://www.reddit.com/prefs/apps)
-- **Reddit API Access**: You can request access at [https://www.reddit.com/wiki/api/](https://www.reddit.com/wiki/api/)
+1. **Create a Reddit Account**: If you don't have one, sign up at [https://www.reddit.com/account/register/](https://www.reddit.com/account/register/)
 
-Once the above is complete, we should set the following environment variables:
+2. **Create a Reddit App**:
+   - Go to [https://www.reddit.com/prefs/apps](https://www.reddit.com/prefs/apps)
+   - Click "are you a developer? create an app..." at the bottom
+   - Choose "script" as the application type
+   - Set "reddacted" as both the name and description
+   - Use "http://localhost:8080" as the redirect URI
+   - Click "create app"
 
+3. **Get Your Credentials**:
+   - After creating the app, note down:
+     - Client ID: The string under "personal use script"
+     - Client Secret: The string labeled "secret"
+
+4. **Set Environment Variables**:
 ```bash
-$ export REDDIT_USERNAME=your-username
-$ export REDDIT_PASSWORD=your-password
+$ export REDDIT_USERNAME=your-reddit-username
+$ export REDDIT_PASSWORD=your-reddit-password
 $ export REDDIT_CLIENT_ID=your-client-id
 $ export REDDIT_CLIENT_SECRET=your-client-secret
 ```
 
-Now when running the CLI, all requests will be authenticated.
+Now when running the CLI with `--enable-auth`, all requests will be properly authenticated. These credentials are also automatically used if all environment variables are present, even without the `--enable-auth` flag.
 
 ## Development
 
