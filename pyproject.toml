@@ -54,9 +54,8 @@ reddacted = "reddacted.cli:main"
 
 [tool.setuptools_scm]
 local_scheme = "no-local-version"
-version_scheme = "post-release"
-version_pattern = "0.1.1.dev{distance}"
-tag_regex = "^(?P<version>[0-9]+\\.[0-9]+\\.[0-9]+)$"
+version_scheme = "guess-next-dev"
+write_to = "reddacted/_version.py"
 
 [tool.black]
 line-length = 100
