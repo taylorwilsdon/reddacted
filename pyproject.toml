@@ -83,3 +83,4 @@ addopts = "-v --tb=short"
 markers = [
     "asyncio: mark test as async/await test",
 ]
+asyncio_default_fixture_loop_scope = "function"
