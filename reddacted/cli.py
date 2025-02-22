@@ -116,63 +116,47 @@ class ModifyComments(Command):
         return "\n".join(details)
 
 class DeleteComments(ModifyComments):
-    """Delete specified comments"""
+    """Delete specified Reddit comments permanently"""
 
-    def get_description(self):
+    @with_logging(logger)
+    def get_description(self) -> str:
         return 'Delete specified Reddit comments permanently using their IDs'
 
-    def take_action(self, parsed_args):
+    @with_logging(logger)
+    def take_action(self, parsed_args: Any) -> None:
+        """Execute the delete operation and display results
+        
+        Args:
+            parsed_args: Command line arguments containing comment_ids and batch_size
+        """
         results = self.process_comments(parsed_args, 'delete')
-
-        # Create detailed results panel
-        details = []
-        details.append(f"[cyan]Processed:[/] {results['processed']}")
-        details.append(f"[green]Successful:[/] {results['success']}")
-        details.append(f"[red]Failed:[/] {results['failures']}\n")
-
-        if results.get('successful_ids'):
-            details.append("[green]Successfully Deleted Comments:[/]")
-            for comment_id in results['successful_ids']:
-                details.append(f"  • [dim]t1_{comment_id}[/]")
-
-        if results.get('failed_ids'):
-            details.append("\n[red]Failed to Delete Comments:[/]")
-            for comment_id in results['failed_ids']:
-                details.append(f"  • [dim]t1_{comment_id}[/]")
-
+        formatted_results = self._format_results(results, 'delete')
+        
         console.print(Panel(
-            "\n".join(details),
+            formatted_results,
             title="[bold red]Delete Results[/]",
             expand=False
         ))
 
 class UpdateComments(ModifyComments):
-    """Update specified comments to r/reddacted"""
+    """Replace comment content with r/reddacted"""
 
-    def get_description(self):
+    @with_logging(logger)
+    def get_description(self) -> str:
         return 'Replace comment content with "r/reddacted" using their IDs'
 
-    def take_action(self, parsed_args):
+    @with_logging(logger)
+    def take_action(self, parsed_args: Any) -> None:
+        """Execute the update operation and display results
+        
+        Args:
+            parsed_args: Command line arguments containing comment_ids and batch_size
+        """
         results = self.process_comments(parsed_args, 'update')
-
-        # Create detailed results panel
-        details = []
-        details.append(f"[cyan]Processed:[/] {results['processed']}")
-        details.append(f"[green]Successful:[/] {results['success']}")
-        details.append(f"[red]Failed:[/] {results['failures']}\n")
-
-        if results.get('successful_ids'):
-            details.append("[green]Successfully Updated Comments:[/]")
-            for comment_id in results['successful_ids']:
-                details.append(f"  • [dim]t1_{comment_id}[/]")
-
-        if results.get('failed_ids'):
-            details.append("\n[red]Failed to Update Comments:[/]")
-            for comment_id in results['failed_ids']:
-                details.append(f"  • [dim]t1_{comment_id}[/]")
-
+        formatted_results = self._format_results(results, 'update')
+        
         console.print(Panel(
-            "\n".join(details),
+            formatted_results,
             title="[bold blue]Update Results[/]",
             expand=False
         ))
