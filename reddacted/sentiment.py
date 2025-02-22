@@ -243,11 +243,22 @@ class Sentiment():
         
         # Handle text search if specified
         if text_match := kwargs.pop('text_match', None):
-            return self.api.search_comments(
-                query=text_match,
-                subreddit=kwargs.get('subreddit'),
-                limit=self.limit
-            )
+            if source_type == 'user':
+                # For users, we pass the text_match to parse_user
+                return fetch_method(
+                    identifier,
+                    headers=self.headers,
+                    limit=self.limit,
+                    text_match=text_match,
+                    **kwargs
+                )
+            else:
+                # For subreddits, use search_comments
+                return self.api.search_comments(
+                    query=text_match,
+                    subreddit=kwargs.get('subreddit'),
+                    limit=self.limit
+                )
             
         # Default comment fetching
         fetch_method = {

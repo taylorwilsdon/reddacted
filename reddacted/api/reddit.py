@@ -237,14 +237,24 @@ class Reddit(api.API):
                 comment_listing = redditor.comments.new(limit=limit)  # default to new
             
             for comment in comment_listing:
-                comments.append({
+                comment_data = {
                     'text': comment.body.rstrip(),
                     'upvotes': comment.ups,
                     'downvotes': comment.downs,
                     'permalink': comment.permalink,
                     'id': comment.id
-                })
+                }
                 
+                # If text matching is enabled, only include matching comments
+                if 'text_match' in kwargs:
+                    if kwargs['text_match'].lower() in comment_data['text'].lower():
+                        comments.append(comment_data)
+                else:
+                    comments.append(comment_data)
+                
+                if len(comments) >= limit:
+                    break
+                    
             return comments
         except Exception as e:
             handle_exception(e, f"Failed to fetch comments for user '{username}'", debug=True)
