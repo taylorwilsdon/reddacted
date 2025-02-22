@@ -9,7 +9,7 @@
 <img width="450" alt="image" src="https://github.com/user-attachments/assets/338fa47e-88da-4844-9728-ace17983cd83" />
 
 ## What is reddacted?
-**Local LLM powererd, highly performant privacy analysis leveraging AI, sentiment analysis & PII detection to provide insights into your true privacy with bulk remediation** 
+**Local LLM powered, highly performant privacy analysis leveraging AI, sentiment analysis & PII detection to provide insights into your true privacy with bulk remediation** 
 
 · *For aging engineers who want to protect their future political careers* 🏛️
 
