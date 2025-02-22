@@ -43,7 +43,7 @@ COMMAND_DESCRIPTIONS = {
 # Environment variables required for Reddit API authentication
 REDDIT_AUTH_VARS = [
     'REDDIT_USERNAME',
-    'REDDIT_PASSWORD', 
+    'REDDIT_PASSWORD',
     'REDDIT_CLIENT_ID',
     'REDDIT_CLIENT_SECRET'
 ]
@@ -71,18 +71,18 @@ class ModifyComments(Command):
     @with_logging(logger)
     def process_comments(self, parsed_args: Any, action: str) -> Dict[str, Any]:
         """Process comments with the specified action and progress tracking
-        
+
         Args:
             parsed_args: Command line arguments
             action: Action to perform ('delete' or 'update')
-            
+
         Returns:
             Dict containing results of the operation
         """
         api = Reddit()
         comment_ids = [id.strip() for id in parsed_args.comment_ids.split(',')]
         total_comments = len(comment_ids)
-        
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -91,29 +91,29 @@ class ModifyComments(Command):
             console=console
         ) as progress:
             task = progress.add_task(
-                f"[cyan]{action.title()}ing comments...",
+                f"[cyan]{action.title()} processing...",
                 total=total_comments
             )
-            
+
             if action == 'delete':
                 result = api.delete_comments(comment_ids, batch_size=parsed_args.batch_size)
             elif action == 'update':
                 result = api.update_comments(comment_ids, batch_size=parsed_args.batch_size)
             else:
                 raise ValueError(f"Invalid action: {action}")
-                
+
             # Update progress based on successful operations
             progress.update(task, completed=result['success'])
-            
+
             return result
 
     def _format_results(self, results: Dict[str, Any], action: str) -> str:
         """Format operation results for display
-        
+
         Args:
             results: Operation results dictionary
             action: The action that was performed
-            
+
         Returns:
             Formatted string for display
         """
@@ -144,13 +144,13 @@ class DeleteComments(ModifyComments):
     @with_logging(logger)
     def take_action(self, parsed_args: Any) -> None:
         """Execute the delete operation and display results
-        
+
         Args:
             parsed_args: Command line arguments containing comment_ids and batch_size
         """
         results = self.process_comments(parsed_args, 'delete')
         formatted_results = self._format_results(results, 'delete')
-        
+
         console.print("\n", Panel(
             formatted_results,
             title="[bold red]Delete Results[/]",
@@ -167,13 +167,13 @@ class UpdateComments(ModifyComments):
     @with_logging(logger)
     def take_action(self, parsed_args: Any) -> None:
         """Execute the update operation and display results
-        
+
         Args:
             parsed_args: Command line arguments containing comment_ids and batch_size
         """
         results = self.process_comments(parsed_args, 'update')
         formatted_results = self._format_results(results, 'update')
-        
+
         console.print("\n", Panel(
             formatted_results,
             title="[bold blue]Update Results[/]",
@@ -188,7 +188,7 @@ class BaseAnalyzeCommand(Command):
         """Check if all required Reddit API environment variables are set"""
         required_vars = [
             'REDDIT_USERNAME',
-            'REDDIT_PASSWORD', 
+            'REDDIT_PASSWORD',
             'REDDIT_CLIENT_ID',
             'REDDIT_CLIENT_SECRET'
         ]
@@ -251,7 +251,7 @@ class Listing(BaseAnalyzeCommand):
 
         # Enable auth if flag is set or all env vars are present
         auth_enabled = args.enable_auth or self._check_auth_env_vars()
-        
+
         sent = Sentiment(
             auth_enabled=auth_enabled,
             pii_enabled=not args.disable_pii,
@@ -303,7 +303,7 @@ class User(BaseAnalyzeCommand):
             logger.debug_with_context(f"Creating Sentiment analyzer with auth_enabled={parsed_args.enable_auth}")
             # Enable auth if flag is set or all env vars are present
             auth_enabled = parsed_args.enable_auth or self._check_auth_env_vars()
-            
+
             sent = Sentiment(
                 auth_enabled=auth_enabled,
                 pii_enabled=not parsed_args.disable_pii,
@@ -408,10 +408,10 @@ class CLI(App):
             console.print(f"[blue]Using local LLM endpoint: {base_url}[/]")
 
             try:
-                # Verify Ollama connection
+                # Verify Local LLM backend connection
                 response = requests.get(f"{base_url}/v1/models")
                 if response.status_code != 200:
-                    console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
+                    console.print(f"[red]Error: Could not connect to {base_url} - {response.status_code}[/]")
                     return None
 
                 # Get available models

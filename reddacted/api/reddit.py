@@ -74,7 +74,7 @@ class Reddit(api.API):
         logger.debug_with_context("Expanding 'more comments' links")
         submission.comments.replace_more(limit=None)
         comments = []
-        
+
         for comment in submission.comments.list():
             comment_data = {
                 'text': comment.body.rstrip(),
@@ -85,7 +85,7 @@ class Reddit(api.API):
             }
             logger.debug_with_context(f"Processing comment: ups={comment.ups}, downs={comment.downs}, text_preview='{comment.body[:50]}...'")
             comments.append(comment_data)
-            
+
         return comments[:limit] if limit else comments
 
     def _process_comments(self, comment_ids: list[str], action: str, batch_size: int = 10) -> dict[str, any]:
@@ -165,15 +165,15 @@ class Reddit(api.API):
     @with_logging(logger)
     def search_comments(self, query: str, subreddit: str = None, limit: int = 100) -> List[Dict[str, Any]]:
         """Search for comments containing specific text.
-        
+
         Args:
             query: Text to search for
             subreddit: Optional subreddit to limit search to
             limit: Maximum number of results to return
-            
+
         Returns:
             List of comment dictionaries
-            
+
         Raises:
             AuthenticationRequiredError: If not authenticated
         """
@@ -181,7 +181,7 @@ class Reddit(api.API):
             raise AuthenticationRequiredError("Authentication required for comment search")
 
         logger.debug_with_context(f"Searching for '{query}' in {subreddit or 'all'}")
-        
+
         try:
             comments = []
             search_params = {'q': query, 'limit': limit, 'type': 'comment'}
@@ -201,7 +201,7 @@ class Reddit(api.API):
                     })
                 if len(comments) >= limit:
                     break
-                    
+
             return comments
         except Exception as e:
             handle_exception(e, f"Failed to search for '{query}'", debug=True)
@@ -223,7 +223,7 @@ class Reddit(api.API):
         try:
             redditor = self.reddit.redditor(username)
             comments = []
-            
+
             # Get the appropriate comment listing based on sort
             if sort == 'hot':
                 comment_listing = redditor.comments.hot(limit=limit)
@@ -235,7 +235,7 @@ class Reddit(api.API):
                 comment_listing = redditor.comments.top(limit=limit, time_filter=time_filter)
             else:
                 comment_listing = redditor.comments.new(limit=limit)  # default to new
-            
+
             for comment in comment_listing:
                 comment_data = {
                     'text': comment.body.rstrip(),
@@ -244,7 +244,7 @@ class Reddit(api.API):
                     'permalink': comment.permalink,
                     'id': comment.id
                 }
-                
+
                 # If text matching is enabled, only include matching comments
                 if 'text_match' in kwargs:
                     logger.debug_with_context(
@@ -258,10 +258,10 @@ class Reddit(api.API):
                 else:
                     logger.debug_with_context(f"No text match filter, including comment {comment_data['id']}")
                     comments.append(comment_data)
-                
+
                 if len(comments) >= limit:
                     break
-                    
+
             return comments
         except Exception as e:
             handle_exception(e, f"Failed to fetch comments for user '{username}'", debug=True)
