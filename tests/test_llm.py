@@ -35,13 +35,13 @@ class LLMDetectorTestCases(unittest.TestCase):
         self.client_patcher.stop()
 
     @patch('openai.AsyncOpenAI')
-    def test_analyze_text_success(self, mock_client):
+    async def test_analyze_text_success(self, mock_client):
         """Test successful PII analysis with valid response"""
         # Configure mock
         mock_client.return_value.chat.completions.create = AsyncMock(return_value=self.mock_completion)
 
         detector = LLMDetector(api_key="sk-test")
-        risk_score, details = asyncio.run(detector.analyze_text("RaunchyRaccoon that looks a lot like Miami Springs!"))
+        risk_score, details = await detector.analyze_text("RaunchyRaccoon that looks a lot like Miami Springs!")
 
         self.assertEqual(risk_score, 0.85)
         self.assertEqual(details['details'], SAMPLE_RESPONSE['details'])
