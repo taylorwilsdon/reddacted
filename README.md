@@ -143,6 +143,27 @@ $ export REDDIT_CLIENT_SECRET=your-client-secret
 
 Now when running the CLI with `--enable-auth`, all requests will be properly authenticated. These credentials are also automatically used if all environment variables are present, even without the `--enable-auth` flag.
 
+## Advanced Usage
+
+### Text Filtering
+
+You can filter comments using these arguments:
+
+- `--text-match "search phrase"` - Only analyze comments containing specific text (requires authentication)
+- `--skip-text "skip phrase"` - Skip comments containing specific text pattern
+
+For example:
+```bash
+# Only analyze comments containing "python"
+reddacted user spez --text-match "python"
+
+# Skip comments containing "deleted"
+reddacted user spez --skip-text "deleted"
+
+# Combine both filters
+reddacted user spez --text-match "python" --skip-text "deleted"
+```
+
 ## Development
 
 It is recommended that you first create a python virtual environment to not overwrite pip dependencies in your system. See [virtualenvs](http://docs.python-guide.org/en/latest/dev/virtualenvs/):

@@ -310,7 +310,6 @@ class CLI(App):
                 --openai-base    Custom OpenAI API base URL
                 --model          Model name to use (default: gpt-4)
 
-
                 Common Options:
                 --output-file    Save detailed analysis to file
                 --enable-auth    Use Reddit API authentication
@@ -318,6 +317,8 @@ class CLI(App):
                 --pii-only       Show only comments with PII
                 --limit          Max comments to analyze (0=unlimited)
                 --batch-size     Comments per batch for delete/update
+                --text-match     Search for comments containing specific text
+                --skip-text      Skip comments containing this text pattern
                 """,
             command_manager=command_manager,
             deferred_help=True,)
