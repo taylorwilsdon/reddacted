@@ -1,6 +1,7 @@
 from types import BuiltinMethodType
 import time
 import os
+from typing import List, Dict, Any
 import praw
 from reddacted.api import api
 from reddacted.utils.logging import get_logger, with_logging
