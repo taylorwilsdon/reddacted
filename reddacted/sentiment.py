@@ -9,6 +9,7 @@ from os import environ
 from typing import List, Dict, Any, Optional, Tuple
 
 # Third-party
+import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from rich.panel import Panel
 from rich.columns import Columns
@@ -55,6 +56,13 @@ class Sentiment():
         """
         # Set up logging
         logger.debug_with_context("Initializing Sentiment Analyzer")
+
+        # Download required NLTK data if not already present
+        try:
+            nltk.data.find('sentiment/vader_lexicon')
+        except LookupError:
+            logger.info("Downloading required NLTK data...")
+            nltk.download('vader_lexicon', quiet=True)
 
         # Initialize necessary variables
         self.skip_text = skip_text
