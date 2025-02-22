@@ -7,7 +7,7 @@ name = "reddacted"
 dynamic = ["version"]
 description = "Analyze Reddit comments for PII and perform sentiment analysis"
 readme = "README.md"
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
 authors = [
     {name = "Taylor Wilsdon", email = "taylor@taylorwilsdon.com"}
