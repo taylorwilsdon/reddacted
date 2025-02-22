@@ -157,6 +157,8 @@ class BaseAnalyzeCommand(Command):
                            help='Time filter for comments (default: all)')
         parser.add_argument('--text-match', type=str,
                            help='Search for comments containing specific text (requires authentication)')
+        parser.add_argument('--skip-text', type=str,
+                           help='Skip comments containing this text pattern')
         return parser
 
 
@@ -183,7 +185,8 @@ class Listing(BaseAnalyzeCommand):
             pii_only=args.pii_only,
             llm_config=llm_config,
             sort=args.sort,
-            limit=limit
+            limit=limit,
+            skip_text=args.skip_text
         )
         sent.get_sentiment('listing', f"{args.subreddit}/{args.article}", output_file=args.output_file)
 
@@ -234,7 +237,8 @@ class User(BaseAnalyzeCommand):
                 llm_config=llm_config,
                 pii_only=parsed_args.pii_only,
                 sort=parsed_args.sort,
-                limit=limit
+                limit=limit,
+                skip_text=parsed_args.skip_text
             )
             logger.debug_with_context(
                 f"Analyzing user with args: username={parsed_args.username}, "
