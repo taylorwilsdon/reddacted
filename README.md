@@ -4,6 +4,7 @@
 [![AI Analysis](https://img.shields.io/badge/AI-PII_Detection-blueviolet)](https://github.com/taylorwilsdon/reddacted)
 ![GitHub License](https://img.shields.io/github/license/taylorwilsdon/reddacted)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/taylorwilsdon/reddacted)
+![PyPI - Version](https://img.shields.io/pypi/v/reddacted)
 
 <img width="450" alt="image" src="https://github.com/user-attachments/assets/338fa47e-88da-4844-9728-ace17983cd83" />
 
@@ -54,6 +55,9 @@ https://github.com/user-attachments/assets/db088d58-2f53-4513-95cc-d4b70397ff82
 ## Installation
 
 ```bash
+# Install from public PyPi
+pip install reddacted
+
 # Install globally
 pip install .
 
