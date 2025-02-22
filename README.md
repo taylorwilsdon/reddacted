@@ -1,4 +1,5 @@
 # reddacted: AI-Powered Reddit Privacy Suite
+![reddacted_logo](https://github.com/user-attachments/assets/077540bd-5ac6-4bea-a4a2-b962f7a21d23)
 
 [![Privacy Shield](https://img.shields.io/badge/Privacy-100%25_Client--Side_Processing-success)](https://github.com/taylorwilsdon)
 [![AI Analysis](https://img.shields.io/badge/AI-PII_Detection-blueviolet)](https://github.com/taylorwilsdon/reddacted)
