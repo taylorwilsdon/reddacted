@@ -241,6 +241,12 @@ class Sentiment():
         """Unified comment fetching method"""
         logger.debug_with_context(f"Fetching comments for {source_type} '{identifier}'")
         
+        # Get the appropriate fetch method
+        fetch_method = {
+            'user': self.api.parse_user,
+            'listing': self.api.parse_listing
+        }[source_type]
+
         # Handle text search if specified
         if text_match := kwargs.pop('text_match', None):
             if source_type == 'user':
@@ -261,11 +267,6 @@ class Sentiment():
                 )
             
         # Default comment fetching
-        fetch_method = {
-            'user': self.api.parse_user,
-            'listing': self.api.parse_listing
-        }[source_type]
-
         return fetch_method(
             identifier,
             headers=self.headers,
