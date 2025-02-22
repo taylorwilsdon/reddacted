@@ -41,7 +41,7 @@ NEUTRAL_SENTIMENT = "😐"
 
 class Sentiment():
     """Performs the LLM PII & sentiment analysis on a given set of Reddit Objects."""
-    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, sort='New', limit=100):
+    def __init__(self, auth_enabled=False, pii_enabled=True, llm_config=None, pii_only=False, sort='New', limit=100, skip_text=None):
         """Initialize Sentiment Analysis with optional PII detection
 
         Args:
@@ -51,11 +51,13 @@ class Sentiment():
             pii_only (bool): Only show comments with PII detected
             debug (bool): Enable debug logging
             limit (int): Maximum number of comments to analyze
+            skip_text (str): Text pattern to skip during analysis
         """
         # Set up logging
         logger.debug_with_context("Initializing Sentiment Analyzer")
 
         # Initialize necessary variables
+        self.skip_text = skip_text
         self.llm_detector = None  # Initialize llm_detector early
         try:
             self.api = Scraper()
@@ -127,6 +129,12 @@ class Sentiment():
             for i, comment_data in enumerate(comments, 1):
                 try:
                     clean_comment = re.sub(cleanup_regex, '', str(comment_data['text']))
+                    
+                    # Skip already reddacted comments
+                    if self.skip_text and self.skip_text in clean_comment:
+                        logger.debug_with_context(f"Skipping already reddacted comment {i}")
+                        progress.update(main_task, advance=1)
+                        continue
                     progress.update(
                         main_task,
                         description=f"[bold blue]💭 Processing comment[/] [cyan]{i}[/]/[cyan]{total_comments}[/]"
@@ -239,12 +247,36 @@ class Sentiment():
     @with_logging(logger)
     def _get_comments(self, source_type: str, identifier: str, **kwargs) -> List[Dict[str, Any]]:
         """Unified comment fetching method"""
-        logger.debug_with_context(f"Fetching comments for {source_type} '{identifier}'")
+        logger.debug_with_context(
+            f"Fetching comments for {source_type} '{identifier}' with kwargs: {kwargs}"
+        )
+        
+        # Get the appropriate fetch method
         fetch_method = {
             'user': self.api.parse_user,
             'listing': self.api.parse_listing
         }[source_type]
 
+        # Handle text search if specified
+        if text_match := kwargs.pop('text_match', None):
+            if source_type == 'user':
+                # For users, we pass the text_match to parse_user
+                return fetch_method(
+                    identifier,
+                    headers=self.headers,
+                    limit=self.limit,
+                    text_match=text_match,
+                    **kwargs
+                )
+            else:
+                # For subreddits, use search_comments
+                return self.api.search_comments(
+                    query=text_match,
+                    subreddit=kwargs.get('subreddit'),
+                    limit=self.limit
+                )
+            
+        # Default comment fetching
         return fetch_method(
             identifier,
             headers=self.headers,

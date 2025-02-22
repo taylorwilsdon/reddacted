@@ -1,6 +1,7 @@
 from types import BuiltinMethodType
 import time
 import os
+from typing import List, Dict, Any
 import praw
 from reddacted.api import api
 from reddacted.utils.logging import get_logger, with_logging
@@ -73,7 +74,7 @@ class Reddit(api.API):
         logger.debug_with_context("Expanding 'more comments' links")
         submission.comments.replace_more(limit=None)
         comments = []
-        
+
         for comment in submission.comments.list():
             comment_data = {
                 'text': comment.body.rstrip(),
@@ -84,7 +85,7 @@ class Reddit(api.API):
             }
             logger.debug_with_context(f"Processing comment: ups={comment.ups}, downs={comment.downs}, text_preview='{comment.body[:50]}...'")
             comments.append(comment_data)
-            
+
         return comments[:limit] if limit else comments
 
     def _process_comments(self, comment_ids: list[str], action: str, batch_size: int = 10) -> dict[str, any]:
@@ -162,6 +163,51 @@ class Reddit(api.API):
 
 
     @with_logging(logger)
+    def search_comments(self, query: str, subreddit: str = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """Search for comments containing specific text.
+
+        Args:
+            query: Text to search for
+            subreddit: Optional subreddit to limit search to
+            limit: Maximum number of results to return
+
+        Returns:
+            List of comment dictionaries
+
+        Raises:
+            AuthenticationRequiredError: If not authenticated
+        """
+        if not self.authenticated:
+            raise AuthenticationRequiredError("Authentication required for comment search")
+
+        logger.debug_with_context(f"Searching for '{query}' in {subreddit or 'all'}")
+
+        try:
+            comments = []
+            search_params = {'q': query, 'limit': limit, 'type': 'comment'}
+            if subreddit:
+                results = self.reddit.subreddit(subreddit).search(**search_params)
+            else:
+                results = self.reddit.subreddit('all').search(**search_params)
+
+            for result in results:
+                if isinstance(result, praw.models.Comment):
+                    comments.append({
+                        'text': result.body.rstrip(),
+                        'upvotes': result.ups,
+                        'downvotes': result.downs,
+                        'permalink': result.permalink,
+                        'id': result.id
+                    })
+                if len(comments) >= limit:
+                    break
+
+            return comments
+        except Exception as e:
+            handle_exception(e, f"Failed to search for '{query}'", debug=True)
+            return []
+
+    @with_logging(logger)
     def parse_user(self, username, limit=100, sort='new', time_filter='all', **kwargs):
         """Parses a listing and extracts the comments from it.
 
@@ -177,7 +223,7 @@ class Reddit(api.API):
         try:
             redditor = self.reddit.redditor(username)
             comments = []
-            
+
             # Get the appropriate comment listing based on sort
             if sort == 'hot':
                 comment_listing = redditor.comments.hot(limit=limit)
@@ -189,16 +235,33 @@ class Reddit(api.API):
                 comment_listing = redditor.comments.top(limit=limit, time_filter=time_filter)
             else:
                 comment_listing = redditor.comments.new(limit=limit)  # default to new
-            
+
             for comment in comment_listing:
-                comments.append({
+                comment_data = {
                     'text': comment.body.rstrip(),
                     'upvotes': comment.ups,
                     'downvotes': comment.downs,
                     'permalink': comment.permalink,
                     'id': comment.id
-                })
-                
+                }
+
+                # If text matching is enabled, only include matching comments
+                if 'text_match' in kwargs:
+                    logger.debug_with_context(
+                        f"Text match enabled: searching for '{kwargs['text_match']}' in comment {comment_data['id']}"
+                    )
+                    if kwargs['text_match'].lower() in comment_data['text'].lower():
+                        logger.debug_with_context(f"Match found in comment {comment_data['id']}")
+                        comments.append(comment_data)
+                    else:
+                        logger.debug_with_context(f"No match found in comment {comment_data['id']}")
+                else:
+                    logger.debug_with_context(f"No text match filter, including comment {comment_data['id']}")
+                    comments.append(comment_data)
+
+                if len(comments) >= limit:
+                    break
+
             return comments
         except Exception as e:
             handle_exception(e, f"Failed to fetch comments for user '{username}'", debug=True)

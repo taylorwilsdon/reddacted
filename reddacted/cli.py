@@ -1,117 +1,181 @@
+"""
+Reddit CLI for PII Detection and Sentiment Analysis
+
+This module provides a command-line interface for analyzing Reddit content,
+detecting PII, and managing comments using both local and OpenAI LLMs.
+"""
+
 import sys
+import os
 import getpass
 import logging
-from typing import Optional, Dict, Any
+import difflib
+from typing import Optional, Dict, Any, List, Tuple
 
 from cliff.app import App
 from cliff.commandmanager import CommandManager
 from cliff.command import Command
+import requests
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.columns import Columns
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+
 from reddacted.utils.logging import get_logger, with_logging, set_global_logging_level
 from reddacted.utils.exceptions import handle_exception
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
-import requests
 
-# Configure logging format
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO  # Set default level to INFO
-)
-
+# Initialize logging with consistent format
+set_global_logging_level(logging.INFO)
 logger = get_logger(__name__)
-console = Console()
+console = Console(highlight=True)
+
+# Command descriptions for help and suggestions
+COMMAND_DESCRIPTIONS = {
+    'listing': 'Analyze a Reddit post and its comments',
+    'user': 'Analyze a Reddit user\'s comment history',
+    'delete': 'Delete comments by ID',
+    'update': 'Replace comment content with r/reddacted'
+}
+
+# Environment variables required for Reddit API authentication
+REDDIT_AUTH_VARS = [
+    'REDDIT_USERNAME',
+    'REDDIT_PASSWORD',
+    'REDDIT_CLIENT_ID',
+    'REDDIT_CLIENT_SECRET'
+]
 
 
 class ModifyComments(Command):
-    """Base class for comment modification commands"""
+    """Base class for comment modification commands with shared functionality"""
 
-    def get_description(self):
-        return self.__doc__ or ''
-
-    def get_parser(self, prog_name):
+    @with_logging(logger)
+    def get_parser(self, prog_name: str) -> Any:
+        """Configure common arguments for comment modification commands"""
         parser = super(ModifyComments, self).get_parser(prog_name)
         parser.add_argument(
             'comment_ids',
-            help='Comma-separated list of comment IDs to process'
+            help='Comma-separated list of comment IDs to process (e.g., abc123,def456)'
         )
         parser.add_argument(
             '--batch-size',
             type=int,
             default=10,
-            help='Number of comments to process per batch'
+            help='Number of comments to process in each API request (default: 10)'
         )
         return parser
 
-    def process_comments(self, parsed_args, action):
+    @with_logging(logger)
+    def process_comments(self, parsed_args: Any, action: str) -> Dict[str, Any]:
+        """Process comments with the specified action and progress tracking
+
+        Args:
+            parsed_args: Command line arguments
+            action: Action to perform ('delete' or 'update')
+
+        Returns:
+            Dict containing results of the operation
+        """
         api = Reddit()
-        comment_ids = parsed_args.comment_ids.split(',')
-        if action == 'delete':
-            return api.delete_comments(comment_ids, batch_size=parsed_args.batch_size)
-        elif action == 'update':
-            return api.update_comments(comment_ids, batch_size=parsed_args.batch_size)
+        comment_ids = [id.strip() for id in parsed_args.comment_ids.split(',')]
+        total_comments = len(comment_ids)
 
-class DeleteComments(ModifyComments):
-    """Delete specified comments"""
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            console=console
+        ) as progress:
+            task = progress.add_task(
+                f"[cyan]{action.title()} processing...",
+                total=total_comments
+            )
 
-    def get_description(self):
-        return 'Delete specified Reddit comments permanently using their IDs'
+            if action == 'delete':
+                result = api.delete_comments(comment_ids, batch_size=parsed_args.batch_size)
+            elif action == 'update':
+                result = api.update_comments(comment_ids, batch_size=parsed_args.batch_size)
+            else:
+                raise ValueError(f"Invalid action: {action}")
 
-    def take_action(self, parsed_args):
-        results = self.process_comments(parsed_args, 'delete')
+            # Update progress based on successful operations
+            progress.update(task, completed=result['success'])
 
-        # Create detailed results panel
+            return result
+
+    def _format_results(self, results: Dict[str, Any], action: str) -> str:
+        """Format operation results for display
+
+        Args:
+            results: Operation results dictionary
+            action: The action that was performed
+
+        Returns:
+            Formatted string for display
+        """
         details = []
         details.append(f"[cyan]Processed:[/] {results['processed']}")
         details.append(f"[green]Successful:[/] {results['success']}")
         details.append(f"[red]Failed:[/] {results['failures']}\n")
 
         if results.get('successful_ids'):
-            details.append("[green]Successfully Deleted Comments:[/]")
+            details.append(f"[green]Successfully {action.title()}d Comments:[/]")
             for comment_id in results['successful_ids']:
                 details.append(f"  • [dim]t1_{comment_id}[/]")
 
         if results.get('failed_ids'):
-            details.append("\n[red]Failed to Delete Comments:[/]")
+            details.append(f"\n[red]Failed to {action.title()} Comments:[/]")
             for comment_id in results['failed_ids']:
                 details.append(f"  • [dim]t1_{comment_id}[/]")
 
-        console.print(Panel(
-            "\n".join(details),
+        return "\n".join(details)
+
+class DeleteComments(ModifyComments):
+    """Delete specified Reddit comments permanently"""
+
+    @with_logging(logger)
+    def get_description(self) -> str:
+        return 'Delete specified Reddit comments permanently using their IDs'
+
+    @with_logging(logger)
+    def take_action(self, parsed_args: Any) -> None:
+        """Execute the delete operation and display results
+
+        Args:
+            parsed_args: Command line arguments containing comment_ids and batch_size
+        """
+        results = self.process_comments(parsed_args, 'delete')
+        formatted_results = self._format_results(results, 'delete')
+
+        console.print("\n", Panel(
+            formatted_results,
             title="[bold red]Delete Results[/]",
             expand=False
         ))
 
 class UpdateComments(ModifyComments):
-    """Update specified comments to r/reddacted"""
+    """Replace comment content with r/reddacted"""
 
-    def get_description(self):
+    @with_logging(logger)
+    def get_description(self) -> str:
         return 'Replace comment content with "r/reddacted" using their IDs'
 
-    def take_action(self, parsed_args):
+    @with_logging(logger)
+    def take_action(self, parsed_args: Any) -> None:
+        """Execute the update operation and display results
+
+        Args:
+            parsed_args: Command line arguments containing comment_ids and batch_size
+        """
         results = self.process_comments(parsed_args, 'update')
+        formatted_results = self._format_results(results, 'update')
 
-        # Create detailed results panel
-        details = []
-        details.append(f"[cyan]Processed:[/] {results['processed']}")
-        details.append(f"[green]Successful:[/] {results['success']}")
-        details.append(f"[red]Failed:[/] {results['failures']}\n")
-
-        if results.get('successful_ids'):
-            details.append("[green]Successfully Updated Comments:[/]")
-            for comment_id in results['successful_ids']:
-                details.append(f"  • [dim]t1_{comment_id}[/]")
-
-        if results.get('failed_ids'):
-            details.append("\n[red]Failed to Update Comments:[/]")
-            for comment_id in results['failed_ids']:
-                details.append(f"  • [dim]t1_{comment_id}[/]")
-
-        console.print(Panel(
-            "\n".join(details),
+        console.print("\n", Panel(
+            formatted_results,
             title="[bold blue]Update Results[/]",
             expand=False
         ))
@@ -119,6 +183,16 @@ class UpdateComments(ModifyComments):
 
 class BaseAnalyzeCommand(Command):
     """Base class for Reddit analysis commands with common arguments"""
+
+    def _check_auth_env_vars(self) -> bool:
+        """Check if all required Reddit API environment variables are set"""
+        required_vars = [
+            'REDDIT_USERNAME',
+            'REDDIT_PASSWORD',
+            'REDDIT_CLIENT_ID',
+            'REDDIT_CLIENT_SECRET'
+        ]
+        return all(os.getenv(var) for var in required_vars)
 
     def get_parser(self, prog_name):
         parser = super(BaseAnalyzeCommand, self).get_parser(prog_name)
@@ -148,12 +222,16 @@ class BaseAnalyzeCommand(Command):
                             help='Only show comments that contain PII (0 < score < 1.0)')
         parser.add_argument('--limit', type=int, default=100,
                             help='Maximum number of comments to analyze (default: 100, use 0 for unlimited)')
-        parser.add_argument('--sort', type=str, choices=['hot', 'top', 'new'], default='new',
+        parser.add_argument('--sort', type=str, choices=['hot', 'new', 'controversial', 'top'], default='new',
                             help='Sort method for comments (default: new)')
         parser.add_argument('--time', type=str,
                            choices=['all', 'day', 'hour', 'month', 'week', 'year'],
                            default='all',
                            help='Time filter for comments (default: all)')
+        parser.add_argument('--text-match', type=str,
+                           help='Search for comments containing specific text (requires authentication)')
+        parser.add_argument('--skip-text', type=str,
+                           help='Skip comments containing this text pattern')
         return parser
 
 
@@ -171,13 +249,17 @@ class Listing(BaseAnalyzeCommand):
         llm_config = CLI()._configure_llm(args, console)
         limit = None if args.limit == 0 else args.limit
 
+        # Enable auth if flag is set or all env vars are present
+        auth_enabled = args.enable_auth or self._check_auth_env_vars()
+
         sent = Sentiment(
-            auth_enabled=args.enable_auth,
+            auth_enabled=auth_enabled,
             pii_enabled=not args.disable_pii,
             pii_only=args.pii_only,
             llm_config=llm_config,
             sort=args.sort,
-            limit=limit
+            limit=limit,
+            skip_text=args.skip_text
         )
         sent.get_sentiment('listing', f"{args.subreddit}/{args.article}", output_file=args.output_file)
 
@@ -219,20 +301,30 @@ class User(BaseAnalyzeCommand):
             limit = None if parsed_args.limit == 0 else parsed_args.limit
 
             logger.debug_with_context(f"Creating Sentiment analyzer with auth_enabled={parsed_args.enable_auth}")
+            # Enable auth if flag is set or all env vars are present
+            auth_enabled = parsed_args.enable_auth or self._check_auth_env_vars()
+
             sent = Sentiment(
-                auth_enabled=parsed_args.enable_auth,
+                auth_enabled=auth_enabled,
                 pii_enabled=not parsed_args.disable_pii,
                 llm_config=llm_config,
                 pii_only=parsed_args.pii_only,
                 sort=parsed_args.sort,
-                limit=limit
+                limit=limit,
+                skip_text=parsed_args.skip_text
+            )
+            logger.debug_with_context(
+                f"Analyzing user with args: username={parsed_args.username}, "
+                f"sort={parsed_args.sort}, time_filter={parsed_args.time}, "
+                f"text_match={parsed_args.text_match}"
             )
             sent.get_sentiment(
                 'user',
                 parsed_args.username,
                 output_file=parsed_args.output_file,
                 sort=parsed_args.sort,
-                time_filter=parsed_args.time
+                time_filter=parsed_args.time,
+                text_match=parsed_args.text_match
             )
         except AttributeError as e:
             handle_exception(
@@ -291,7 +383,6 @@ class CLI(App):
                 --openai-base    Custom OpenAI API base URL
                 --model          Model name to use (default: gpt-4)
 
-
                 Common Options:
                 --output-file    Save detailed analysis to file
                 --enable-auth    Use Reddit API authentication
@@ -299,6 +390,8 @@ class CLI(App):
                 --pii-only       Show only comments with PII
                 --limit          Max comments to analyze (0=unlimited)
                 --batch-size     Comments per batch for delete/update
+                --text-match     Search for comments containing specific text
+                --skip-text      Skip comments containing this text pattern
                 """,
             command_manager=command_manager,
             deferred_help=True,)
@@ -315,10 +408,10 @@ class CLI(App):
             console.print(f"[blue]Using local LLM endpoint: {base_url}[/]")
 
             try:
-                # Verify Ollama connection
+                # Verify Local LLM backend connection
                 response = requests.get(f"{base_url}/v1/models")
                 if response.status_code != 200:
-                    console.print(f"[red]Error: Could not connect to Ollama at {base_url}[/]")
+                    console.print(f"[red]Error: Could not connect to {base_url} - {response.status_code}[/]")
                     return None
 
                 # Get available models
