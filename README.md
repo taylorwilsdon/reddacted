@@ -54,10 +54,11 @@ https://github.com/user-attachments/assets/db088d58-2f53-4513-95cc-d4b70397ff82
 ## Installation
 
 ```bash
-# Install from PyPI
+# Install from PyPI (recommended)
 pip install reddacted
 
-# Or install from source
+# Or install from source with all dependencies
+pip install -r requirements.txt
 pip install .
 ```
 
