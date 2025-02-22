@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "reddacted"
-dynamic = ["version"]
+dynamic = ["version", "urls", "entry-points"]
 description = "Analyze Reddit comments for PII and perform sentiment analysis"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -33,6 +33,13 @@ dependencies = [
     "openai",
     "rich"
 ]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/taylorwilsdon/reddacted/issues"
+
+[project.entry-points.reddacted.commands]
+listing = "reddacted.cli:Listing"
+user = "reddacted.cli:User"
 
 [project.optional-dependencies]
 dev = [
