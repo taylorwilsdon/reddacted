@@ -54,8 +54,9 @@ reddacted = "reddacted.cli:main"
 
 [tool.setuptools_scm]
 local_scheme = "no-local-version"
-version_scheme = "guess-next-dev"
+version_scheme = "no-guess-dev"
 write_to = "reddacted/_version.py"
+fallback_version = "0.1.1"
 
 [tool.black]
 line-length = 100
