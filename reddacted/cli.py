@@ -225,8 +225,11 @@ class User(BaseAnalyzeCommand):
             limit = None if parsed_args.limit == 0 else parsed_args.limit
 
             logger.debug_with_context(f"Creating Sentiment analyzer with auth_enabled={parsed_args.enable_auth}")
+            # Enable auth if flag is set or all env vars are present
+            auth_enabled = parsed_args.enable_auth or self._check_auth_env_vars()
+            
             sent = Sentiment(
-                auth_enabled=parsed_args.enable_auth,
+                auth_enabled=auth_enabled,
                 pii_enabled=not parsed_args.disable_pii,
                 llm_config=llm_config,
                 pii_only=parsed_args.pii_only,
