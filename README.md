@@ -1,11 +1,11 @@
 # reddacted: AI-Powered Reddit Privacy Suite
-
 [![Privacy Shield](https://img.shields.io/badge/Privacy-100%25_Client--Side_Processing-success)](https://github.com/taylorwilsdon)
 [![AI Analysis](https://img.shields.io/badge/AI-PII_Detection-blueviolet)](https://github.com/taylorwilsdon/reddacted)
 ![GitHub License](https://img.shields.io/github/license/taylorwilsdon/reddacted)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/taylorwilsdon/reddacted)
 ![PyPI - Version](https://img.shields.io/pypi/v/reddacted)
 
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/934113f1-4a38-4985-935c-b247688ccac8" />
 <img width="450" alt="image" src="https://github.com/user-attachments/assets/338fa47e-88da-4844-9728-ace17983cd83" />
 
 ## What is reddacted?
@@ -79,23 +79,29 @@ Note: The examples above use a local LLM. For cloud-based analysis, omit the --l
 export OPENAI_API_KEY="your-api-key"
 ```
 
-## 💡 FAQ
-
 ## Support & Community
 Join our subreddit: [r/reddacted](https://reddit.com/r/reddacted)
 
 ### ❓ How accurate is the PII detection, really?
 Surprisingly good. Good enough that I run it against my own stuff in delete mode. It's basically a defense-in-depth approach combining these, and I'll probably add upvotes/downvotes into the logic at some point:
-- **AI Detection**: Doesn't need a crazy smart model, don't waste your money on r1 or o1. Cheap & light models like gpt-4o-mini, gpt-3.5-turbo, qwen2.5:3b or 7b and Mistral are all plenty. Don't use something too dumb or it will be inconsistent, a 0.5b model will produce unreliable results. It works well with cheap models like qwen2.5:3b (potato can run this) and gpt-4o-mini, which is like 15 cents per million tokens
+- **AI Detection**: Doesn't need a crazy smart model, don't waste your money on r1 or o1.
+    - Cheap & light models like gpt-4o-mini, gpt-3.5-turbo, qwen2.5:3b or 7b and Mistral are all plenty.
+    - Don't use something too dumb or it will be inconsistent, a 0.5b model will produce unreliable results.
+    - It works well with cheap models like qwen2.5:3b (potato can run this) and gpt-4o-mini, which is like 15 cents per million tokens
 - **Pattern Matching**: 50+ regex rules for common PII formats does a first past sweep for the obvious stuff
 - **Context Analysis**: Are you coming off as a dick? Perhaps that factors into your decision to clean up. Who could say, mine are all smiley faces.
 
+## 💡 FAQ
 **Q:** How does the AI handle false positives?
+
 **A:** Adjust confidence threshold (default 0.7) per risk tolerance. You're building a repo from source off some random dude's github - don't run this and just delete a bunch of shit blindly, you're a smart person. Review your results, and if it is doing something crazy, please tell me.
 
 **Q:** What LLMs are supported?
+
 **A:** Local: any model via Ollama, vLLM or other platform capable of exposing an openai-compatible endpoint. • Cloud: OpenAI-compatible endpoints
+
 **Q:** Is my data sent externally?
+
 **A:** If you choose to use a hosted provider, yes - in cloud mode - local analysis stays fully private.
 
 ## Troubleshooting
