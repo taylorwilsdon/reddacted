@@ -1,6 +1,5 @@
-import unittest
 import json
-import asyncio
+import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 
 from reddacted.llm_detector import LLMDetector
@@ -13,54 +12,53 @@ SAMPLE_RESPONSE = {
     "risk_factors": ["geographical specificity", "local slang reference"]
 }
 
-class LLMDetectorTestCases(unittest.TestCase):
-    def setUp(self):
-        self.mock_client = MagicMock()
-        self.mock_client.chat = MagicMock()
-        self.mock_completion = MagicMock()
+@pytest.fixture
+def mock_openai():
+    """Fixture to provide mocked OpenAI client"""
+    with patch('openai.AsyncOpenAI') as mock:
+        mock_client = MagicMock()
+        mock_client.chat = MagicMock()
+        mock.return_value = mock_client
+        yield mock
 
-        # Mock async response
-        self.mock_message = MagicMock()
-        self.mock_message.content = json.dumps(SAMPLE_RESPONSE)
-        self.mock_choice = MagicMock()
-        self.mock_choice.message = self.mock_message
-        self.mock_completion.choices = [self.mock_choice]
+@pytest.fixture
+def mock_completion():
+    """Fixture to provide mocked completion response"""
+    completion = MagicMock()
+    message = MagicMock()
+    message.content = json.dumps(SAMPLE_RESPONSE)
+    choice = MagicMock()
+    choice.message = message
+    completion.choices = [choice]
+    return completion
 
-        # Patch the OpenAI client
-        self.client_patcher = patch('openai.AsyncOpenAI', return_value=self.mock_client)
-        self.mock_openai = self.client_patcher.start()
-        self.addCleanup(self.client_patcher.stop)
-
-    def tearDown(self):
-        self.client_patcher.stop()
-
-    @patch('openai.AsyncOpenAI')
-    async def test_analyze_text_success(self, mock_client):
+class TestLLMDetector:
+    @pytest.mark.asyncio
+    async def test_analyze_text_success(self, mock_openai, mock_completion):
         """Test successful PII analysis with valid response"""
-        # Configure mock
-        mock_client.return_value.chat.completions.create = AsyncMock(return_value=self.mock_completion)
-
+        mock_openai.return_value.chat.completions.create = AsyncMock(return_value=mock_completion)
+        
         detector = LLMDetector(api_key="sk-test")
         risk_score, details = await detector.analyze_text("RaunchyRaccoon that looks a lot like Miami Springs!")
-
-        self.assertEqual(risk_score, 0.85)
-        self.assertEqual(details['details'], SAMPLE_RESPONSE['details'])
-        self.assertEqual(details['risk_factors'], SAMPLE_RESPONSE['risk_factors'])
-        mock_client.assert_called_once_with(
+        
+        assert risk_score == 0.85
+        assert details['details'] == SAMPLE_RESPONSE['details']
+        assert details['risk_factors'] == SAMPLE_RESPONSE['risk_factors']
+        mock_openai.assert_called_once_with(
             api_key="sk-test",
             default_headers={}
         )
 
-    @patch('openai.AsyncOpenAI')
-    async def test_analyze_invalid_key(self, mock_client):
+    @pytest.mark.asyncio
+    async def test_analyze_invalid_key(self, mock_openai):
         """Test authentication error handling"""
-        mock_client.side_effect = Exception("Invalid API key")
-
+        mock_openai.side_effect = Exception("Invalid API key")
+        
         detector = LLMDetector(api_key="invalid-key")
         risk_score, details = await detector.analyze_text("Sample text")
-
-        self.assertEqual(risk_score, 0.0)
-        self.assertIn("error", details)
+        
+        assert risk_score == 0.0
+        assert "error" in details
 
     @patch('openai.AsyncOpenAI')
     def test_analyze_batch(self, mock_client):
