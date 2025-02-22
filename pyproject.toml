@@ -74,7 +74,7 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
-asyncio_mode = "strict"
+asyncio_mode = "auto"
 testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
@@ -83,4 +83,3 @@ addopts = "-v --tb=short"
 markers = [
     "asyncio: mark test as async/await test",
 ]
-asyncio_auto_mode = true
