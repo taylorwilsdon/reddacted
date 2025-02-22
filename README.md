@@ -54,30 +54,22 @@ https://github.com/user-attachments/assets/db088d58-2f53-4513-95cc-d4b70397ff82
 ## Installation
 
 ```bash
-# Install globally
-pip install .
+# Install from PyPI
+pip install reddacted
 
-# Or install in development mode (for contributors)
-pip install -e .
-```
-
-That's it! No PATH configuration needed.
-
-## Using the CLI
-
-Install once with:
-```bash
+# Or install from source
 pip install .
 ```
 
-Then run directly:
+## Quick Start
+
 ```bash
-reddacted user <username> [--output-file analysis.txt] [--enable-auth]
-reddacted listing <subreddit> <article> [--output-file results.csv]
+# Analyze a user's comments
+reddacted user spez --limit 5
+
+# Analyze a specific post
+reddacted listing r/privacy abc123 --limit 10
 ```
-
-https://github.com/user-attachments/assets/177f865b-7a4e-424d-854a-d4285a322b1a
-
 
 ## 💡 FAQ
 
@@ -166,74 +158,29 @@ reddacted user spez --text-match "python" --skip-text "deleted"
 
 ## Development
 
-It is recommended that you first create a python virtual environment to not overwrite pip dependencies in your system. See [virtualenvs](http://docs.python-guide.org/en/latest/dev/virtualenvs/):
-
-1. Clone this repository
-
-2. Change directory to application path
-
-3. Install application requirements
-
+1. Create and activate a virtual environment:
 ```bash
-$ pip install -r requirements.txt
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-4. Install required **nltk** packages
-
+2. Install in development mode with test dependencies:
 ```bash
-$ python -m nltk.downloader vader_lexicon
+pip install -e ".[dev]"
 ```
 
-5. Make changes to the code
-
-6. Install the application from source code
-
-```bash
-$ sudo python setup.py install
-```
-
-Now you can go ahead and test the new features you have implemented! Contributions welcome, feel free to contribute by:
-
-- Opening an Issue
-- Creating a PR with additions/fixes
+That's it! The package handles all other dependencies automatically, including NLTK data.
 
 ## Testing
 
-I have included a number of unit tests to validate the application. In order to run the tests, simply perform the following:
-
-1. Install pytest
-
+Run the test suite:
 ```bash
-$ pip install pytest
+pytest tests
 ```
 
-2. Clone this repository
-
-3. Change directory to application path
-
-4. Install application requirements
-
-```bash
-$ pip install -r requirements.txt
-```
-
-5. Install required **nltk** packages
-
-```bash
-$ python -m nltk.downloader vader_lexicon
-```
-
-6. Install application test requirements
-
-```bash
-$ pip install -r test-requirements.txt
-```
-
-7. Run Unit tests
-
-```bash
-$ pytest tests
-```
+Want to contribute? Great! Feel free to:
+- Open an Issue
+- Submit a Pull Request
 
 ## Common Exceptions
 
