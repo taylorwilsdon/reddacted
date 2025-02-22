@@ -277,12 +277,24 @@ class Sentiment():
                 )
             
         # Default comment fetching
-        return fetch_method(
-            identifier,
-            headers=self.headers,
-            limit=self.limit,
-            **kwargs
-        )
+        if source_type == 'listing':
+            # Split subreddit/article for listing type
+            subreddit = identifier.split('/')[0]
+            article = identifier.split('/')[1]
+            return fetch_method(
+                subreddit,
+                article,
+                headers=self.headers,
+                limit=self.limit,
+                **kwargs
+            )
+        else:
+            return fetch_method(
+                identifier,
+                headers=self.headers,
+                limit=self.limit,
+                **kwargs
+            )
 
     @with_logging(logger)
     def _run_analysis_flow(self, comments: List[Dict[str, Any]]) -> Tuple[float, List[AnalysisResult]]:
