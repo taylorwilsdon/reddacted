@@ -37,7 +37,7 @@ dependencies = [
 [project.urls]
 "Bug Tracker" = "https://github.com/taylorwilsdon/reddacted/issues"
 
-[project.entry-points.reddacted.commands]
+[project.entry-points."reddacted.commands"]
 listing = "reddacted.cli:Listing"
 user = "reddacted.cli:User"
 
