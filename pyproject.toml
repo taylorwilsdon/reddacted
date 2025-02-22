@@ -53,6 +53,8 @@ dev = [
 reddacted = "reddacted.cli:main"
 
 [tool.setuptools_scm]
+local_scheme = "no-local-version"
+version_scheme = "post-release"
 
 [tool.black]
 line-length = 100
