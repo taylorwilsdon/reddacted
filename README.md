@@ -5,7 +5,7 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/taylorwilsdon/reddacted)
 ![PyPI - Version](https://img.shields.io/pypi/v/reddacted)
 
-<img width="450" alt="image" src="https://github.com/user-attachments/assets/934113f1-4a38-4985-935c-b247688ccac8" />
+<img width="350" alt="image" src="https://github.com/user-attachments/assets/934113f1-4a38-4985-935c-b247688ccac8" />
 <img width="450" alt="image" src="https://github.com/user-attachments/assets/338fa47e-88da-4844-9728-ace17983cd83" />
 
 ## What is reddacted?
