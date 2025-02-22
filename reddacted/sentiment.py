@@ -239,7 +239,9 @@ class Sentiment():
     @with_logging(logger)
     def _get_comments(self, source_type: str, identifier: str, **kwargs) -> List[Dict[str, Any]]:
         """Unified comment fetching method"""
-        logger.debug_with_context(f"Fetching comments for {source_type} '{identifier}'")
+        logger.debug_with_context(
+            f"Fetching comments for {source_type} '{identifier}' with kwargs: {kwargs}"
+        )
         
         # Get the appropriate fetch method
         fetch_method = {

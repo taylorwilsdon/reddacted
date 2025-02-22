@@ -247,9 +247,16 @@ class Reddit(api.API):
                 
                 # If text matching is enabled, only include matching comments
                 if 'text_match' in kwargs:
+                    logger.debug_with_context(
+                        f"Text match enabled: searching for '{kwargs['text_match']}' in comment {comment_data['id']}"
+                    )
                     if kwargs['text_match'].lower() in comment_data['text'].lower():
+                        logger.debug_with_context(f"Match found in comment {comment_data['id']}")
                         comments.append(comment_data)
+                    else:
+                        logger.debug_with_context(f"No match found in comment {comment_data['id']}")
                 else:
+                    logger.debug_with_context(f"No text match filter, including comment {comment_data['id']}")
                     comments.append(comment_data)
                 
                 if len(comments) >= limit:

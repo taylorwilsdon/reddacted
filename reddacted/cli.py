@@ -229,12 +229,18 @@ class User(BaseAnalyzeCommand):
                 sort=parsed_args.sort,
                 limit=limit
             )
+            logger.debug_with_context(
+                f"Analyzing user with args: username={parsed_args.username}, "
+                f"sort={parsed_args.sort}, time_filter={parsed_args.time}, "
+                f"text_match={parsed_args.text_match}"
+            )
             sent.get_sentiment(
                 'user',
                 parsed_args.username,
                 output_file=parsed_args.output_file,
                 sort=parsed_args.sort,
-                time_filter=parsed_args.time
+                time_filter=parsed_args.time,
+                text_match=parsed_args.text_match
             )
         except AttributeError as e:
             handle_exception(
