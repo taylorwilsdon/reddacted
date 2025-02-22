@@ -1,5 +1,5 @@
 # reddacted: AI-Powered Reddit Privacy Suite
-![reddacted_github](https://github.com/user-attachments/assets/934113f1-4a38-4985-935c-b247688ccac8){width=400}
+<img width="450" alt=image" src="https://github.com/user-attachments/assets/934113f1-4a38-4985-935c-b247688ccac8" />
 [![Privacy Shield](https://img.shields.io/badge/Privacy-100%25_Client--Side_Processing-success)](https://github.com/taylorwilsdon)
 [![AI Analysis](https://img.shields.io/badge/AI-PII_Detection-blueviolet)](https://github.com/taylorwilsdon/reddacted)
 ![GitHub License](https://img.shields.io/github/license/taylorwilsdon/reddacted)
