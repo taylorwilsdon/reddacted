@@ -129,13 +129,15 @@ class TestLLMDetector:
         assert "Rate limit" in details["error"]
 
     @pytest.mark.asyncio
-    async def test_empty_text_handling(self):
+    async def test_empty_text_handling(self, mock_openai):
         """Test handling of empty text input"""
+        # Don't set up mock response - empty text should return early
         risk_score, details = await self.detector.analyze_text("")
         
+        # Verify early return without API call
         assert risk_score == 0.0
-        assert "error" in details
-        assert details["error"] == "Empty text provided"
+        assert details == {"error": "Empty text provided", "has_pii": False}
+        mock_openai.return_value.chat.completions.create.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_long_text_handling(self, mock_openai):
@@ -149,10 +151,9 @@ class TestLLMDetector:
         truncated_response = {
             "has_pii": False,
             "confidence": 0.5,
-            "details": ["Text was truncated"],
-            "risk_factors": [],
-            "truncated": True,
-            "reasoning": "Text was truncated due to length"
+            "details": ["Text was truncated due to length"],
+            "risk_factors": ["truncated_text"],
+            "reasoning": "Analysis may be incomplete due to truncation"
         }
         message.content = json.dumps(truncated_response)
         mock_completion.choices = [MagicMock(message=message)]
@@ -161,9 +162,9 @@ class TestLLMDetector:
         
         risk_score, details = await self.detector.analyze_text(long_text)
         
-        assert isinstance(risk_score, float)
-        assert details["truncated"] is True
+        assert risk_score == 0.5
         assert "truncated" in details["details"][0].lower()
+        assert "truncated_text" in details["risk_factors"]
 
     @pytest.mark.asyncio
     async def test_batch_concurrent_processing(self, mock_openai, mock_responses, mock_texts):
@@ -258,15 +259,16 @@ class TestLLMDetector:
     @pytest.mark.asyncio
     async def test_invalid_json_response(self, mock_openai):
         """Test handling of malformed LLM response"""
-        # Create mock with JSON wrapped in code block
+        # Create mock with invalid JSON response
         mock_completion = MagicMock()
         message = MagicMock()
-        message.content = "```json\n" + json.dumps(SAMPLE_RESPONSE) + "\n```"
+        message.content = "Not valid JSON"
         mock_completion.choices = [MagicMock(message=message)]
         mock_openai.return_value.chat.completions.create.return_value = mock_completion
 
         risk_score, details = await self.detector.analyze_text("Sample text")
 
-        assert risk_score == 0.85
-        assert details['details'] == SAMPLE_RESPONSE['details']
+        assert risk_score == 0.0
+        assert "error" in details
+        assert "Failed to parse LLM response" in details["error"]
 
