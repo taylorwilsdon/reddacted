@@ -46,7 +46,8 @@ dev = [
     "pytest",
     "black",
     "mypy",
-    "ruff"
+    "ruff",
+    "build>=1.0.3"
 ]
 
 [project.scripts]
