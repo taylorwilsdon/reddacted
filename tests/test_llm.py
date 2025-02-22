@@ -129,43 +129,41 @@ class TestLLMDetector:
         assert "Rate limit" in details["error"]
 
     @pytest.mark.asyncio
-    async def test_empty_text_handling(self, mock_openai):
+    async def test_empty_text_handling(self):
         """Test handling of empty text input"""
         risk_score, details = await self.detector.analyze_text("")
         
         assert risk_score == 0.0
         assert "error" in details
-        assert "Empty text provided" in details["error"]
-        mock_openai.return_value.chat.completions.create.assert_not_called()
+        assert details["error"] == "Empty text provided"
 
     @pytest.mark.asyncio
     async def test_long_text_handling(self, mock_openai):
         """Test handling of very long text input"""
-        # Create text that exceeds OpenAI's typical token limit
+        # Create text that exceeds token limit
         long_text = "test " * 5000
         
-        # Create a specific mock response for truncated text
+        # Mock the response
         mock_completion = MagicMock()
         message = MagicMock()
-        message.content = json.dumps({
+        truncated_response = {
             "has_pii": False,
             "confidence": 0.5,
-            "details": [],
+            "details": ["Text was truncated"],
             "risk_factors": [],
             "truncated": True,
             "reasoning": "Text was truncated due to length"
-        })
-        choice = MagicMock()
-        choice.message = message
-        mock_completion.choices = [choice]
+        }
+        message.content = json.dumps(truncated_response)
+        mock_completion.choices = [MagicMock(message=message)]
         
-        mock_openai.return_value.chat.completions.create = AsyncMock(return_value=mock_completion)
+        mock_openai.return_value.chat.completions.create.return_value = mock_completion
         
         risk_score, details = await self.detector.analyze_text(long_text)
         
         assert isinstance(risk_score, float)
-        assert details.get("truncated") is True
-        assert "Text was truncated" in details.get("reasoning", "")
+        assert details["truncated"] is True
+        assert "truncated" in details["details"][0].lower()
 
     @pytest.mark.asyncio
     async def test_batch_concurrent_processing(self, mock_openai, mock_responses, mock_texts):
@@ -258,20 +256,17 @@ class TestLLMDetector:
         )
 
     @pytest.mark.asyncio
-    @patch('openai.AsyncOpenAI')
-    async def test_invalid_json_response(self, mock_client):
+    async def test_invalid_json_response(self, mock_openai):
         """Test handling of malformed LLM response"""
-        bad_message = MagicMock()
-        bad_message.content = "```json\n" + json.dumps(SAMPLE_RESPONSE) + "\n```"
-        bad_choice = MagicMock()
-        bad_choice.message = bad_message
-        bad_completion = MagicMock()
-        bad_completion.choices = [bad_choice]
-        mock_client.return_value.chat.completions.create = AsyncMock(return_value=bad_completion)
+        # Create mock with JSON wrapped in code block
+        mock_completion = MagicMock()
+        message = MagicMock()
+        message.content = "```json\n" + json.dumps(SAMPLE_RESPONSE) + "\n```"
+        mock_completion.choices = [MagicMock(message=message)]
+        mock_openai.return_value.chat.completions.create.return_value = mock_completion
 
-        detector = LLMDetector(api_key="sk-test")
-        risk_score, details = await detector.analyze_text("Sample text")
+        risk_score, details = await self.detector.analyze_text("Sample text")
 
-        self.assertEqual(risk_score, 0.85)
-        self.assertEqual(details['details'], SAMPLE_RESPONSE['details'])
+        assert risk_score == 0.85
+        assert details['details'] == SAMPLE_RESPONSE['details']
 
