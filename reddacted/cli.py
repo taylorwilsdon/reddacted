@@ -1,7 +1,8 @@
 import sys
+import os
 import getpass
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from cliff.app import App
 from cliff.commandmanager import CommandManager
@@ -173,8 +174,11 @@ class Listing(BaseAnalyzeCommand):
         llm_config = CLI()._configure_llm(args, console)
         limit = None if args.limit == 0 else args.limit
 
+        # Enable auth if flag is set or all env vars are present
+        auth_enabled = args.enable_auth or self._check_auth_env_vars()
+        
         sent = Sentiment(
-            auth_enabled=args.enable_auth,
+            auth_enabled=auth_enabled,
             pii_enabled=not args.disable_pii,
             pii_only=args.pii_only,
             llm_config=llm_config,
@@ -310,6 +314,16 @@ class CLI(App):
                 """,
             command_manager=command_manager,
             deferred_help=True,)
+
+    def _check_auth_env_vars(self) -> bool:
+        """Check if all required Reddit API environment variables are set"""
+        required_vars = [
+            'REDDIT_USERNAME',
+            'REDDIT_PASSWORD', 
+            'REDDIT_CLIENT_ID',
+            'REDDIT_CLIENT_SECRET'
+        ]
+        return all(os.getenv(var) for var in required_vars)
 
     @with_logging(logger)
     def _configure_llm(self, args, console):
