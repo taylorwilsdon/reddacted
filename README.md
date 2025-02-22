@@ -79,8 +79,6 @@ Note: The examples above use a local LLM. For cloud-based analysis, omit the --l
 export OPENAI_API_KEY="your-api-key"
 ```
 
-## 💡 FAQ
-
 ## Support & Community
 Join our subreddit: [r/reddacted](https://reddit.com/r/reddacted)
 
@@ -90,12 +88,17 @@ Surprisingly good. Good enough that I run it against my own stuff in delete mode
 - **Pattern Matching**: 50+ regex rules for common PII formats does a first past sweep for the obvious stuff
 - **Context Analysis**: Are you coming off as a dick? Perhaps that factors into your decision to clean up. Who could say, mine are all smiley faces.
 
+## 💡 FAQ
 **Q:** How does the AI handle false positives?
+
 **A:** Adjust confidence threshold (default 0.7) per risk tolerance. You're building a repo from source off some random dude's github - don't run this and just delete a bunch of shit blindly, you're a smart person. Review your results, and if it is doing something crazy, please tell me.
 
 **Q:** What LLMs are supported?
+
 **A:** Local: any model via Ollama, vLLM or other platform capable of exposing an openai-compatible endpoint. • Cloud: OpenAI-compatible endpoints
+
 **Q:** Is my data sent externally?
+
 **A:** If you choose to use a hosted provider, yes - in cloud mode - local analysis stays fully private.
 
 ## Troubleshooting
