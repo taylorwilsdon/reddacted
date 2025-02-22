@@ -1,59 +1,119 @@
+"""
+Reddit CLI for PII Detection and Sentiment Analysis
+
+This module provides a command-line interface for analyzing Reddit content,
+detecting PII, and managing comments using both local and OpenAI LLMs.
+"""
+
 import sys
 import os
 import getpass
 import logging
-from typing import Optional, Dict, Any, List
+import difflib
+from typing import Optional, Dict, Any, List, Tuple
 
 from cliff.app import App
 from cliff.commandmanager import CommandManager
 from cliff.command import Command
+import requests
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.columns import Columns
+
 from reddacted.utils.logging import get_logger, with_logging, set_global_logging_level
 from reddacted.utils.exceptions import handle_exception
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
-import requests
 
-# Configure logging format
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO  # Set default level to INFO
-)
-
+# Initialize logging with consistent format
+set_global_logging_level(logging.INFO)
 logger = get_logger(__name__)
-console = Console()
+console = Console(highlight=True)
+
+# Command descriptions for help and suggestions
+COMMAND_DESCRIPTIONS = {
+    'listing': 'Analyze a Reddit post and its comments',
+    'user': 'Analyze a Reddit user\'s comment history',
+    'delete': 'Delete comments by ID',
+    'update': 'Replace comment content with r/reddacted'
+}
+
+# Environment variables required for Reddit API authentication
+REDDIT_AUTH_VARS = [
+    'REDDIT_USERNAME',
+    'REDDIT_PASSWORD', 
+    'REDDIT_CLIENT_ID',
+    'REDDIT_CLIENT_SECRET'
+]
 
 
 class ModifyComments(Command):
-    """Base class for comment modification commands"""
+    """Base class for comment modification commands with shared functionality"""
 
-    def get_description(self):
-        return self.__doc__ or ''
-
-    def get_parser(self, prog_name):
+    @with_logging(logger)
+    def get_parser(self, prog_name: str) -> Any:
+        """Configure common arguments for comment modification commands"""
         parser = super(ModifyComments, self).get_parser(prog_name)
         parser.add_argument(
             'comment_ids',
-            help='Comma-separated list of comment IDs to process'
+            help='Comma-separated list of comment IDs to process (e.g., abc123,def456)'
         )
         parser.add_argument(
             '--batch-size',
             type=int,
             default=10,
-            help='Number of comments to process per batch'
+            help='Number of comments to process in each API request (default: 10)'
         )
         return parser
 
-    def process_comments(self, parsed_args, action):
+    @with_logging(logger)
+    def process_comments(self, parsed_args: Any, action: str) -> Dict[str, Any]:
+        """Process comments with the specified action
+        
+        Args:
+            parsed_args: Command line arguments
+            action: Action to perform ('delete' or 'update')
+            
+        Returns:
+            Dict containing results of the operation
+        """
         api = Reddit()
-        comment_ids = parsed_args.comment_ids.split(',')
+        comment_ids = [id.strip() for id in parsed_args.comment_ids.split(',')]
+        
         if action == 'delete':
             return api.delete_comments(comment_ids, batch_size=parsed_args.batch_size)
         elif action == 'update':
             return api.update_comments(comment_ids, batch_size=parsed_args.batch_size)
+        else:
+            raise ValueError(f"Invalid action: {action}")
+
+    def _format_results(self, results: Dict[str, Any], action: str) -> str:
+        """Format operation results for display
+        
+        Args:
+            results: Operation results dictionary
+            action: The action that was performed
+            
+        Returns:
+            Formatted string for display
+        """
+        details = []
+        details.append(f"[cyan]Processed:[/] {results['processed']}")
+        details.append(f"[green]Successful:[/] {results['success']}")
+        details.append(f"[red]Failed:[/] {results['failures']}\n")
+
+        if results.get('successful_ids'):
+            details.append(f"[green]Successfully {action.title()}d Comments:[/]")
+            for comment_id in results['successful_ids']:
+                details.append(f"  • [dim]t1_{comment_id}[/]")
+
+        if results.get('failed_ids'):
+            details.append(f"\n[red]Failed to {action.title()} Comments:[/]")
+            for comment_id in results['failed_ids']:
+                details.append(f"  • [dim]t1_{comment_id}[/]")
+
+        return "\n".join(details)
 
 class DeleteComments(ModifyComments):
     """Delete specified comments"""
