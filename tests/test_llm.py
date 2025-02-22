@@ -129,26 +129,43 @@ class TestLLMDetector:
         assert "Rate limit" in details["error"]
 
     @pytest.mark.asyncio
-    async def test_empty_text_handling(self, mock_openai, mock_completion):
+    async def test_empty_text_handling(self, mock_openai):
         """Test handling of empty text input"""
-        mock_openai.return_value.chat.completions.create = AsyncMock(return_value=mock_completion)
-        
         risk_score, details = await self.detector.analyze_text("")
         
         assert risk_score == 0.0
         assert "error" in details
-        assert "Empty text" in details["error"]
+        assert "Empty text provided" in details["error"]
+        mock_openai.return_value.chat.completions.create.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_long_text_handling(self, mock_openai, mock_completion):
+    async def test_long_text_handling(self, mock_openai):
         """Test handling of very long text input"""
-        long_text = "test " * 1000  # Create a very long text
+        # Create text that exceeds OpenAI's typical token limit
+        long_text = "test " * 5000
+        
+        # Create a specific mock response for truncated text
+        mock_completion = MagicMock()
+        message = MagicMock()
+        message.content = json.dumps({
+            "has_pii": False,
+            "confidence": 0.5,
+            "details": [],
+            "risk_factors": [],
+            "truncated": True,
+            "reasoning": "Text was truncated due to length"
+        })
+        choice = MagicMock()
+        choice.message = message
+        mock_completion.choices = [choice]
+        
         mock_openai.return_value.chat.completions.create = AsyncMock(return_value=mock_completion)
         
         risk_score, details = await self.detector.analyze_text(long_text)
         
         assert isinstance(risk_score, float)
-        assert "truncated" in details
+        assert details.get("truncated") is True
+        assert "Text was truncated" in details.get("reasoning", "")
 
     @pytest.mark.asyncio
     async def test_batch_concurrent_processing(self, mock_openai, mock_responses, mock_texts):
@@ -240,6 +257,7 @@ class TestLLMDetector:
             default_headers={}
         )
 
+    @pytest.mark.asyncio
     @patch('openai.AsyncOpenAI')
     async def test_invalid_json_response(self, mock_client):
         """Test handling of malformed LLM response"""
