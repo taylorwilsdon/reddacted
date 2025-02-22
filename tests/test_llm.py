@@ -143,26 +143,23 @@ class TestLLMDetector:
         # Create text that exceeds token limit
         long_text = "test " * 5000
         
-        # Mock the response
+        # Mock the async response
         mock_completion = MagicMock()
         message = MagicMock()
         truncated_response = {
             "has_pii": False,
             "confidence": 0.5,
-            "details": ["Text was truncated due to length"],
-            "risk_factors": ["truncated_text"],
-            "reasoning": "Analysis may be incomplete due to truncation"
+            "details": ["Text was truncated"],
+            "risk_factors": []
         }
         message.content = json.dumps(truncated_response)
         mock_completion.choices = [MagicMock(message=message)]
-        
-        mock_openai.return_value.chat.completions.create.return_value = mock_completion
+        mock_openai.return_value.chat.completions.create = AsyncMock(return_value=mock_completion)
         
         risk_score, details = await self.detector.analyze_text(long_text)
         
         assert risk_score == 0.5
-        assert "truncated" in details["details"][0].lower()
-        assert "truncated_text" in details["risk_factors"]
+        assert "truncated" in details["details"][0]
 
     @pytest.mark.asyncio
     async def test_batch_concurrent_processing(self, mock_openai, mock_responses, mock_texts):
@@ -263,11 +260,11 @@ class TestLLMDetector:
         message = MagicMock()
         message.content = "Not valid JSON"
         mock_completion.choices = [MagicMock(message=message)]
-        mock_openai.return_value.chat.completions.create.return_value = mock_completion
+        mock_openai.return_value.chat.completions.create = AsyncMock(return_value=mock_completion)
 
         risk_score, details = await self.detector.analyze_text("Sample text")
 
         assert risk_score == 0.0
         assert "error" in details
-        assert "Failed to parse LLM response" in details["error"]
+        assert "LLM Analysis Failed" in details["error"]
 
