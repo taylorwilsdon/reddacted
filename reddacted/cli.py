@@ -261,7 +261,9 @@ class Listing(BaseAnalyzeCommand):
             limit=limit,
             skip_text=args.skip_text
         )
-        sent.get_sentiment('listing', f"{args.subreddit}/{args.article}", output_file=args.output_file)
+        # Strip 'r/' prefix if present when using API
+        subreddit = args.subreddit.replace('r/', '') if auth_enabled else args.subreddit
+        sent.get_sentiment('listing', f"{subreddit}/{args.article}", output_file=args.output_file)
 
 
 class User(BaseAnalyzeCommand):
