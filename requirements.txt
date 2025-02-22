@@ -9,3 +9,4 @@ rich==13.7.0
 
 # Development dependencies
 flake8==7.0.0
+build==1.0.3
