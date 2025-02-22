@@ -52,12 +52,12 @@ class LLMDetectorTestCases(unittest.TestCase):
         )
 
     @patch('openai.AsyncOpenAI')
-    def test_analyze_invalid_key(self, mock_client):
+    async def test_analyze_invalid_key(self, mock_client):
         """Test authentication error handling"""
         mock_client.side_effect = Exception("Invalid API key")
 
         detector = LLMDetector(api_key="invalid-key")
-        risk_score, details = asyncio.run(detector.analyze_text("Sample text"))
+        risk_score, details = await detector.analyze_text("Sample text")
 
         self.assertEqual(risk_score, 0.0)
         self.assertIn("error", details)
@@ -121,7 +121,7 @@ class LLMDetectorTestCases(unittest.TestCase):
         )
 
     @patch('openai.AsyncOpenAI')
-    def test_invalid_json_response(self, mock_client):
+    async def test_invalid_json_response(self, mock_client):
         """Test handling of malformed LLM response"""
         bad_message = MagicMock()
         bad_message.content = "```json\n" + json.dumps(SAMPLE_RESPONSE) + "\n```"
@@ -132,7 +132,7 @@ class LLMDetectorTestCases(unittest.TestCase):
         mock_client.return_value.chat.completions.create = AsyncMock(return_value=bad_completion)
 
         detector = LLMDetector(api_key="sk-test")
-        risk_score, details = asyncio.run(detector.analyze_text("Sample text"))
+        risk_score, details = await detector.analyze_text("Sample text")
 
         self.assertEqual(risk_score, 0.85)
         self.assertEqual(details['details'], SAMPLE_RESPONSE['details'])
