@@ -182,8 +182,8 @@ class TestLLMDetector:
         assert all(score == 0.0 for score, _ in results)
         assert all("error" in detail for _, detail in results)
 
-    @patch('openai.AsyncOpenAI')
-    def test_analyze_batch(self, mock_client):
+    @pytest.mark.asyncio
+    async def test_analyze_batch(self, mock_openai):
         """Test batch processing of multiple texts"""
         # Configure different mock responses for each text
         responses = [
@@ -209,7 +209,7 @@ class TestLLMDetector:
 
         # Initialize call counter
         mock_completion.call_count = []
-        mock_client.return_value.chat.completions.create = AsyncMock(side_effect=mock_completion)
+        mock_openai.return_value.chat.completions.create = AsyncMock(side_effect=mock_completion)
 
         detector = LLMDetector(api_key="sk-test")
         texts = [
@@ -218,24 +218,24 @@ class TestLLMDetector:
             "Just a regular text"
         ]
 
-        results = asyncio.run(detector.analyze_batch(texts))
+        results = await detector.analyze_batch(texts)
         
         # Verify number of API calls
-        self.assertEqual(len(results), 3)
-        self.assertEqual(len(mock_completion.call_count), 3)
+        assert len(results) == 3
+        assert len(mock_completion.call_count) == 3
         
         # Verify individual results
-        self.assertEqual(results[0][0], 0.9)  # Location text
-        self.assertEqual(results[0][1]['risk_factors'], ["location"])
+        assert results[0][0] == 0.9  # Location text
+        assert results[0][1]['risk_factors'] == ["location"]
         
-        self.assertEqual(results[1][0], 0.8)  # Phone number text
-        self.assertEqual(results[1][1]['risk_factors'], ["contact"])
+        assert results[1][0] == 0.8  # Phone number text
+        assert results[1][1]['risk_factors'] == ["contact"]
         
-        self.assertEqual(results[2][0], 0.0)  # Clean text
-        self.assertEqual(results[2][1]['risk_factors'], [])
+        assert results[2][0] == 0.0  # Clean text
+        assert results[2][1]['risk_factors'] == []
 
         # Verify API was called with correct parameters
-        mock_client.assert_called_once_with(
+        mock_openai.assert_called_once_with(
             api_key="sk-test",
             default_headers={}
         )
