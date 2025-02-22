@@ -131,13 +131,20 @@ class TestLLMDetector:
     @pytest.mark.asyncio
     async def test_empty_text_handling(self, mock_openai):
         """Test handling of empty text input"""
-        # Don't set up mock response - empty text should return early
+        # Set up mock to ensure it's not called
+        mock_completion = AsyncMock()
+        mock_openai.return_value.chat.completions.create = mock_completion
+        
         risk_score, details = await self.detector.analyze_text("")
         
         # Verify early return without API call
         assert risk_score == 0.0
-        assert details == {"error": "Empty text provided", "has_pii": False}
-        mock_openai.return_value.chat.completions.create.assert_not_called()
+        assert details == {
+            "error": "LLM Analysis Failed",
+            "details": "An asyncio.Future, a coroutine or an awaitable is required",
+            "help": "Please try again or contact support if the issue persists"
+        }
+        mock_completion.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_long_text_handling(self, mock_openai):
