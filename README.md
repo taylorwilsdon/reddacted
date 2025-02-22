@@ -85,9 +85,9 @@ Join our subreddit: [r/reddacted](https://reddit.com/r/reddacted)
 ### ❓ How accurate is the PII detection, really?
 Surprisingly good. Good enough that I run it against my own stuff in delete mode. It's basically a defense-in-depth approach combining these, and I'll probably add upvotes/downvotes into the logic at some point:
 - **AI Detection**: Doesn't need a crazy smart model, don't waste your money on r1 or o1.
-- Cheap & light models like gpt-4o-mini, gpt-3.5-turbo, qwen2.5:3b or 7b and Mistral are all plenty.
-- Don't use something too dumb or it will be inconsistent, a 0.5b model will produce unreliable results.
-- It works well with cheap models like qwen2.5:3b (potato can run this) and gpt-4o-mini, which is like 15 cents per million tokens
+-- Cheap & light models like gpt-4o-mini, gpt-3.5-turbo, qwen2.5:3b or 7b and Mistral are all plenty.
+-- Don't use something too dumb or it will be inconsistent, a 0.5b model will produce unreliable results.
+-- It works well with cheap models like qwen2.5:3b (potato can run this) and gpt-4o-mini, which is like 15 cents per million tokens
 - **Pattern Matching**: 50+ regex rules for common PII formats does a first past sweep for the obvious stuff
 - **Context Analysis**: Are you coming off as a dick? Perhaps that factors into your decision to clean up. Who could say, mine are all smiley faces.
 
