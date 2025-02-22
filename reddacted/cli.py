@@ -20,6 +20,7 @@ from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.columns import Columns
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 
 from reddacted.utils.logging import get_logger, with_logging, set_global_logging_level
 from reddacted.utils.exceptions import handle_exception
@@ -69,7 +70,7 @@ class ModifyComments(Command):
 
     @with_logging(logger)
     def process_comments(self, parsed_args: Any, action: str) -> Dict[str, Any]:
-        """Process comments with the specified action
+        """Process comments with the specified action and progress tracking
         
         Args:
             parsed_args: Command line arguments
@@ -80,13 +81,31 @@ class ModifyComments(Command):
         """
         api = Reddit()
         comment_ids = [id.strip() for id in parsed_args.comment_ids.split(',')]
+        total_comments = len(comment_ids)
         
-        if action == 'delete':
-            return api.delete_comments(comment_ids, batch_size=parsed_args.batch_size)
-        elif action == 'update':
-            return api.update_comments(comment_ids, batch_size=parsed_args.batch_size)
-        else:
-            raise ValueError(f"Invalid action: {action}")
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            console=console
+        ) as progress:
+            task = progress.add_task(
+                f"[cyan]{action.title()}ing comments...",
+                total=total_comments
+            )
+            
+            if action == 'delete':
+                result = api.delete_comments(comment_ids, batch_size=parsed_args.batch_size)
+            elif action == 'update':
+                result = api.update_comments(comment_ids, batch_size=parsed_args.batch_size)
+            else:
+                raise ValueError(f"Invalid action: {action}")
+                
+            # Update progress based on successful operations
+            progress.update(task, completed=result['success'])
+            
+            return result
 
     def _format_results(self, results: Dict[str, Any], action: str) -> str:
         """Format operation results for display
@@ -132,7 +151,7 @@ class DeleteComments(ModifyComments):
         results = self.process_comments(parsed_args, 'delete')
         formatted_results = self._format_results(results, 'delete')
         
-        console.print(Panel(
+        console.print("\n", Panel(
             formatted_results,
             title="[bold red]Delete Results[/]",
             expand=False
@@ -155,7 +174,7 @@ class UpdateComments(ModifyComments):
         results = self.process_comments(parsed_args, 'update')
         formatted_results = self._format_results(results, 'update')
         
-        console.print(Panel(
+        console.print("\n", Panel(
             formatted_results,
             title="[bold blue]Update Results[/]",
             expand=False
