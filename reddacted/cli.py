@@ -410,21 +410,14 @@ class CLI(App):
             console.print(f"[blue]Using local LLM endpoint: {base_url}[/]")
 
             try:
-                # Verify Local LLM backend connection
-                response = requests.get(f"{base_url}/v1/models")
-                if response.status_code != 200:
-                    console.print(f"[red]Error: Could not connect to {base_url} - {response.status_code}[/]")
-                    return None
-
                 # Get available models
-                models_url = f"{base_url}/api/tags"
+                models_url = f"{base_url}/v1/models"
                 response = requests.get(models_url)
                 if response.status_code != 200:
                     console.print(f"[red]Error: Could not fetch models: {response.status_code}[/]")
                     return None
-
                 models_data = response.json()
-                available_models = [m['name'] for m in models_data.get('models', [])]
+                available_models = [m['id'] for m in models_data.get('data', [])]
                 args.model = args.model or available_models[0]
 
                 if args.model not in available_models:
