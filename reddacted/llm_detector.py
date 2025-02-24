@@ -30,8 +30,9 @@ class LLMDetector:
         self.model = model
         self.client_config = {
             'api_key': api_key,
-            'default_headers': headers or {},
         }
+        if headers:
+            self.client_config['default_headers'] = headers
         if api_base:
             self.client_config['base_url'] = api_base
 
