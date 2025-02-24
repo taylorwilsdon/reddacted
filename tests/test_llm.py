@@ -101,10 +101,7 @@ class TestLLMDetector:
         assert risk_score == 0.85
         assert details['details'] == SAMPLE_RESPONSE['details']
         assert details['risk_factors'] == SAMPLE_RESPONSE['risk_factors']
-        mock_openai.assert_called_once_with(
-            api_key="sk-test",
-            default_headers={}
-        )
+        mock_openai.assert_called_once_with(api_key="sk-test")
 
     @pytest.mark.asyncio
     async def test_analyze_invalid_key(self, mock_openai):
@@ -234,10 +231,7 @@ class TestLLMDetector:
         assert results[2][1]["risk_factors"] == []
 
         # Verify API setup
-        mock_openai.assert_called_once_with(
-            api_key="sk-test",
-            default_headers={}
-        )
+        mock_openai.assert_called_once_with(api_key="sk-test")
 
     @pytest.mark.asyncio
     async def test_invalid_json_response(self, mock_openai):
