@@ -58,7 +58,7 @@ reddacted = "reddacted.cli:main"
 local_scheme = "no-local-version"
 version_scheme = "no-guess-dev"
 write_to = "reddacted/_version.py"
-fallback_version = "0.1.1"
+fallback_version = "0.1.2"
 
 [tool.black]
 line-length = 100
