@@ -18,6 +18,11 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 # Local
 from reddacted.utils.logging import get_logger, with_logging
+from reddacted.report_generator import (
+    generate_analysis_report,
+    should_show_result,
+    format_llm_detail,
+)
 
 logger = get_logger(__name__)
 
@@ -71,24 +76,17 @@ class ResultsFormatter:
         with progress:
             progress_task = progress.add_task("📝 Generating analysis report...", total=len(comments))
             try:
-                with open(filename, 'w') as target:
-                    self._write_report_header(target, url, overall_score, overall_sentiment, len(comments))
-                    sentiment_scores = []
-                    max_risk_score = 0.0
-                    riskiest_comment = ""
-                    for idx, result in enumerate(results, 1):
-                        progress.update(progress_task, description=f"📝 Writing comment {idx}/{len(comments)}", advance=1)
-                        if not self._should_show_result(result):
-                            continue
-                        self._write_comment_details(target, result, idx)
-                        self._update_summary_stats(result, sentiment_scores)
-                        if result.pii_risk_score > max_risk_score:
-                            max_risk_score = result.pii_risk_score
-                            riskiest_comment = (result.text[:100] + "...") if len(result.text) > 100 else result.text
-                    self._write_summary_section(
-                        target, len(comments), sentiment_scores,
-                        max_risk_score, riskiest_comment
-                    )
+                stats = generate_analysis_report(
+                    filename=filename,
+                    comments=comments,
+                    url=url,
+                    results=results,
+                    overall_score=overall_score,
+                    overall_sentiment=overall_sentiment,
+                    pii_only=getattr(self, 'pii_only', False)
+                )
+                self.total_pii_comments = stats['total_pii_comments']
+                self.total_llm_pii_comments = stats['total_llm_pii_comments']
                 self._print_completion_message(filename, comments, results, progress)
             except Exception as e:
                 self.logger.exception("Failed to generate output file: %s", e)
@@ -125,7 +123,7 @@ class ResultsFormatter:
         overall_sentiment: str
     ) -> None:
         """Prints out analysis of user comments."""
-        filtered_results = [r for r in results if self._should_show_result(r)]
+        filtered_results = [r for r in results if should_show_result(r, getattr(self, 'pii_only', False))]
         if not filtered_results and getattr(self, 'pii_only', False):
             self.logger.info("No comments with high PII risk found.")
             print("No comments with high PII risk found.")
@@ -141,19 +139,6 @@ class ResultsFormatter:
         progress = self.create_progress()
         with progress:
             progress.console.print(Group(stats_panel, *panels, summary_panel, action_panel))
-
-    def _should_show_result(self, result: AnalysisResult) -> bool:
-        """Determines if a result should be shown based on PII detection settings."""
-        if not getattr(self, 'pii_only', False):
-            return True
-        has_pattern_pii = result.pii_risk_score > 0.0
-        has_llm_pii = (
-            result.llm_findings and
-            isinstance(result.llm_findings, dict) and
-            result.llm_findings.get('has_pii', False) and
-            result.llm_findings.get('confidence', 0.0) > 0.0
-        )
-        return has_pattern_pii or has_llm_pii
 
     def _generate_summary_table(self, filtered_results: List[AnalysisResult]) -> Table:
         """Generates a summary table with selection indicators."""
@@ -428,7 +413,7 @@ class ResultsFormatter:
             findings_table.add_column(style="cyan")
             content_groups.extend([
                 Text("\n📋 Findings:", style="bold"),
-                *[Text(f"  • {self._format_llm_detail(detail)}", style="cyan") for detail in details]
+                *[Text(f"  • {format_llm_detail(detail)}", style="cyan") for detail in details]
             ])
 
         # Add risk factors if present
@@ -453,15 +438,6 @@ class ResultsFormatter:
         error_table.add_row(f"Error: {error_msg}")
         error_table.add_row("Please check your OpenAI API key and ensure you have sufficient credits.")
         return Group(error_table)
-
-    def _format_llm_detail(self, detail: Any) -> str:
-        """Formats LLM detail information."""
-        if isinstance(detail, dict):
-            return (
-                f"{detail.get('type', 'Finding')}: {detail.get('example', 'N/A')}" or
-                f"{detail.get('finding', 'N/A')}: {detail.get('reasoning', '')}"
-            )
-        return str(detail)
 
     def _create_summary_panel(self, summary_table: Table) -> Panel:
         """Creates a panel displaying the action summary."""
@@ -494,77 +470,6 @@ class ResultsFormatter:
             border_style="yellow",
             title="[bold]Actions[/]"
         )
-
-    # Methods for writing to the report file
-    def _write_report_header(
-        self,
-        target,
-        url: str,
-        overall_score: float,
-        overall_sentiment: str,
-        num_comments: int
-    ) -> None:
-        """Writes the report header."""
-        target.write(f"# Analysis Report for '{url}'\n\n")
-        target.write(f"- **Overall Sentiment Score**: {overall_score:.2f}\n")
-        target.write(f"- **Overall Sentiment**: {overall_sentiment}\n")
-        target.write(f"- **Comments Analyzed**: {num_comments}\n\n")
-        target.write("---\n\n")
-
-    def _write_comment_details(self, target, result: AnalysisResult, index: int) -> None:
-        """Writes detailed analysis for a single comment."""
-        target.write(f"## Comment {index}\n\n")
-        target.write(f"**Text**: {result.text}\n\n")
-        target.write(f"- Sentiment Score: `{result.sentiment_score:.2f}` {result.sentiment_emoji}\n")
-        target.write(f"- PII Risk Score: `{result.pii_risk_score:.2f}`\n")
-        target.write(f"- Votes: ⬆️ `{result.upvotes}` ⬇️ `{result.downvotes}`\n")
-        target.write(f"- Comment ID: `{result.comment_id}`\n\n")
-        if result.pii_matches:
-            target.write("### Pattern-based PII Detected\n")
-            for pii in result.pii_matches:
-                target.write(f"- **{pii.type}** (confidence: {pii.confidence:.2f})\n")
-            target.write("\n")
-        if result.llm_findings:
-            target.write("### LLM Privacy Analysis\n")
-            target.write(f"- **Risk Score**: `{result.llm_risk_score:.2f}`\n")
-            if isinstance(result.llm_findings, dict):
-                target.write(f"- **PII Detected**: {'Yes' if result.llm_findings.get('has_pii') else 'No'}\n")
-                if details := result.llm_findings.get('details'):
-                    target.write("\n#### Findings\n")
-                    for detail in details:
-                        target.write(f"- {self._format_llm_detail(detail)}\n")
-                if reasoning := result.llm_findings.get('reasoning'):
-                    target.write(f"\n#### Reasoning\n{reasoning}\n")
-            target.write("\n")
-        target.write("---\n\n")
-
-    def _update_summary_stats(self, result: AnalysisResult, sentiment_scores: List[float]) -> None:
-        """Updates running summary statistics."""
-        sentiment_scores.append(result.sentiment_score)
-        if result.pii_risk_score > 0:
-            self.total_pii_comments += 1
-        if result.llm_risk_score > 0:
-            self.total_llm_pii_comments += 1
-
-    def _write_summary_section(
-        self,
-        target,
-        total_comments: int,
-        sentiment_scores: List[float],
-        max_risk_score: float,
-        riskiest_comment: str
-    ) -> None:
-        """Writes the summary section of the report."""
-        average_sentiment = sum(sentiment_scores) / len(sentiment_scores) if sentiment_scores else 0.0
-        target.write("\n# Summary\n\n")
-        target.write(f"- Total Comments Analyzed: {total_comments}\n")
-        target.write(f"- Comments with PII Detected: {self.total_pii_comments} ({self.total_pii_comments/total_comments:.1%})\n")
-        target.write(f"- Comments with LLM Privacy Risks: {self.total_llm_pii_comments} ({self.total_llm_pii_comments/total_comments:.1%})\n")
-        target.write(f"- Average Sentiment Score: {average_sentiment:.2f}\n")
-        target.write(f"- Highest PII Risk Score: {max_risk_score:.2f}\n")
-        if riskiest_comment:
-            target.write(f"- Riskiest Comment Preview: '{riskiest_comment}'\n")
-        target.write("✅ Analysis complete\n")
 
     def _print_completion_message(
         self,
