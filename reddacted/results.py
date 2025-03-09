@@ -17,10 +17,9 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 # Local
 from reddacted.utils.logging import get_logger, with_logging
-from reddacted.report_generator import (
+from reddacted.utils.report import (
     generate_analysis_report,
     should_show_result,
-    format_llm_detail,
 )
 from reddacted.utils.tables import TableFormatter
 from reddacted.utils.panels import PanelFormatter
@@ -111,23 +110,24 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
         overall_score: float,
         overall_sentiment: str
     ) -> None:
-        """Prints out analysis of user comments."""
+        """Prints out analysis of user comments using Textual UI."""
         filtered_results = [r for r in results if should_show_result(r, getattr(self, 'pii_only', False))]
         if not filtered_results and getattr(self, 'pii_only', False):
             self.logger.info("No comments with high PII risk found.")
             print("No comments with high PII risk found.")
             return
-        panels = []
-        stats_panel = self.create_stats_panel(url, len(comments), overall_score, overall_sentiment)
-        for idx, result in enumerate(filtered_results, 1):
-            comment_panel = self.create_comment_panel(result, idx)
-            panels.append(comment_panel)
-        summary_table = self.generate_summary_table(filtered_results)
-        summary_panel = self.create_summary_panel(summary_table)
-        action_panel = self.create_action_panel(filtered_results)
-        progress = self.create_progress()
-        with progress:
-            progress.console.print(Group(stats_panel, *panels, summary_panel, action_panel))
+
+        # Import here to avoid circular imports
+        from reddacted.textual_ui import show_results
+        
+        # Show interactive results view
+        show_results(
+            url=url,
+            comments=comments,
+            results=filtered_results,
+            overall_score=overall_score,
+            overall_sentiment=overall_sentiment
+        )
     def _print_completion_message(
         self,
         filename: str,

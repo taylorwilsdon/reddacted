@@ -8,11 +8,11 @@ from rich.console import Group
 from rich.text import Text
 from rich.table import Table
 
-from reddacted.utils.logging import get_logger, with_logging
-from reddacted.utils.base import BaseFormatter
-from reddacted.utils.tables import TableFormatter
 from reddacted.utils.analysis import AnalysisResult
-from reddacted.report_generator import format_llm_detail
+from reddacted.utils.base import BaseFormatter
+from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.tables import TableFormatter
+from reddacted.utils.report import format_llm_detail
 
 
 class PanelFormatter(BaseFormatter):
