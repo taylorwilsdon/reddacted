@@ -2,6 +2,51 @@
 
 from textual.color import Color
 
+# Textual CSS 
+TEXTUAL_CSS = """
+Screen {
+    background: $surface-darken-1;
+}
+
+Header {
+    dock: top;
+    background: $primary-background;
+    color: $text;
+    height: 3;
+    content-align: center middle;
+    border-bottom: heavy $primary;
+}
+
+Footer {
+    dock: bottom;
+    background: $primary-background;
+    color: $text;
+    height: 1;
+}
+
+StatsDisplay {
+    height: auto;
+    padding: 1;
+    background: $surface;
+    border: heavy $primary-darken-2;
+    margin: 1;
+}
+
+DataTable {
+    height: auto;
+    margin: 1;
+    border: heavy $primary-darken-2;
+}
+
+.stats-text {
+    text-align: center;
+}
+
+CommentActionScreen {
+    align: center middle;
+}
+"""
+
 # Color System
 COLORS = {
     "primary": Color.parse("#6366f1"),      # Indigo

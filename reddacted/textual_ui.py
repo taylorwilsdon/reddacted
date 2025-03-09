@@ -10,6 +10,7 @@ from typing import List, Optional
 
 from reddacted.utils.analysis import AnalysisResult
 from reddacted.ui.comment_actions import CommentActionScreen
+from reddacted.styles import TEXTUAL_CSS
 
 class ResultsSummary(DataTable):
     """An interactive data table showing analysis results."""
@@ -87,49 +88,7 @@ class StatsDisplay(Static):
 class TextualResultsView(App):
     """Main Textual app for displaying analysis results."""
     
-    CSS = """
-    Screen {
-        background: $surface-darken-1;
-    }
-    
-    Header {
-        dock: top;
-        background: $primary-background;
-        color: $text;
-        height: 3;
-        content-align: center middle;
-        border-bottom: heavy $primary;
-    }
-    
-    Footer {
-        dock: bottom;
-        background: $primary-background;
-        color: $text;
-        height: 1;
-    }
-    
-    StatsDisplay {
-        height: auto;
-        padding: 1;
-        background: $surface;
-        border: heavy $primary-darken-2;
-        margin: 1;
-    }
-    
-    DataTable {
-        height: auto;
-        margin: 1;
-        border: heavy $primary-darken-2;
-    }
-    
-    .stats-text {
-        text-align: center;
-    }
-
-    CommentActionScreen {
-        align: center middle;
-    }
-    """
+    CSS = TEXTUAL_CSS
     
     BINDINGS = [
         Binding("q", "quit", "Quit", show=True),

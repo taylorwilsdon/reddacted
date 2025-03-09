@@ -62,6 +62,7 @@ class Reddit(api.API):
                 password=required_vars["REDDIT_PASSWORD"],
                 user_agent=f"reddacted u/{required_vars['REDDIT_USERNAME']}",
                 username=required_vars["REDDIT_USERNAME"],
+                check_for_async=False
             )
             self.authenticated = True
             logger.debug_with_context("Successfully authenticated with Reddit API")
