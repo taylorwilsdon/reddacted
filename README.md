@@ -4,6 +4,7 @@
 ![GitHub License](https://img.shields.io/github/license/taylorwilsdon/reddacted)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/taylorwilsdon/reddacted)
 ![PyPI - Version](https://img.shields.io/pypi/v/reddacted)
+![PyPI Downloads](https://img.shields.io/pypi/dm/reddacted?style=flat&logo=pypi&logoColor=white&label=Downloads&labelColor=005da7&color=blue)
 
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/934113f1-4a38-4985-935c-b247688ccac8" />
 <img width="450" alt="image" src="https://github.com/user-attachments/assets/338fa47e-88da-4844-9728-ace17983cd83" />
