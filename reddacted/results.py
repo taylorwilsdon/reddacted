@@ -24,6 +24,8 @@ from reddacted.utils.report import (
 from reddacted.utils.tables import TableFormatter
 from reddacted.utils.panels import PanelFormatter
 from reddacted.utils.analysis import AnalysisResult
+from reddacted.textual_ui import show_results
+
 
 logger = get_logger(__name__)
 
@@ -117,8 +119,6 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
             print("No comments with high PII risk found.")
             return
 
-        # Import here to avoid circular imports
-        from reddacted.textual_ui import show_results
         
         # Show interactive results view
         show_results(

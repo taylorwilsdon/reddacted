@@ -5,37 +5,37 @@ from textual.color import Color
 # Textual CSS 
 TEXTUAL_CSS = """
 Screen {
-    background: $surface-darken-1;
+    background: #0e333d;  /* A custom dark blend derived from bg_0 (#103c48) */
 }
 
 Header {
     dock: top;
-    background: $primary-background;
-    color: $text;
+    background: #184956;
+    color: #cad8d9;
     height: 3;
     content-align: center middle;
-    border-bottom: heavy $primary;
+    border-bottom: heavy #58a3ff;
 }
 
 Footer {
     dock: bottom;
-    background: $primary-background;
-    color: $text;
+    background: #184956;
+    color: #cad8d9;
     height: 1;
 }
 
 StatsDisplay {
     height: auto;
     padding: 1;
-    background: $surface;
-    border: heavy $primary-darken-2;
+    background: #103c48;
+    border: heavy #4695f7;
     margin: 1;
 }
 
 DataTable {
     height: auto;
     margin: 1;
-    border: heavy $primary-darken-2;
+    border: heavy #4695f7;
 }
 
 .stats-text {
