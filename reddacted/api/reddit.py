@@ -24,8 +24,10 @@ class Reddit(api.API):
     """
 
     def __init__(self):
-        """Initialize Reddit API client"""
+        """Initialize Reddit API client. Will attempt authenticated access first,
+        falling back to read-only mode if credentials are not provided."""
         self.authenticated = False
+        self.reddit = None  # Initialize to None by default
 
         # Check for all required credentials first
         required_vars = {
@@ -37,11 +39,18 @@ class Reddit(api.API):
 
         if None in required_vars.values():
             missing = [k for k, v in required_vars.items() if v is None]
-            handle_exception(
-                ValueError(f"Missing authentication variables: {', '.join(missing)}"),
-                "Reddit API authentication failed - missing environment variables",
-                debug=True
+            logger.warning(
+                f"Reddit API authentication requires environment variables: {', '.join(missing)}. "
+                "Falling back to read-only mode. Some features like comment deletion will be unavailable."
             )
+            try:
+                # Initialize read-only client
+                self.reddit = praw.Reddit(
+                    user_agent="reddacted:read_only_client"
+                )
+                logger.info("Successfully initialized read-only Reddit client")
+            except Exception as e:
+                logger.error(f"Failed to initialize read-only client: {str(e)}")
             return
 
         logger.debug_with_context("Attempting to initialize authenticated Reddit client")
@@ -53,6 +62,7 @@ class Reddit(api.API):
                 password=required_vars["REDDIT_PASSWORD"],
                 user_agent=f"reddacted u/{required_vars['REDDIT_USERNAME']}",
                 username=required_vars["REDDIT_USERNAME"],
+                check_for_async=False
             )
             self.authenticated = True
             logger.debug_with_context("Successfully authenticated with Reddit API")
@@ -61,14 +71,20 @@ class Reddit(api.API):
 
     @with_logging(logger)
     def parse_listing(self, subreddit, article, limit=100, **kwargs):
-        logger.debug_with_context(f"Parsing listing for subreddit={subreddit}, article={article}, limit={limit}")
         """Parses a listing and extracts the comments from it.
 
        :param subreddit: a subreddit
        :param article: an article associated with the subreddit
        :param limit: maximum number of comments to return (None for unlimited)
-       :return: a list of comments from an article.
+       :return: a list of comments from an article
        """
+        if self.reddit is None:
+            logger.error("Reddit client initialization failed - cannot fetch comments")
+            return []
+
+        mode = "authenticated" if self.authenticated else "read-only"
+        logger.info(f"Fetching comments for article '{article}' in {mode} mode")
+        logger.debug_with_context(f"Parsing listing for subreddit={subreddit}, article={article}, limit={limit}")
         submission = self.reddit.submission(id=article)
         logger.debug_with_context(f"Retrieved submission: title='{submission.title}'")
         logger.debug_with_context("Expanding 'more comments' links")
@@ -215,10 +231,16 @@ class Reddit(api.API):
        :param limit: maximum number of comments to return (None for unlimited)
        :param sort: Sort method ('hot', 'new', 'controversial', 'top')
        :param time_filter: Time filter for 'top' ('all', 'day', 'hour', 'month', 'week', 'year')
-       :return: a list of comments from a user.
+       :return: a list of comments from a user
        :raises: prawcore.exceptions.NotFound if user doesn't exist
        :raises: prawcore.exceptions.Forbidden if user is private/banned
        """
+        if self.reddit is None:
+            logger.error("Reddit client initialization failed - cannot fetch comments")
+            return []
+
+        mode = "authenticated" if self.authenticated else "read-only"
+        logger.info(f"Fetching comments for user '{username}' in {mode} mode")
         logger.debug(f"Using sort method: {sort}")
         try:
             redditor = self.reddit.redditor(username)
