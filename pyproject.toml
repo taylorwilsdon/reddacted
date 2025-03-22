@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools>=61.0", "setuptools_scm"]
+requires = ["setuptools>=68.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["reddacted", "reddacted.ui", "reddacted.api", "reddacted.utils"]
+[tool.uv]
+# Configuration for UV package build
+package = true
 
 [project]
 name = "reddacted"
-dynamic = ["version"]
+version = "0.1.5"
 description = "Analyze Reddit comments for PII and other sensitive information using local or OpenAI API compatible LLMs and perform sentiment analysis, edit and remove comments."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -52,17 +53,14 @@ dev = [
     "black",
     "mypy",
     "ruff",
-    "build>=1.0.3"
+    "uv"
 ]
 
 [project.scripts]
 reddacted = "reddacted.cli:main"
 
-[tool.setuptools_scm]
-local_scheme = "no-local-version"
-version_scheme = "no-guess-dev"
-write_to = "reddacted/_version.py"
-fallback_version = "0.1.4"
+[tool.setuptools]
+packages = ["reddacted", "reddacted.ui", "reddacted.api", "reddacted.utils"]
 
 [tool.black]
 line-length = 100
