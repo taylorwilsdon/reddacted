@@ -7,6 +7,7 @@ from reddacted.utils.exceptions import handle_exception
 
 logger = get_logger(__name__)
 
+
 @with_logging(logger)
 class LLMDetector:
     """Uses LLM to detect potential PII and personal information in text"""
@@ -25,15 +26,17 @@ class LLMDetector:
     Text to analyze: {text}
     """
 
-    def __init__(self, api_key: str, api_base: str = None, model: str = "gpt-3.5-turbo", headers: dict = None):
+    def __init__(
+        self, api_key: str, api_base: str = None, model: str = "gpt-3.5-turbo", headers: dict = None
+    ):
         self.model = model
         self.client_config = {
-            'api_key': api_key,
+            "api_key": api_key,
         }
         if headers:
-            self.client_config['default_headers'] = headers
+            self.client_config["default_headers"] = headers
         if api_base:
-            self.client_config['base_url'] = api_base
+            self.client_config["base_url"] = api_base
 
     async def analyze_batch(self, texts: List[str]) -> List[Tuple[float, Dict[str, Any]]]:
         """
@@ -48,7 +51,11 @@ class LLMDetector:
             error_msg = str(e)
             if "Incorrect API key provided" in error_msg:
                 # Extract the redacted key if present
-                key_preview = error_msg.split("provided: ")[1].split(".")[0] if "provided: " in error_msg else "UNKNOWN"
+                key_preview = (
+                    error_msg.split("provided: ")[1].split(".")[0]
+                    if "provided: " in error_msg
+                    else "UNKNOWN"
+                )
                 raise ValueError(f"Invalid API key (provided: {key_preview})") from e
             raise ValueError("Authentication failed - please check your API key") from e
         except openai.APIError as e:
@@ -56,16 +63,16 @@ class LLMDetector:
 
         try:
             for i in range(0, len(texts), batch_size):
-                batch = texts[i:i + batch_size]
+                batch = texts[i : i + batch_size]
                 tasks = []
                 for text in batch:
                     task = client.chat.completions.create(
                         model=self.model,
                         messages=[
                             {"role": "system", "content": "You are a privacy analysis assistant."},
-                            {"role": "user", "content": self.DEFAULT_PROMPT.format(text=text)}
+                            {"role": "user", "content": self.DEFAULT_PROMPT.format(text=text)},
                         ],
-                        temperature=0.1
+                        temperature=0.1,
                     )
                     logger.debug_with_context(f"Using API base: {client.base_url}")
                     logger.debug_with_context(f"Using model: {self.model}")
@@ -83,14 +90,16 @@ class LLMDetector:
                         except json.JSONDecodeError:
                             # If that fails, try to extract JSON from markdown blocks
                             if "```json" in raw_response:
-                                json_content = raw_response.split("```json")[1].split("```")[0].strip()
+                                json_content = (
+                                    raw_response.split("```json")[1].split("```")[0].strip()
+                                )
                                 analysis = json.loads(json_content)
                             else:
                                 raise
 
                         # Calculate risk score based on confidence and PII presence
-                        confidence = float(analysis.get('confidence', 0.0))
-                        has_pii = analysis.get('has_pii', False)
+                        confidence = float(analysis.get("confidence", 0.0))
+                        has_pii = analysis.get("has_pii", False)
 
                         logger.debug_with_context(f"Parsed confidence: {confidence}")
                         logger.debug_with_context(f"Parsed has_pii: {has_pii}")
@@ -100,11 +109,11 @@ class LLMDetector:
                         else:
                             risk_score = 0.0
                             analysis = {
-                                'has_pii': False,
-                                'confidence': 0.0,
-                                'details': [],
-                                'risk_factors': [],
-                                'reasoning': "No PII detected"
+                                "has_pii": False,
+                                "confidence": 0.0,
+                                "details": [],
+                                "risk_factors": [],
+                                "reasoning": "No PII detected",
                             }
 
                         results.append((risk_score, analysis))
@@ -118,16 +127,26 @@ class LLMDetector:
             error_msg = str(e)
             if isinstance(e, ValueError) and "Invalid API key" in error_msg:
                 # Format a user-friendly error message
-                return [(0.0, {
-                    "error": "Authentication Failed",
-                    "details": error_msg,
-                    "help": "Please check your OpenAI API key configuration"
-                })] * len(texts)
-            return [(0.0, {
-                "error": "LLM Analysis Failed",
-                "details": error_msg,
-                "help": "Please try again or contact support if the issue persists"
-            })] * len(texts)
+                return [
+                    (
+                        0.0,
+                        {
+                            "error": "Authentication Failed",
+                            "details": error_msg,
+                            "help": "Please check your OpenAI API key configuration",
+                        },
+                    )
+                ] * len(texts)
+            return [
+                (
+                    0.0,
+                    {
+                        "error": "LLM Analysis Failed",
+                        "details": error_msg,
+                        "help": "Please try again or contact support if the issue persists",
+                    },
+                )
+            ] * len(texts)
 
     async def analyze_text(self, text: str) -> Tuple[float, Dict[str, Any]]:
         """

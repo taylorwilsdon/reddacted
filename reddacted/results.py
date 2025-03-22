@@ -20,6 +20,7 @@ from reddacted.textual_ui import show_results
 
 logger = get_logger(__name__)
 
+
 class ResultsFormatter(TableFormatter, PanelFormatter):
     """Handles formatting and display of analysis results."""
 
@@ -33,12 +34,12 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
     @with_logging(logger)
     def create_progress(self) -> Progress:
         """Creates a unified progress context manager."""
-        if not hasattr(self, '_progress'):
+        if not hasattr(self, "_progress"):
             self._progress = Progress(
                 SpinnerColumn(spinner_name="dots"),
                 TextColumn("[bold blue]{task.description}"),
                 TimeElapsedColumn(),
-                transient=True
+                transient=True,
             )
         return self._progress
 
@@ -50,12 +51,14 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
         url: str,
         results: List[AnalysisResult],
         overall_score: float,
-        overall_sentiment: str
+        overall_sentiment: str,
     ) -> None:
         """Outputs a file containing a detailed sentiment and PII analysis per comment."""
         progress = self.create_progress()
         with progress:
-            progress_task = progress.add_task("📝 Generating analysis report...", total=len(comments))
+            progress_task = progress.add_task(
+                "📝 Generating analysis report...", total=len(comments)
+            )
             try:
                 stats = generate_analysis_report(
                     filename=filename,
@@ -64,10 +67,10 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
                     results=results,
                     overall_score=overall_score,
                     overall_sentiment=overall_sentiment,
-                    pii_only=getattr(self, 'pii_only', False)
+                    pii_only=getattr(self, "pii_only", False),
                 )
-                self.total_pii_comments = stats['total_pii_comments']
-                self.total_llm_pii_comments = stats['total_llm_pii_comments']
+                self.total_pii_comments = stats["total_pii_comments"]
+                self.total_llm_pii_comments = stats["total_llm_pii_comments"]
                 self._print_completion_message(filename, comments, results, progress)
             except Exception as e:
                 self.logger.exception("Failed to generate output file: %s", e)
@@ -81,13 +84,15 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
         llm_config: Optional[Dict[str, Any]],
         pii_only: bool,
         limit: int,
-        sort: str
+        sort: str,
     ) -> None:
         """Prints the active configuration."""
         progress = self.create_progress()
         with progress:
             progress.console.print("\n[bold cyan]Active Configuration[/]")
-            features_panel = self.create_features_panel(auth_enabled, pii_enabled, llm_config, pii_only, limit, sort)
+            features_panel = self.create_features_panel(
+                auth_enabled, pii_enabled, llm_config, pii_only, limit, sort
+            )
             panels = [features_panel]
             if auth_enabled:
                 auth_panel = self.create_auth_panel()
@@ -101,11 +106,13 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
         url: str,
         results: List[AnalysisResult],
         overall_score: float,
-        overall_sentiment: str
+        overall_sentiment: str,
     ) -> None:
         """Prints out analysis of user comments using Textual UI."""
-        filtered_results = [r for r in results if should_show_result(r, getattr(self, 'pii_only', False))]
-        if not filtered_results and getattr(self, 'pii_only', False):
+        filtered_results = [
+            r for r in results if should_show_result(r, getattr(self, "pii_only", False))
+        ]
+        if not filtered_results and getattr(self, "pii_only", False):
             self.logger.info("No comments with high PII risk found.")
             print("No comments with high PII risk found.")
             return
@@ -116,7 +123,7 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
             comments=comments,
             results=filtered_results,
             overall_score=overall_score,
-            overall_sentiment=overall_sentiment
+            overall_sentiment=overall_sentiment,
         )
 
     def _print_completion_message(
@@ -124,19 +131,17 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
         filename: str,
         comments: List[Dict[str, Any]],
         results: List[AnalysisResult],
-        progress: Progress
+        progress: Progress,
     ) -> None:
         """Prints completion message with file info and action panel."""
         high_risk_comments = [
-            r for r in results if r.pii_risk_score > 0.5 or
-            (r.llm_findings and r.llm_findings.get('has_pii', False))
+            r
+            for r in results
+            if r.pii_risk_score > 0.5 or (r.llm_findings and r.llm_findings.get("has_pii", False))
         ]
         comment_ids = [r.comment_id for r in high_risk_comments]
         completion_panel = self.create_completion_panel(
-            filename,
-            len(comments),
-            self.total_pii_comments,
-            self.total_llm_pii_comments
+            filename, len(comments), self.total_pii_comments, self.total_llm_pii_comments
         )
         if comment_ids:
             actions_panel = self.create_action_panel(results)

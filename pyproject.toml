@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "reddacted"
 dynamic = ["version"]
-description = "Analyze Reddit comments for PII and perform sentiment analysis"
+description = "Analyze Reddit comments for PII and other sensitive information using local or OpenAI API compatible LLMs and perform sentiment analysis, edit and remove comments."
 readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE"}
@@ -58,7 +58,7 @@ reddacted = "reddacted.cli:main"
 local_scheme = "no-local-version"
 version_scheme = "no-guess-dev"
 write_to = "reddacted/_version.py"
-fallback_version = "0.1.2"
+fallback_version = "0.1.4"
 
 [tool.black]
 line-length = 100
