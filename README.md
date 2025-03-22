@@ -231,16 +231,40 @@ reddacted user spez --text-match "python" --skip-text "deleted"
 
 ## Development
 
+This project uses [UV](https://github.com/astral-sh/uv) for building and publishing. Here's how to set up your development environment:
+
 1. Create and activate a virtual environment:
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-2. Install in development mode with test dependencies:
+2. Install UV:
+```bash
+pip install uv
+```
+
+3. Install in development mode with test dependencies:
 ```bash
 pip install -e ".[dev]"
 ```
+
+4. Build the package:
+```bash
+uv build --sdist --wheel
+```
+
+5. Create a new release:
+```bash
+./release.sh
+```
+
+The release script will:
+- Build the package with UV
+- Create and push a git tag
+- Create a GitHub release
+- Update the Homebrew formula
+- Publish to PyPI (optional)
 
 That's it! The package handles all other dependencies automatically, including NLTK data.
 
