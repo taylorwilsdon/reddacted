@@ -2,6 +2,9 @@
 requires = ["setuptools>=61.0", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+packages = ["reddacted", "reddacted.ui", "reddacted.api", "reddacted.utils"]
+
 [project]
 name = "reddacted"
 dynamic = ["version"]
