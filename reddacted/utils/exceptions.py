@@ -11,6 +11,7 @@ from rich.traceback import Traceback
 console = Console()
 logger = logging.getLogger(__name__)
 
+
 def format_exception(exc: Exception, include_trace: bool = False) -> str:
     """Format exception with source location and clean message
 
@@ -35,7 +36,7 @@ def format_exception(exc: Exception, include_trace: bool = False) -> str:
         current = current.__cause__ or current.__context__
 
     # Get traceback information
-    tb = getattr(exc, '__traceback__', None) or sys.exc_info()[2]
+    tb = getattr(exc, "__traceback__", None) or sys.exc_info()[2]
     if tb is None:
         # Fallback location info if no traceback available
         module_name = "unknown"
@@ -85,11 +86,8 @@ def format_exception(exc: Exception, include_trace: bool = False) -> str:
 
     return "\n".join(messages + [location])
 
-def handle_exception(
-    exc: Exception,
-    context: Optional[str] = None,
-    debug: bool = False
-) -> None:
+
+def handle_exception(exc: Exception, context: Optional[str] = None, debug: bool = False) -> None:
     """Print a formatted exception with optional context and debugging
 
     Args:
@@ -98,10 +96,7 @@ def handle_exception(
         debug: Whether to include full traceback
     """
     # Log the full exception for debugging
-    logger.error(
-        f"Error in {context or 'unknown context'}",
-        exc_info=exc if debug else False
-    )
+    logger.error(f"Error in {context or 'unknown context'}", exc_info=exc if debug else False)
 
     # Format the error message
     error_msg = format_exception(exc, include_trace=debug)
@@ -109,8 +104,6 @@ def handle_exception(
         error_msg = f"{context}\n{error_msg}"
 
     # Print to console
-    console.print(Panel(
-        Text.from_markup(error_msg),
-        title="[bold red]Error[/]",
-        border_style="red"
-    ))
+    console.print(
+        Panel(Text.from_markup(error_msg), title="[bold red]Error[/]", border_style="red")
+    )

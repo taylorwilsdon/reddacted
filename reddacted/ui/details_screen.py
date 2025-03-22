@@ -42,17 +42,19 @@ class DetailsScreen(Screen):
 
                 # Risk score with appropriate coloring
                 risk_class = self._get_risk_class()
-                yield Static(f"Risk Score: {self.result.pii_risk_score:.0%}",
-                            classes=f"details-risk-{risk_class}")
+                yield Static(
+                    f"Risk Score: {self.result.pii_risk_score:.0%}",
+                    classes=f"details-risk-{risk_class}",
+                )
 
                 # Sentiment and votes on same line
                 yield Static(
                     f"Sentiment: {self.result.sentiment_emoji} {self.result.sentiment_score:.2f}",
-                    classes="details-sentiment"
+                    classes="details-sentiment",
                 )
                 yield Static(
                     f"Votes: ⬆️ {self.result.upvotes} ⬇️ {self.result.downvotes}",
-                    classes="details-votes"
+                    classes="details-votes",
                 )
 
             # Comment text section
@@ -66,7 +68,7 @@ class DetailsScreen(Screen):
                     for pii in self.result.pii_matches:
                         yield Static(
                             f"• {pii.type} (confidence: {pii.confidence:.2f})",
-                            classes="details-pii-item"
+                            classes="details-pii-item",
                         )
 
             # LLM analysis section
@@ -76,23 +78,25 @@ class DetailsScreen(Screen):
                 findings = self.result.llm_findings
                 if isinstance(findings, dict):
                     with Vertical(classes="llm-stats"):
-                        has_pii = findings.get('has_pii', False)
+                        has_pii = findings.get("has_pii", False)
                         yield Static(
                             f"Risk Score: {self.result.llm_risk_score:.2f}",
-                            classes="details-llm-risk"
+                            classes="details-llm-risk",
                         )
                         yield Static(
                             f"PII Detected: {'Yes' if has_pii else 'No'}",
-                            classes=f"details-has-pii-{'yes' if has_pii else 'no'}"
+                            classes=f"details-has-pii-{'yes' if has_pii else 'no'}",
                         )
 
-                    if details := findings.get('details'):
+                    if details := findings.get("details"):
                         yield Label("Findings:", classes="subsection-header")
                         with Vertical(classes="llm-findings-container"):
                             for detail in details:
-                                yield Static(f"• {format_llm_detail(detail)}", classes="details-llm-item")
+                                yield Static(
+                                    f"• {format_llm_detail(detail)}", classes="details-llm-item"
+                                )
 
-                    if reasoning := findings.get('reasoning'):
+                    if reasoning := findings.get("reasoning"):
                         yield Label("Reasoning:", classes="subsection-header")
                         yield Markdown(reasoning, classes="details-reasoning")
 
@@ -128,13 +132,15 @@ class DetailsScreen(Screen):
         # Debug screen stack before pop
         current_screens = "\n".join([screen.__class__.__name__ for screen in self.app.screen_stack])
         print(f"Screen stack BEFORE pop:\n{current_screens}")
-        
+
         # Return to main screen by popping twice (action screen + details screen)
         self.app.pop_screen()  # Remove CommentActionScreen
         self.app.pop_screen()  # Remove DetailsScreen
-        
+
         # Debug screen stack after pop
-        remaining_screens = "\n".join([screen.__class__.__name__ for screen in self.app.screen_stack])
+        remaining_screens = "\n".join(
+            [screen.__class__.__name__ for screen in self.app.screen_stack]
+        )
         print(f"Popped screen: {popped_screen.__class__.__name__}")
         print(f"Screen stack AFTER pop:\n{remaining_screens}\n")
 
@@ -152,6 +158,7 @@ class DetailsScreen(Screen):
 
     class DetailActionComplete(message.Message):
         """Message sent when returning to main screen."""
+
         def __init__(self, comment_id: str, action: str = None):
             self.comment_id = comment_id
             self.action = action

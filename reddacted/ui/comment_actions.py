@@ -7,6 +7,7 @@ from textual import message
 
 from reddacted.api.reddit import Reddit
 
+
 class CommentActionScreen(Screen):
     """Screen for confirming and executing comment actions."""
 
@@ -16,7 +17,7 @@ class CommentActionScreen(Screen):
 
     def __init__(self, comment_id: str, action: str):
         """Initialize the action screen.
-        
+
         Args:
             comment_id: The ID of the comment to act on
             action: Either 'edit' or 'delete'
@@ -59,12 +60,14 @@ class CommentActionScreen(Screen):
                 result = self.api.delete_comments([self.comment_id])
                 action_text = "deleted"
 
-            if result['success'] > 0:
+            if result["success"] > 0:
                 # Notify parent to refresh
                 self.app.post_message(self.ActionCompleted(self.comment_id, self.action))
+
                 # Close the screen after a short delay to show success
                 def close_screen():
                     self.app.pop_screen()
+
                 self.set_timer(0.5, close_screen)
                 status.update(f"✅ Successfully {action_text} comment")
             else:
@@ -74,6 +77,7 @@ class CommentActionScreen(Screen):
 
     class ActionCompleted(message.Message):
         """Message sent when action is completed successfully."""
+
         def __init__(self, comment_id: str, action: str):
             self.comment_id = comment_id
             self.action = action

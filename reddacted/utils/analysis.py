@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
+
 @dataclass
 class AnalysisResult:
     """Holds the results of both sentiment and PII analysis."""
+
     comment_id: str
     sentiment_score: float
     sentiment_emoji: str

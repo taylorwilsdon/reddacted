@@ -1,5 +1,6 @@
 import unittest
 
+
 class SentimentPostiveTestCases(unittest.TestCase):
 
     def setUp(self):
