@@ -1,6 +1,5 @@
 import json
 import asyncio
-import logging
 from typing import Tuple, Dict, Any, List
 import openai
 from reddacted.utils.logging import get_logger, with_logging

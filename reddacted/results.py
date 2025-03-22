@@ -1,21 +1,12 @@
-    #!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Standard library
-import logging
-import os
 from typing import List, Dict, Any, Optional
-from dataclasses import dataclass
 
-# Third-party
-from rich.panel import Panel
 from rich.columns import Columns
 from rich.console import Group
-from rich.text import Text
-from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
-# Local
 from reddacted.utils.logging import get_logger, with_logging
 from reddacted.utils.report import (
     generate_analysis_report,
@@ -119,7 +110,6 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
             print("No comments with high PII risk found.")
             return
 
-        
         # Show interactive results view
         show_results(
             url=url,
@@ -128,6 +118,7 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
             overall_score=overall_score,
             overall_sentiment=overall_sentiment
         )
+
     def _print_completion_message(
         self,
         filename: str,
