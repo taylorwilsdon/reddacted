@@ -3,7 +3,6 @@
 
 # Standard library
 import asyncio
-import logging
 import re
 from os import environ
 from typing import List, Dict, Any, Optional, Tuple
@@ -11,11 +10,6 @@ from typing import List, Dict, Any, Optional, Tuple
 # Third-party
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from rich.panel import Panel
-from rich.columns import Columns
-from rich.console import Group
-from rich.text import Text
-from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 # Local
