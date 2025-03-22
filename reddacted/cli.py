@@ -30,14 +30,6 @@ set_global_logging_level(logging.INFO)
 logger = get_logger(__name__)
 console = Console(highlight=True)
 
-# Command descriptions for help and suggestions
-COMMAND_DESCRIPTIONS = {
-    'listing': 'Analyze a Reddit post and its comments',
-    'user': 'Analyze a Reddit user\'s comment history',
-    'delete': 'Delete comments by ID',
-    'update': 'Replace comment content with r/reddacted'
-}
-
 # Environment variables required for Reddit API authentication
 REDDIT_AUTH_VARS = [
     'REDDIT_USERNAME',
@@ -132,10 +124,10 @@ class ModifyComments(Command):
 
         return "\n".join(details)
 
+
 class DeleteComments(ModifyComments):
     """Delete specified Reddit comments permanently"""
 
-    @with_logging(logger)
     def get_description(self) -> str:
         return 'Delete specified Reddit comments permanently using their IDs'
 
@@ -155,10 +147,10 @@ class DeleteComments(ModifyComments):
             expand=False
         ))
 
+
 class UpdateComments(ModifyComments):
     """Replace comment content with r/reddacted"""
 
-    @with_logging(logger)
     def get_description(self) -> str:
         return 'Replace comment content with "r/reddacted" using their IDs'
 
@@ -184,13 +176,7 @@ class BaseAnalyzeCommand(Command):
 
     def _check_auth_env_vars(self) -> bool:
         """Check if all required Reddit API environment variables are set"""
-        required_vars = [
-            'REDDIT_USERNAME',
-            'REDDIT_PASSWORD',
-            'REDDIT_CLIENT_ID',
-            'REDDIT_CLIENT_SECRET'
-        ]
-        return all(os.getenv(var) for var in required_vars)
+        return all(os.getenv(var) for var in REDDIT_AUTH_VARS)
 
     def get_parser(self, prog_name):
         parser = super(BaseAnalyzeCommand, self).get_parser(prog_name)
@@ -244,7 +230,7 @@ class Listing(BaseAnalyzeCommand):
         return parser
 
     def take_action(self, args):
-        llm_config = CLI()._configure_llm(args, console)
+        llm_config = CLI._configure_llm(args)
         limit = None if args.limit == 0 else args.limit
 
         # Enable auth if flag is set or all env vars are present
@@ -297,7 +283,7 @@ class User(BaseAnalyzeCommand):
                 )
                 console.print(f"[blue]Analyzing user: u/{parsed_args.username}[/]")
 
-            llm_config = CLI()._configure_llm(parsed_args, console)
+            llm_config = CLI._configure_llm(parsed_args)
             limit = None if parsed_args.limit == 0 else parsed_args.limit
 
             logger.debug_with_context(f"Creating Sentiment analyzer with auth_enabled={parsed_args.enable_auth}")
@@ -342,6 +328,7 @@ class User(BaseAnalyzeCommand):
                 debug="--debug" in sys.argv
             )
             raise
+
 
 class CLI(App):
     def __init__(self):
@@ -396,8 +383,8 @@ class CLI(App):
             command_manager=command_manager,
             deferred_help=True,)
 
-    @with_logging(logger)
-    def _configure_llm(self, args, console):
+    @staticmethod
+    def _configure_llm(args):
         """Centralized LLM configuration handler"""
         logger.debug("Configuring LLM settings")
         if args.disable_pii:
@@ -460,13 +447,12 @@ class CLI(App):
                 "Enter local LLM endpoint URL",
                 default="http://localhost:11434"
             )
-            return self._configure_llm(args, console)
+            return CLI._configure_llm(args)
 
 
 def main(argv=sys.argv[1:]):
     try:
         app = CLI()
-
         return app.run(argv)
     except Exception as e:
         command = argv[0] if argv else "unknown"
@@ -476,6 +462,7 @@ def main(argv=sys.argv[1:]):
             debug="--debug" in argv
         )
         return 1
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
