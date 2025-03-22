@@ -61,7 +61,7 @@ class Sentiment():
         try:
             nltk.data.find('sentiment/vader_lexicon')
         except LookupError:
-            logger.info("Downloading required NLTK data...")
+            logger.debug("Downloading required NLTK data...")
             nltk.download('vader_lexicon', quiet=True)
 
         # Initialize necessary variables

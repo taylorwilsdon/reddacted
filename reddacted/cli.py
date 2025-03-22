@@ -9,8 +9,7 @@ import sys
 import os
 import getpass
 import logging
-import difflib
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Dict, Any
 
 from cliff.app import App
 from cliff.commandmanager import CommandManager
@@ -19,7 +18,6 @@ import requests
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
-from rich.columns import Columns
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 
 from reddacted.utils.logging import get_logger, with_logging, set_global_logging_level
@@ -465,72 +463,12 @@ class CLI(App):
             return self._configure_llm(args, console)
 
 
-def suggest_command(input_command):
-    """Suggests the closest matching command with a fun message"""
-    commands = {
-        'listing': 'Analyze a Reddit post and its comments',
-        'user': 'Analyze a Reddit user\'s comment history',
-        'delete': 'Delete comments by ID',
-        'update': 'Replace comment content with r/reddacted'
-    }
-
-    # Map common variations to actual commands
-    command_map = {
-        'post': 'listing',
-        'thread': 'listing',
-        'article': 'listing',
-        'comments': 'listing',
-        'redditor': 'user',
-        'profile': 'user',
-        'history': 'user',
-        'remove': 'delete',
-        'del': 'delete',
-        'rm': 'delete',
-        'edit': 'update',
-        'redact': 'update',
-        'modify': 'update',
-        'change': 'update'
-    }
-
-    input_command = input_command.lower()
-
-    # Direct command match
-    if input_command in commands:
-        return None
-
-    # Check mapped variations
-    if input_command in command_map:
-        actual_command = command_map[input_command]
-        return (f"🤔 Ah, you probably meant '{actual_command}'! That's what we call it around here.\n"
-                f"💡 This command will: {commands[actual_command]}")
-
-    # Find closest match
-    import difflib
-    all_commands = list(commands.keys()) + list(command_map.keys())
-    matches = difflib.get_close_matches(input_command, all_commands, n=1, cutoff=0.6)
-
-    if matches:
-        matched = matches[0]
-        actual = matched if matched in commands else command_map[matched]
-        return (f"🎯 Close! Did you mean '{actual}'?\n"
-                f"💡 This command will: {commands[actual]}")
-
-    # No close match found
-    return (f"🤖 Hmm, I don't recognize '{input_command}'.\n"
-            "Here's what I can help you with:\n"
-            "📊 'listing' - Analyze a Reddit post\n"
-            "👤 'user' - Analyze a user's history\n"
-            "🗑️ 'delete' - Remove comments\n"
-            "✏️ 'update' - Redact comments\n"
-            "\nTry one of these!")
-
 def main(argv=sys.argv[1:]):
     try:
         app = CLI()
 
         return app.run(argv)
     except Exception as e:
-        from reddacted.utils.exceptions import handle_exception
         command = argv[0] if argv else "unknown"
         handle_exception(
             e,
@@ -538,7 +476,6 @@ def main(argv=sys.argv[1:]):
             debug="--debug" in argv
         )
         return 1
-
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

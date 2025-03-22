@@ -73,16 +73,10 @@ class ResultsSummary(DataTable):
         """Handle row selection by mouse click."""
         # Trigger the view details action in the parent application
         if self.cursor_row is not None:
-            self.app.notify("Row selected event triggered")
             self.app.action_view_details()
-            
-    def on_click(self) -> None:
-        """Handle click event."""
-        self.app.notify("DataTable clicked")
-        
+                    
     def on_data_table_cell_selected(self) -> None:
         """Handle cell selection."""
-        self.app.notify("Cell selected event triggered")
         if self.cursor_row is not None:
             self.app.action_view_details()
 
@@ -190,12 +184,9 @@ class TextualResultsView(App):
     
     def action_view_details(self) -> None:
         """Handle viewing details of selected row."""
-        self.notify("action_view_details called")
         if comment_id := self._get_selected_comment_id():
-            self.notify(f"Found comment ID: {comment_id}")
             result = next((r for r in self.results if r.comment_id == comment_id), None)
             if result:
-                self.notify("Found result, pushing DetailsScreen")
                 self.push_screen(DetailsScreen(result))
             else:
                 self.notify(f"No result found for comment ID: {comment_id}")
