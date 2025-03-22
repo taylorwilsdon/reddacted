@@ -50,8 +50,11 @@ reddacted user yourusername \
 ```
 reddacted user taylorwilsdon --limit 3
 ```
+
 https://github.com/user-attachments/assets/db088d58-2f53-4513-95cc-d4b70397ff82
 
+## Support & Community
+Join our subreddit: [r/reddacted](https://reddit.com/r/reddacted)
 
 ## Installation
 
@@ -65,23 +68,78 @@ cd reddacted
 pip install -e ".[dev]"  # Installs with development dependencies
 ```
 
-## Quick Start
+## Usage
 
 ```bash
-# Analyze a user's comments
-reddacted user spez --limit 5 --local-llm "localhost:11434"
+# Most basic possible quick start - this will walk you through selecting your LLM in the command line
+reddacted user spez
 
-# Analyze a specific post
-reddacted listing r/privacy abc123 --limit 10 --local-llm "localhost:11434"
+
+# Analyze a user's recent comments with local LLM specified
+reddacted user spez \
+  --limit 5 \
+  --local-llm "localhost:11434" \
+  --model "qwen2.5:3b" \
+  --sort new \
+  --output-file "spez_analysis.txt"
+
+# Analyze controversial comments with OpenAI
+export OPENAI_API_KEY="your-api-key"
+reddacted user spez \
+  --sort controversial \
+  --time month \
+  --model "gpt-4" \
+  --limit 10 \
+  --pii-only
+
+# Analyze a specific subreddit post with PII filter disabled
+reddacted listing r/privacy abc123 \
+  --local-llm "localhost:11434" \
+  --model "qwen2.5:3b" \
+  --disable-pii \
+  --sort new
+
+# Search for specific content (requires auth)
+reddacted user spez \
+  --enable-auth \
+  --text-match "python" \
+  --skip-text "deleted" \
+  --sort top \
+  --time all
+
+# Bulk comment management
+reddacted delete abc123,def456 --batch-size 5  # Delete comments
+reddacted update abc123,def456                 # Replace with r/reddacted
 ```
 
-Note: The examples above use a local LLM. For cloud-based analysis, omit the --local-llm flag and configure your OpenAI API key:
+### Available Commands
+- `user` - Analyze a user's comment history
+- `listing` - Analyze a specific post and its comments
+- `delete` - Delete comments by their IDs
+- `update` - Replace comment content with r/reddacted
+
+### Common Arguments
+- `--limit N` - Maximum comments to analyze (default: 100, 0 for unlimited)
+- `--sort` - Sort method: hot, new, controversial, top (default: new)
+- `--time` - Time filter: all, day, hour, month, week, year (default: all)
+- `--output-file` - Save detailed analysis to a file
+- `--enable-auth` - Enable Reddit API authentication
+- `--disable-pii` - Skip PII detection
+- `--pii-only` - Show only comments containing PII
+- `--text-match` - Search for comments containing specific text
+- `--skip-text` - Skip comments containing specific text pattern
+- `--batch-size` - Comments per batch for delete/update (default: 10)
+
+### LLM Configuration
+- `--local-llm URL` - Local LLM endpoint (OpenAI compatible)
+- `--openai-key KEY` - OpenAI API key
+- `--openai-base URL` - Custom OpenAI API base URL
+- `--model NAME` - Model to use (default: gpt-4 for OpenAI)
+
+Note: For cloud-based analysis using OpenAI, you can either use the --openai-key flag or set the environment variable:
 ```bash
 export OPENAI_API_KEY="your-api-key"
 ```
-
-## Support & Community
-Join our subreddit: [r/reddacted](https://reddit.com/r/reddacted)
 
 ### ❓ How accurate is the PII detection, really?
 Surprisingly good. Good enough that I run it against my own stuff in delete mode. It's basically a defense-in-depth approach combining these, and I'll probably add upvotes/downvotes into the logic at some point:
@@ -148,7 +206,7 @@ $ export REDDIT_CLIENT_ID=your-client-id
 $ export REDDIT_CLIENT_SECRET=your-client-secret
 ```
 
-Now when running the CLI with `--enable-auth`, all requests will be properly authenticated. These credentials are also automatically used if all environment variables are present, even without the `--enable-auth` flag.
+These credentials are also automatically used if all environment variables are present, even without the `--enable-auth` flag. 
 
 ## Advanced Usage
 

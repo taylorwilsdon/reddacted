@@ -1,11 +1,7 @@
-import logging
 from typing import List, Dict, Any, Optional
-
-from rich.progress import Progress
 from rich.text import Text
 
 from reddacted.utils.logging import get_logger, with_logging
-from reddacted.utils.analysis import AnalysisResult
 
 class BaseFormatter:
     """Base class for formatters with shared utilities."""
