@@ -94,18 +94,11 @@ if [ "$UPDATE_DEPS_ONLY" = false ]; then
     if curl -sL --fail "https://github.com/${GITHUB_USER}/${REPO}/archive/refs/tags/v${VERSION}.tar.gz" -o "${TARBALL_PATH}"; then
       SHA=$(shasum -a 256 "${TARBALL_PATH}" | cut -d ' ' -f 1)
       
-      # Update Homebrew formula with the SHA
-      if [ -n "$SHA" ]; then
-        echo -e "${YELLOW}Updating Homebrew formula with new version, URL and SHA...${NC}"
-        # Update version in the formula
-        sed -i '' "s/version \".*\"/version \"${VERSION}\"/" homebrew/reddacted.rb
-        # Update URL in the formula
-        ESCAPED_URL=$(echo "https://github.com/${GITHUB_USER}/${REPO}/archive/refs/tags/v${VERSION}.tar.gz" | sed 's/[\/&]/\\&/g')
-        sed -i '' "s|url \".*\"|url \"${ESCAPED_URL}\"|" homebrew/reddacted.rb
-        # Update SHA in the formula
-        sed -i '' "s/sha256 \".*\"/sha256 \"${SHA}\"/" homebrew/reddacted.rb
-      else
-        echo -e "${YELLOW}Failed to calculate SHA, skipping Homebrew formula update${NC}"
+      # Generate new Homebrew formula
+      echo -e "${YELLOW}Generating new Homebrew formula...${NC}"
+      if ! python3 scripts/homebrew_formula_generator.py "${VERSION}"; then
+        echo -e "${YELLOW}Failed to generate Homebrew formula${NC}"
+        exit 1
       fi
     else
       echo -e "${YELLOW}Failed to download tarball, skipping SHA calculation and Homebrew formula update${NC}"
@@ -124,143 +117,16 @@ if [ "$UPDATE_DEPS_ONLY" = false ]; then
     fi
 fi
 
-# 9. Update Homebrew formula with correct dependency URLs and SHAs
-echo -e "${YELLOW}Updating Homebrew formula with correct dependency URLs and SHAs...${NC}"
+# Ensure scripts directory exists and formula generator is executable
+if [ ! -d "scripts" ]; then
+  echo -e "${YELLOW}Creating scripts directory...${NC}"
+  mkdir -p scripts
+fi
 
-# Extract direct dependencies from pyproject.toml
-echo -e "${YELLOW}Extracting direct dependencies from pyproject.toml...${NC}"
-# More precisely extract only the dependencies section by using awk to get content between dependencies = [ and ]
-DEPS_JSON=$(awk '/dependencies = \[/,/\]/' pyproject.toml | grep -v "dependencies = \[" | grep -v "\]" | sed 's/^[ \t]*//' | sed 's/,$//' | sed 's/"//g')
-DIRECT_DEPS=()
-
-# Parse the direct dependencies
-while IFS= read -r line; do
-    # Skip empty lines
-    if [ -z "$line" ]; then
-        continue
-    fi
-    # Extract package name (everything before >=, >, ==, or end of line)
-    pkg=$(echo "$line" | sed -E 's/([^><=]+).*/\1/' | xargs)
-    # Only add if not empty
-    if [ -n "$pkg" ]; then
-        DIRECT_DEPS+=("$pkg")
-    fi
-done <<< "$DEPS_JSON"
-
-echo -e "${YELLOW}Found direct dependencies: ${DIRECT_DEPS[*]}${NC}"
-
-# Create a temporary virtual environment to resolve all dependencies
-echo -e "${YELLOW}Creating temporary virtual environment to resolve all dependencies...${NC}"
-TEMP_VENV="/tmp/reddacted_temp_venv"
-python -m venv "$TEMP_VENV"
-source "$TEMP_VENV/bin/activate"
-
-# Install direct dependencies to resolve transitive dependencies
-echo -e "${YELLOW}Installing dependencies to resolve full dependency tree...${NC}"
-for dep in "${DIRECT_DEPS[@]}"; do
-    pip install "$dep" >/dev/null 2>&1
-done
-
-# Get all installed packages (excluding standard library and development packages)
-echo -e "${YELLOW}Extracting full dependency tree...${NC}"
-ALL_DEPS=$(pip freeze | grep -v "^-e" | cut -d= -f1 | tr '[:upper:]' '[:lower:]')
-
-# Create an array of all dependencies, normalizing names and avoiding duplicates
-DEPS=()
-
-while IFS= read -r pkg; do
-    # Skip empty lines and the package itself
-    if [ -z "$pkg" ] || [ "$pkg" = "reddacted" ]; then
-        continue
-    fi
-    
-    # Normalize package name (use hyphens consistently)
-    normalized_pkg=$(echo "$pkg" | tr '_' '-')
-    
-    # Check if this package is already in DEPS (avoid duplicates)
-    is_duplicate=0
-    for existing_dep in "${DEPS[@]}"; do
-        if [ "$existing_dep" = "$normalized_pkg" ]; then
-            is_duplicate=1
-            break
-        fi
-    done
-    
-    # Only add if not a duplicate
-    if [ "$is_duplicate" -eq 0 ]; then
-        DEPS+=("$normalized_pkg")
-    fi
-done <<< "$ALL_DEPS"
-
-# Clean up the temporary virtual environment
-deactivate
-rm -rf "$TEMP_VENV"
-
-echo -e "${YELLOW}Found all dependencies: ${DEPS[*]}${NC}"
-
-for dep in "${DEPS[@]}"; do
-  echo -e "${YELLOW}Fetching info for ${dep}...${NC}"
-  
-  # Get package info from PyPI JSON API
-  JSON_INFO=$(curl -s "https://pypi.org/pypi/${dep}/json")
-  
-  # Use jq to reliably extract information
-  LATEST_VERSION=$(echo "$JSON_INFO" | jq -r '.info.version')
-  echo -e "${YELLOW}Latest version: ${LATEST_VERSION}${NC}"
-  
-  # Get the sdist (tar.gz) URL and SHA
-  SDIST_INFO=$(echo "$JSON_INFO" | jq -r '.urls[] | select(.packagetype=="sdist")')
-  SDIST_URL=$(echo "$SDIST_INFO" | jq -r '.url')
-  SDIST_SHA=$(echo "$SDIST_INFO" | jq -r '.digests.sha256')
-  
-  if [ -n "$SDIST_URL" ] && [ -n "$SDIST_SHA" ] && [ "$SDIST_URL" != "null" ] && [ "$SDIST_SHA" != "null" ]; then
-    echo -e "${YELLOW}Updating ${dep} to ${SDIST_URL} with SHA ${SDIST_SHA}${NC}"
-    
-    # Escape URL and SHA for sed
-    ESCAPED_URL=$(echo "$SDIST_URL" | sed 's/[\/&]/\\&/g')
-    ESCAPED_SHA=$(echo "$SDIST_SHA" | sed 's/[\/&]/\\&/g')
-    
-    # Check if resource block exists for this dependency (checking both hyphen and underscore versions)
-    hyphen_version=$(echo "$dep" | tr '_' '-')
-    underscore_version=$(echo "$dep" | tr '-' '_')
-    
-    if grep -q "resource \"$hyphen_version\" do" homebrew/reddacted.rb; then
-      # Update existing resource block with hyphen version
-      sed -i '' "/resource \"$hyphen_version\" do/,/end/ {
-        s|url \".*\"|url \"$ESCAPED_URL\"|
-        s|sha256 \".*\"|sha256 \"$ESCAPED_SHA\"|
-      }" homebrew/reddacted.rb
-    elif grep -q "resource \"$underscore_version\" do" homebrew/reddacted.rb; then
-      # Update existing resource block with underscore version
-      sed -i '' "/resource \"$underscore_version\" do/,/end/ {
-        s|url \".*\"|url \"$ESCAPED_URL\"|
-        s|sha256 \".*\"|sha256 \"$ESCAPED_SHA\"|
-      }" homebrew/reddacted.rb
-    else
-      # Add new resource block before the install method
-      echo -e "${YELLOW}Adding new resource block for ${dep}${NC}"
-      
-      # Use awk to insert the new resource block before the install method
-      # This is more reliable on macOS than sed for multi-line insertions
-      awk -v url="$SDIST_URL" -v sha="$SDIST_SHA" -v dep="$dep" '
-      /def install/ {
-        print "  resource \"" dep "\" do";
-        print "    url \"" url "\"";
-        print "    sha256 \"" sha "\"";
-        print "  end";
-        print "";
-        print $0;
-        next;
-      }
-      { print }
-      ' homebrew/reddacted.rb > homebrew/reddacted.rb.tmp
-      
-      mv homebrew/reddacted.rb.tmp homebrew/reddacted.rb
-    fi
-  else
-    echo -e "${YELLOW}Failed to get URL and SHA for ${dep}${NC}"
-  fi
-done
+if [ ! -x "scripts/homebrew_formula_generator.py" ]; then
+  echo -e "${YELLOW}Making formula generator executable...${NC}"
+  chmod +x scripts/homebrew_formula_generator.py
+fi
 
 # 10. Instructions for Homebrew tap
 echo -e "${GREEN}Release v${VERSION} completed!${NC}"
