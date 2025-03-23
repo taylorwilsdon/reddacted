@@ -7,6 +7,9 @@
 ![PyPI Downloads](https://img.shields.io/pypi/dm/reddacted?style=flat&logo=pypi&logoColor=white&label=Downloads&labelColor=005da7&color=blue)
 
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/934113f1-4a38-4985-935c-b247688ccac8" />
+
+https://github.com/user-attachments/assets/53cf8972-2f5a-4dd9-b047-867f0b6342ad
+
 <img width="450" alt="image" src="https://github.com/user-attachments/assets/338fa47e-88da-4844-9728-ace17983cd83" />
 
 ## What is reddacted?
@@ -50,8 +53,6 @@ reddacted user yourusername \
 ```
 reddacted user taylorwilsdon --limit 3
 ```
-
-https://github.com/user-attachments/assets/db088d58-2f53-4513-95cc-d4b70397ff82
 
 ## Support & Community
 Join our subreddit: [r/reddacted](https://reddit.com/r/reddacted)
