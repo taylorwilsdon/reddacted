@@ -125,15 +125,12 @@ DetailsScreen {
     padding: 1;
     background: #103c48;
     border: solid #4695f7;
-    margin-bottom: 1;
-    min-height: 3;
 }
 
 .pii-matches-container, .llm-findings-container, .llm-stats {
     padding: 1;
     background: #103c48;
     border: solid #4695f7;
-    margin-bottom: 1;
 }
 
 .details-pii-item, .details-llm-item {

@@ -47,7 +47,6 @@ class DetailsScreen(Screen):
                     classes=f"details-risk-{risk_class}",
                 )
 
-                # Sentiment and votes on same line
                 yield Static(
                     f"Sentiment: {self.result.sentiment_emoji} {self.result.sentiment_score:.2f}",
                     classes="details-sentiment",
@@ -74,27 +73,25 @@ class DetailsScreen(Screen):
             # LLM analysis section
             if self.result.llm_findings:
                 yield Label("LLM Privacy Analysis", classes="section-header")
-
+                yield Static(
+                    f"Risk Score: {self.result.llm_risk_score:.2f}",
+                    classes="details-llm-risk",
+                )
                 findings = self.result.llm_findings
+                has_pii = findings.get("has_pii", False)
+                yield Static(
+                    f"PII Detected: {'Yes' if has_pii else 'No'}",
+                    classes=f"details-has-pii-{'yes' if has_pii else 'no'}",
+                )
                 if isinstance(findings, dict):
-                    with Vertical(classes="llm-stats"):
-                        has_pii = findings.get("has_pii", False)
-                        yield Static(
-                            f"Risk Score: {self.result.llm_risk_score:.2f}",
-                            classes="details-llm-risk",
-                        )
-                        yield Static(
-                            f"PII Detected: {'Yes' if has_pii else 'No'}",
-                            classes=f"details-has-pii-{'yes' if has_pii else 'no'}",
-                        )
-
                     if details := findings.get("details"):
                         yield Label("Findings:", classes="subsection-header")
-                        with Vertical(classes="llm-findings-container"):
-                            for detail in details:
-                                yield Static(
-                                    f"• {format_llm_detail(detail)}", classes="details-llm-item"
-                                )
+                        for detail in details:
+                            formatted_detail = format_llm_detail(detail, self.app)
+                            yield Static(
+                                "• " + formatted_detail,
+                                classes="details-llm-item"
+                            )
 
                     if reasoning := findings.get("reasoning"):
                         yield Label("Reasoning:", classes="subsection-header")
