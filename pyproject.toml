@@ -8,7 +8,7 @@ package = true
 
 [project]
 name = "reddacted"
-version = "0.1.6"
+version = "0.1.7"
 description = "Analyze Reddit comments for PII and other sensitive information using local or OpenAI API compatible LLMs and perform sentiment analysis, edit and remove comments."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -30,6 +30,7 @@ classifiers = [
 
 dependencies = [
     "cliff>=4.3.0",
+    "autopage>=0.5.2",
     "praw>=7.7.1",
     "nltk>=3.8.1",
     "requests>=2.31.0",
@@ -37,7 +38,9 @@ dependencies = [
     "httpx==0.27.2",
     "openai>=1.3.7",
     "rich>=13.7.0",
-    "textual==2.1.2"
+    "textual==2.1.2",
+    "stevedore==5.4.1",
+    "urllib3==2.3.0"
 ]
 
 [project.urls]
@@ -53,7 +56,8 @@ dev = [
     "black",
     "mypy",
     "ruff",
-    "uv"
+    "uv",
+    "tomli>=2.0.0"  # Required for Homebrew formula generation
 ]
 
 [project.scripts]
