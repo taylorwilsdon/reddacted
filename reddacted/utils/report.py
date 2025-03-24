@@ -65,15 +65,11 @@ def should_show_result(result: "AnalysisResult", pii_only: bool = False) -> bool
 
 def format_llm_detail(detail: Any, app=None) -> str:
     """Formats LLM detail information."""
-    if app:
-        app.notify(f"Processing detail: {detail}")
     if isinstance(detail, dict):
         formatted = (
             f"{detail.get('type', 'Finding')}: {detail.get('example', 'N/A')}"
             or f"{detail.get('finding', 'N/A')}: {detail.get('reasoning', '')}"
         )
-        if app:
-            app.notify(f"Formatted output: {formatted}")
         return formatted.replace('\n', ' ')  # Replace newlines with spaces
     return str(detail)
 

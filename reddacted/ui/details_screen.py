@@ -92,7 +92,6 @@ class DetailsScreen(Screen):
                                 "• " + formatted_detail,
                                 classes="details-llm-item"
                             )
-
                     if reasoning := findings.get("reasoning"):
                         yield Label("Reasoning:", classes="subsection-header")
                         yield Markdown(reasoning, classes="details-reasoning")
