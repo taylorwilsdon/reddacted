@@ -63,13 +63,14 @@ def should_show_result(result: "AnalysisResult", pii_only: bool = False) -> bool
     return has_pattern_pii or has_llm_pii
 
 
-def format_llm_detail(detail: Any) -> str:
+def format_llm_detail(detail: Any, app=None) -> str:
     """Formats LLM detail information."""
     if isinstance(detail, dict):
-        return (
+        formatted = (
             f"{detail.get('type', 'Finding')}: {detail.get('example', 'N/A')}"
             or f"{detail.get('finding', 'N/A')}: {detail.get('reasoning', '')}"
         )
+        return formatted.replace('\n', ' ')  # Replace newlines with spaces
     return str(detail)
 
 

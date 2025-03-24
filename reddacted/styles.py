@@ -73,7 +73,6 @@ DetailsScreen {
 .header-info {
     background: #103c48;
     border: solid #4695f7;
-    margin-bottom: 1;
     padding: 1;
     height: auto;
     text-align: center;
@@ -111,7 +110,6 @@ DetailsScreen {
     color: #cad8d9;
     padding: 0 1;
     margin-top: 1;
-    margin-bottom: 1;
     text-style: bold;
 }
 
@@ -125,41 +123,40 @@ DetailsScreen {
     padding: 1;
     background: #103c48;
     border: solid #4695f7;
-    margin-bottom: 1;
-    min-height: 3;
 }
 
 .pii-matches-container, .llm-findings-container, .llm-stats {
     padding: 1;
     background: #103c48;
     border: solid #4695f7;
-    margin-bottom: 1;
 }
 
 .details-pii-item, .details-llm-item {
     padding-left: 1;
     color: #cad8d9;
+    border: solid #4695f7;
 }
 
 .details-reasoning {
     padding: 1;
     background: #103c48;
     border: solid #4695f7;
-    margin-top: 1;
-    margin-bottom: 1;
 }
 
 .details-llm-risk {
+    padding-left: 1;
+    background: #103c48;
     color: #cad8d9;
-    margin-bottom: 1;
 }
 
 .details-has-pii-yes {
+    padding-left: 1;
     color: #ef4444;
     text-style: bold;
 }
 
 .details-has-pii-no {
+    padding-left: 1;
     color: #22c55e;
 }
 
