@@ -125,19 +125,11 @@ class DetailsScreen(Screen):
         """Handle action_completed events from CommentActionScreen."""
         action_type = "edited" if event.action == "edit" else "deleted"
         self.app.notify(f"Comment {self.result.comment_id} successfully {action_type}")
-        # Debug screen stack before pop
-        current_screens = "\n".join([screen.__class__.__name__ for screen in self.app.screen_stack])
-        print(f"Screen stack BEFORE pop:\n{current_screens}")
 
         # Return to main screen by popping twice (action screen + details screen)
         self.app.pop_screen()  # Remove CommentActionScreen
         self.app.pop_screen()  # Remove DetailsScreen
 
-        # Debug screen stack after pop
-        remaining_screens = "\n".join(
-            [screen.__class__.__name__ for screen in self.app.screen_stack]
-        )
-        print(f"Screen stack AFTER pop:\n{remaining_screens}\n")
 
     def action_edit_comment(self) -> None:
         """Handle editing the current comment."""
