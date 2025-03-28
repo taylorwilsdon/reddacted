@@ -1,5 +1,4 @@
 # Core dependencies
-cliff==4.3.0
 praw==7.7.1
 nltk==3.8.1
 requests==2.31.0
