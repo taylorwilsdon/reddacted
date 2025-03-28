@@ -137,7 +137,6 @@ class DetailsScreen(Screen):
         remaining_screens = "\n".join(
             [screen.__class__.__name__ for screen in self.app.screen_stack]
         )
-        print(f"Popped screen: {popped_screen.__class__.__name__}")
         print(f"Screen stack AFTER pop:\n{remaining_screens}\n")
 
     def action_edit_comment(self) -> None:
