@@ -1,6 +1,6 @@
 import json
 import asyncio
-from typing import Tuple, Dict, Any, List
+from typing import Tuple, Dict, Any, List, Optional
 import openai
 from reddacted.utils.logging import get_logger, with_logging
 from reddacted.utils.exceptions import handle_exception
@@ -10,7 +10,8 @@ logger = get_logger(__name__)
 
 @with_logging(logger)
 class LLMDetector:
-    """Uses LLM to detect potential PII and personal information in text"""
+    """Uses LLM to detect potential PII and personal information in text,
+    and can suggest sarcastic replacements."""
 
     DEFAULT_PROMPT = """
     Analyze the following text for any information that could potentially identify the author or reveal personal details about them.
@@ -24,6 +25,20 @@ class LLMDetector:
     - risk_factors: list of specific elements that contribute to the risk score
 
     Text to analyze: {text}
+    """
+
+    REPLACEMENT_PROMPT_TEMPLATE = """
+    You are a creative writing assistant specializing in sarcastic and nonsensical rewrites.
+    Your task is to rewrite the following text, replacing any identified personal information with humorous, absurd, or sarcastic placeholders. Maintain the original structure and tone as much as possible, but ensure all sensitive details are obscured.
+
+    Original Text:
+    "{original_text}"
+
+    Identified Personal Information Details:
+    {pii_details}
+
+    Rewrite the text, replacing the identified information with sarcastic/nonsensical content.
+    ONLY output the rewritten text. Do not include explanations, apologies, or any text other than the rewritten version.
     """
 
     def __init__(
@@ -43,7 +58,7 @@ class LLMDetector:
         Analyze a batch of texts using LLM for potential personal information.
         Returns list of tuples (risk_score, details).
         """
-        batch_size = 3
+        batch_size = 10
         results = []
         try:
             client = openai.AsyncOpenAI(**self.client_config)
@@ -118,7 +133,8 @@ class LLMDetector:
 
                         results.append((risk_score, analysis))
                     except Exception as e:
-                        results.append((0.0, {"error": str(e)}))
+                        logger.warning_with_context(f"Failed to parse LLM analysis response: {e}")
+                        results.append((0.0, {"error": f"LLM response parsing failed: {e}"}))
             return results
 
         except Exception as e:
@@ -159,3 +175,72 @@ class LLMDetector:
         except Exception as e:
             logger.error_with_context(f"LLM analysis failed: {str(e)}")
             return 0.0, {"error": str(e)}
+
+    async def suggest_replacement(self, text: str, analysis: Dict[str, Any]) -> Optional[str]:
+        """
+        Suggests a sarcastic/nonsensical replacement for the text, obscuring PII.
+
+        Args:
+            text: The original text.
+            analysis: The analysis result dictionary from analyze_text/analyze_batch.
+
+        Returns:
+            The suggested replacement text, or None if no PII was found or an error occurred.
+        """
+        if not analysis or not analysis.get("has_pii"):
+            logger.info_with_context("No PII found, skipping replacement suggestion.")
+            return None
+
+        pii_details_list = analysis.get("details", [])
+        if not pii_details_list:
+             logger.warning_with_context("has_pii is True, but no details found. Skipping replacement.")
+             return None
+
+        # Format PII details for the prompt
+        pii_details_str = "\n".join([f"- Type: {item.get('type', 'N/A')}, Example: {item.get('example', 'N/A')}" for item in pii_details_list])
+
+        prompt = self.REPLACEMENT_PROMPT_TEMPLATE.format(
+            original_text=text,
+            pii_details=pii_details_str
+        )
+
+        try:
+            # Create a client instance for this specific call
+            client = openai.AsyncOpenAI(**self.client_config)
+            logger.debug_with_context("Requesting replacement suggestion from LLM.")
+            logger.debug_with_context(f"Replacement Prompt:\n{prompt}")
+
+            response = await client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are a creative writing assistant specializing in sarcastic and nonsensical rewrites."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.7, # Slightly higher temp for creativity
+            )
+
+            replacement_text = response.choices[0].message.content.strip()
+            logger.debug_with_context(f"Raw replacement suggestion:\n{replacement_text}")
+
+            # Basic check to ensure it's not empty or just whitespace
+            if not replacement_text:
+                 logger.warning_with_context("LLM returned an empty replacement suggestion.")
+                 return None
+
+            return replacement_text
+
+        except openai.AuthenticationError as e:
+            error_msg = str(e)
+            key_preview = "UNKNOWN"
+            if "Incorrect API key provided" in error_msg and "provided: " in error_msg:
+                 key_preview = error_msg.split("provided: ")[1].split(".")[0]
+            logger.error_with_context(f"Authentication failed for replacement suggestion (key: {key_preview}): {e}")
+            # Propagate a clear error message or handle as needed downstream
+            # For now, returning None as the function signature suggests optional return
+            return None
+        except openai.APIError as e:
+            logger.error_with_context(f"API error during replacement suggestion: {e.message}")
+            return None
+        except Exception as e:
+            logger.error_with_context(f"Unexpected error during replacement suggestion: {str(e)}")
+            return None
