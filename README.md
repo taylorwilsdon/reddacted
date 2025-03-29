@@ -96,6 +96,9 @@ reddacted user taylorwilsdon --limit 3
 ## 📥 Installation
 
 ```bash
+# Install from brew (recommended)
+brew install taylorwilsdon/tap/reddacted
+
 # Install from PyPI (recommended)
 pip install reddacted
 
