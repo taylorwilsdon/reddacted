@@ -63,7 +63,7 @@
 </div>
 
 ```bash
-reddacted user yourusername --local-llm "localhost:11434"
+reddacted user yourusername --local-llm "http://localhost:11434"
 ```
 
 - ✅ Client-side execution only, no tracking or external calls
@@ -117,10 +117,9 @@ reddacted user spez
 # Analyze a user's recent comments with local LLM specified
 reddacted user spez \
   --limit 5 \
-  --local-llm "localhost:11434" \
+  --local-llm "http://localhost:11434" \
   --model "qwen2.5:3b" \
-  --sort new \
-  --output-file "spez_analysis.txt"
+  --sort new
 
 # Analyze controversial comments with OpenAI
 export OPENAI_API_KEY="your-api-key"
@@ -133,7 +132,7 @@ reddacted user spez \
 
 # Analyze a specific subreddit post with PII filter disabled
 reddacted listing r/privacy abc123 \
-  --local-llm "localhost:11434" \
+  --local-llm "http://localhost:11434" \
   --model "qwen2.5:3b" \
   --disable-pii \
   --sort new
