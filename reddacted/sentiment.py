@@ -114,6 +114,7 @@ class Sentiment:
         else:
             logger.debug_with_context("Authentication not enabled")
         self.formatter = ResultsFormatter()
+        self.formatter.pii_only = self.pii_only
         self.formatter.print_config(
             auth_enabled, pii_enabled, llm_config, self.pii_only, self.limit, self.sort
         )
