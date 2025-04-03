@@ -1,35 +1,21 @@
-"""
-Reddit CLI for PII Detection and Sentiment Analysis
-
-This module provides a command-line interface for analyzing Reddit content,
-detecting PII, and managing comments using both local and OpenAI LLMs.
-"""
-
 import sys
 import os
-import getpass
 import logging
 import argparse
-from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional, Callable
 
-import requests
-from rich.console import Console
-from rich.prompt import Prompt
-from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 
-from reddacted.utils.logging import get_logger, with_logging, set_global_logging_level
+from rich.console import Console
 from reddacted.utils.exceptions import handle_exception
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
+from .new_cli_test import ConfigApp, ENV_VARS_MAP
+from reddacted.utils.logging import set_global_logging_level, get_logger, with_logging
 
-# Initialize logging with consistent format
 set_global_logging_level(logging.INFO)
 logger = get_logger(__name__)
 console = Console(highlight=True)
 
-# Environment variables required for Reddit API authentication
 REDDIT_AUTH_VARS = [
     "REDDIT_USERNAME",
     "REDDIT_PASSWORD",
@@ -37,458 +23,328 @@ REDDIT_AUTH_VARS = [
     "REDDIT_CLIENT_SECRET",
 ]
 
-@dataclass
-class Command:
-    """Base class for all CLI commands"""
-    name: str
-    description: str
-    handler: Callable
-    arguments: List[Dict[str, Any]] = field(default_factory=list)
+@with_logging(logger)
+def handle_listing(config: Dict[str, Any]) -> None:
+    """Handle the listing command using unified config."""
+    logger.debug(f"Handling listing command with config: {config}")
+    limit = None if config.get("limit") == 0 else config.get("limit")
 
-    def setup_parser(self, parser: argparse.ArgumentParser) -> None:
-        """Configure command-specific arguments"""
-        for arg in self.arguments:
-            parser.add_argument(*arg["args"], **arg["kwargs"])
+    auth_enabled = config.get("enable_auth", False)
 
-@dataclass
-class CommandGroup:
-    """Group of related commands"""
-    name: str
-    commands: List[Command]
+    llm_config = None
+    if config.get("openai_key") or config.get("local_llm"):
+         llm_config = {
+             "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
+             "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+             "model": config.get("model"),
+         }
+         # Adjust api_base for local LLM if needed
+         if not config.get("use_openai_api") and llm_config["api_base"]:
+             base_url = llm_config["api_base"].rstrip('/')
+             if not base_url.endswith('/v1'):
+                 llm_config["api_base"] = f"{base_url}/v1"
 
-class ModifyCommand(Command):
-    """Base class for comment modification commands"""
-    def __init__(self, name: str, description: str, handler: Callable):
-        arguments = [
-            {
-                "args": ["comment_ids"],
-                "kwargs": {
-                    "help": "Comma-separated list of comment IDs to process (e.g., abc123,def456)",
-                }
-            },
-            {
-                "args": ["--batch-size"],
-                "kwargs": {
-                    "type": int,
-                    "default": 10,
-                    "help": "Number of comments to process in each API request (default: 10)",
-                }
-            }
-        ]
-        super().__init__(name=name, description=description, handler=handler, arguments=arguments)
 
-    @with_logging(logger)
-    def process_comments(self, args: argparse.Namespace, action: str) -> Dict[str, Any]:
-        """Process comments with the specified action and progress tracking"""
-        api = Reddit()
-        comment_ids = [id.strip() for id in args.comment_ids.split(",")]
-        total_comments = len(comment_ids)
+    sent = Sentiment(
+        auth_enabled=auth_enabled,
+        pii_enabled=True,
+        pii_only=config.get("pii_only", False),
+        llm_config=llm_config,
+        sort=config.get("sort", "new"),
+        limit=limit,
+        skip_text=config.get("skip_text"),
+    )
+    subreddit = config["subreddit"].replace("r/", "") if auth_enabled else config["subreddit"]
+    target = f"{subreddit}/{config['article']}"
+    console.print(f"[cyan]Analyzing listing:[/cyan] {target}")
+    sent.get_sentiment("listing", target, output_file=config.get("output_file"))
+    console.print("[green]Listing analysis complete.[/green]")
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            console=console,
-        ) as progress:
-            task = progress.add_task(f"[cyan]{action.title()} processing...", total=total_comments)
 
-            if action == "delete":
-                result = api.delete_comments(comment_ids, batch_size=args.batch_size)
-            elif action == "update":
-                result = api.update_comments(comment_ids, batch_size=args.batch_size)
-            else:
-                raise ValueError(f"Invalid action: {action}")
+@with_logging(logger)
+def handle_user(config: Dict[str, Any]) -> None:
+    """Handle the user command using unified config."""
+    logger.debug(f"Handling user command with config: {config}")
+    username = config["username"]
+    if not username:
+        console.print("[red]Error: Username is required for the user command.[/red]")
+        return
 
-            progress.update(task, completed=result["success"])
-            return result
+    console.print(f"[cyan]Analyzing user:[/cyan] u/{username}")
 
-    def format_results(self, results: Dict[str, Any], action: str) -> str:
-        """Format operation results for display"""
-        details = []
-        details.append(f"[cyan]Processed:[/] {results['processed']}")
-        details.append(f"[green]Successful:[/] {results['success']}")
-        details.append(f"[red]Failed:[/] {results['failures']}\n")
+    limit = None if config.get("limit") == 0 else config.get("limit")
+    auth_enabled = config.get("enable_auth", False)
 
-        if results.get("successful_ids"):
-            details.append(f"[green]Successfully {action.title()}d Comments:[/]")
-            for comment_id in results["successful_ids"]:
-                details.append(f"  • [dim]t1_{comment_id}[/]")
+    llm_config = None
+    if config.get("openai_key") or config.get("local_llm"):
+         llm_config = {
+             "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
+             "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+             "model": config.get("model"),
+         }
+         if not config.get("use_openai_api") and llm_config["api_base"]:
+             base_url = llm_config["api_base"].rstrip('/')
+             if not base_url.endswith('/v1'):
+                 llm_config["api_base"] = f"{base_url}/v1"
 
-        if results.get("failed_ids"):
-            details.append(f"\n[red]Failed to {action.title()} Comments:[/]")
-            for comment_id in results["failed_ids"]:
-                details.append(f"  • [dim]t1_{comment_id}[/]")
+    try:
+        sent = Sentiment(
+            auth_enabled=auth_enabled,
+            pii_enabled=True,
+            llm_config=llm_config,
+            pii_only=config.get("pii_only", False),
+            sort=config.get("sort", "new"),
+            limit=limit,
+            skip_text=config.get("skip_text"),
+        )
+        sent.get_sentiment(
+            "user",
+            username,
+            output_file=config.get("output_file"),
+            sort=config.get("sort", "new"),
+            time_filter=config.get("time", "all"),
+            text_match=config.get("text_match"),
+        )
+        console.print(f"[green]User '{username}' analysis complete.[/green]")
+    except Exception as e:
+        handle_exception(
+            e,
+            f"Failed to analyze user '{username}'\n"
+            + "Check if the user exists and is not banned/private.",
+            debug=config.get("debug", False)
+        )
+        raise
 
-        return "\n".join(details)
 
-class AnalyzeCommand(Command):
-    """Base class for Reddit analysis commands"""
-    def __init__(self, name: str, description: str, handler: Callable, extra_args: Optional[List[Dict[str, Any]]] = None):
-        arguments = [
-            {
-                "args": ["--output-file"],
-                "kwargs": {
-                    "dest": "output_file",
-                    "help": "Outputs a file with information on each sentence of the post, as well as the final score.",
-                }
-            },
-            {
-                "args": ["--enable-auth"],
-                "kwargs": {
-                    "dest": "enable_auth",
-                    "action": "store_true",
-                    "help": "Enable reddit api authentication using environment variables",
-                }
-            },
-            {
-                "args": ["--disable-pii"],
-                "kwargs": {
-                    "dest": "disable_pii",
-                    "action": "store_true",
-                    "help": "Disable PII detection in the analysis",
-                }
-            },
-            {
-                "args": ["--openai-key"],
-                "kwargs": {
-                    "dest": "openai_key",
-                    "help": "OpenAI API key for LLM-based analysis",
-                }
-            },
-            {
-                "args": ["--local-llm"],
-                "kwargs": {
-                    "dest": "local_llm",
-                    "help": "URL for local LLM endpoint (OpenAI compatible)",
-                }
-            },
-            {
-                "args": ["--openai-base"],
-                "kwargs": {
-                    "dest": "openai_base",
-                    "help": "Optional OpenAI API base URL",
-                }
-            },
-            {
-                "args": ["--model"],
-                "kwargs": {
-                    "dest": "model",
-                    "help": "OpenAI or local LLM model to use",
-                }
-            },
-            {
-                "args": ["--pii-only"],
-                "kwargs": {
-                    "dest": "pii_only",
-                    "action": "store_true",
-                    "help": "Only show comments that contain PII (0 < score < 1.0)",
-                }
-            },
-            {
-                "args": ["--limit"],
-                "kwargs": {
-                    "dest": "limit",
-                    "type": int,
-                    "default": 100,
-                    "help": "Maximum number of comments to analyze (default: 100, use 0 for unlimited)",
-                }
-            },
-            {
-                "args": ["--sort"],
-                "kwargs": {
-                    "dest": "sort",
-                    "choices": ["hot", "new", "controversial", "top"],
-                    "default": "new",
-                    "help": "Sort method for comments (default: new)",
-                }
-            },
-            {
-                "args": ["--time"],
-                "kwargs": {
-                    "dest": "time",
-                    "choices": ["all", "day", "hour", "month", "week", "year"],
-                    "default": "all",
-                    "help": "Time filter for comments (default: all)",
-                }
-            },
-            {
-                "args": ["--text-match"],
-                "kwargs": {
-                    "dest": "text_match",
-                    "help": "Search for comments containing specific text (requires authentication)",
-                }
-            },
-            {
-                "args": ["--skip-text"],
-                "kwargs": {
-                    "dest": "skip_text",
-                    "help": "Skip comments containing this text pattern",
-                }
-            },
-        ]
-        if extra_args:
-            arguments.extend(extra_args)
-        
-        super().__init__(name=name, description=description, handler=handler, arguments=arguments)
+@with_logging(logger)
+def handle_delete(config: Dict[str, Any]) -> None:
+    """Handle the delete command using unified config."""
+    logger.debug(f"Handling delete command with config: {config}")
+    if not config.get("enable_auth"):
+        console.print("[red]Error: Reddit API authentication must be enabled to delete comments.[/red]")
+        return
 
-    def check_auth_env_vars(self) -> bool:
-        """Check if all required Reddit API environment variables are set"""
-        return all(os.getenv(var) for var in REDDIT_AUTH_VARS)
+    comment_ids_str = config.get("comment_ids")
+    if not comment_ids_str:
+         console.print("[red]Error: Comment IDs are required for the delete command.[/red]")
+         return
+
+    comment_ids = [id.strip() for id in comment_ids_str.split(",")]
+    batch_size = config.get("batch_size", 10)
+
+    console.print(f"[cyan]Attempting to delete {len(comment_ids)} comments...[/cyan]")
+
+    reddit_api = Reddit(
+         username=config.get("reddit_username"),
+         password=config.get("reddit_password"),
+         client_id=config.get("reddit_client_id"),
+         client_secret=config.get("reddit_client_secret")
+    )
+
+    try:
+        result = reddit_api.delete_comments(comment_ids, batch_size=batch_size)
+
+        console.print(f"[green]Delete operation finished.[/green]")
+        console.print(f"  Processed: {result.get('processed', 0)}")
+        console.print(f"  Successful: {result.get('success', 0)}")
+        console.print(f"  Failed: {result.get('failures', 0)}") # Added missing line back
+        if result.get("successful_ids"):
+            console.print("[bold green]Successfully Deleted:[/bold green]")
+            for cid in result["successful_ids"]: console.print(f"  - t1_{cid}")
+        if result.get("failed_ids"):
+            console.print("[bold red]Failed to Delete:[/bold red]")
+            for cid in result["failed_ids"]: console.print(f"  - t1_{cid}")
+
+    except Exception as e:
+        handle_exception(e, "Failed during delete operation.", debug=config.get("debug", False))
+
+
+@with_logging(logger)
+def handle_update(config: Dict[str, Any]) -> None:
+    """Handle the update command using unified config."""
+    logger.debug(f"Handling update command with config: {config}")
+    if not config.get("enable_auth"):
+        console.print("[red]Error: Reddit API authentication must be enabled to update comments.[/red]")
+        return
+
+    comment_ids_str = config.get("comment_ids")
+    if not comment_ids_str:
+         console.print("[red]Error: Comment IDs are required for the update command.[/red]")
+         return
+
+    comment_ids = [id.strip() for id in comment_ids_str.split(",")]
+    batch_size = config.get("batch_size", 10)
+
+    console.print(f"[cyan]Attempting to update {len(comment_ids)} comments...[/cyan]")
+
+    reddit_api = Reddit(
+         username=config.get("reddit_username"),
+         password=config.get("reddit_password"),
+         client_id=config.get("reddit_client_id"),
+         client_secret=config.get("reddit_client_secret")
+    )
+
+    try:
+        result = reddit_api.update_comments(comment_ids, batch_size=batch_size)
+
+        console.print(f"[green]Update operation finished.[/green]")
+        console.print(f"  Processed: {result.get('processed', 0)}")
+        console.print(f"  Successful: {result.get('success', 0)}")
+        console.print(f"  Failed: {result.get('failures', 0)}")
+        if result.get("successful_ids"):
+            console.print("[bold blue]Successfully Updated:[/bold blue]")
+            for cid in result["successful_ids"]: console.print(f"  - t1_{cid}")
+        if result.get("failed_ids"):
+            console.print("[bold red]Failed to Update:[/bold red]")
+            for cid in result["failed_ids"]: console.print(f"  - t1_{cid}")
+
+    except Exception as e:
+         handle_exception(e, "Failed during update operation.", debug=config.get("debug", False))
+
 
 class CLI:
     """Main CLI application class"""
     def __init__(self):
         self.parser = argparse.ArgumentParser(
-            description="""
-            Reddit LLM PII & Sentiment Analysis Tool
-
-            Commands:
-            listing     Analyze a Reddit post and its comments
-            user        Analyze a user's comment history
-            delete      Delete comments by ID
-            update      Replace comment content with r/reddacted
-
-            Authentication:
-            Set these environment variables for Reddit API access:
-                REDDIT_USERNAME
-                REDDIT_PASSWORD
-                REDDIT_CLIENT_ID
-                REDDIT_CLIENT_SECRET
-
-            LLM Configuration:
-            --openai-key     OpenAI API key
-            --local-llm      Local LLM endpoint URL
-            --openai-base    Custom OpenAI API base URL
-            --model          Model name to use (default: gpt-4)
-
-            Common Options:
-            --output-file    Save detailed analysis to file
-            --enable-auth    Use Reddit API authentication
-            --disable-pii    Skip PII detection
-            --pii-only       Show only comments with PII
-            --limit          Max comments to analyze (0=unlimited)
-            --batch-size     Comments per batch for delete/update
-            --text-match     Search for comments containing specific text
-            --skip-text      Skip comments containing this text pattern
-            """,
+            description="Reddit LLM PII & Sentiment Analysis Tool (Textual UI)",
             formatter_class=argparse.RawDescriptionHelpFormatter
         )
-        self.parser.add_argument('--version', action='version', version='%(prog)s 1.0')
-        self.parser.add_argument('--debug', action='store_true', help='Enable debug logging')
+        self.parser.add_argument('--version', action='version', version='%(prog)s 2.0 (Textual)')
+        self.parser.add_argument('--debug', action='store_true', help='Enable debug logging (passed to UI)')
 
-        # Set up subcommands
-        self.subparsers = self.parser.add_subparsers(dest='command', help='Commands')
-        self.setup_commands()
+        # --- Add ALL optional config arguments to the main parser ---
+        # These will be passed as initial values to the Textual UI
+        self.parser.add_argument("--output-file", dest="output_file", help="Outputs analysis results to a file.")
+        self.parser.add_argument("--enable-auth", dest="enable_auth", action=argparse.BooleanOptionalAction, help="Pre-check 'Enable Auth' in UI or force disable.") # Use BooleanOptionalAction
+        self.parser.add_argument("--openai-key", dest="openai_key", help="OpenAI API key (passed to UI).")
+        self.parser.add_argument("--local-llm", dest="local_llm", help="URL for local LLM endpoint (passed to UI).")
+        # self.parser.add_argument("--openai-base", dest="openai_base", help="Optional OpenAI API base URL (handled by UI).") # Let UI handle this based on checkbox
+        self.parser.add_argument("--model", dest="model", help="Preferred OpenAI or local LLM model (passed to UI).")
+        self.parser.add_argument("--pii-only", dest="pii_only", action='store_true', help="Pre-check 'PII Only' in UI.")
+        self.parser.add_argument("--limit", dest="limit", type=int, help="Maximum comments to analyze (passed to UI).")
+        self.parser.add_argument("--sort", dest="sort", choices=["hot", "new", "controversial", "top"], help="Sort method for comments (passed to UI).")
+        self.parser.add_argument("--time", dest="time", choices=["all", "day", "hour", "month", "week", "year"], help="Time filter for comments (passed to UI).")
+        self.parser.add_argument("--text-match", dest="text_match", help="Search comments containing text (passed to UI).")
+        self.parser.add_argument("--skip-text", dest="skip_text", help="Skip comments containing text pattern (passed to UI).")
+        self.parser.add_argument("--batch-size", dest="batch_size", type=int, help="Comments per batch for delete/update (passed to UI).")
+        self.parser.add_argument("--use-openai-api", dest="use_openai_api", action='store_true', help="Pre-check 'Use OpenAI API' in UI.")
 
-    def setup_commands(self) -> None:
-        """Register all available commands"""
-        # Analysis commands
-        listing_cmd = AnalyzeCommand(
-            "listing",
-            "Analyze a Reddit post and its comments",
-            self.handle_listing,
-            extra_args=[
-                {"args": ["subreddit"], "kwargs": {"help": "The subreddit"}},
-                {"args": ["article"], "kwargs": {"help": "The id of the article"}},
-            ]
-        )
-        user_cmd = AnalyzeCommand(
-            "user",
-            "Analyze a user's comment history",
-            self.handle_user,
-            extra_args=[
-                {"args": ["username"], "kwargs": {"nargs": "?", "help": "The name of the user"}},
-            ]
-        )
+        # --- Subparsers for commands and their REQUIRED arguments ---
+        self.subparsers = self.parser.add_subparsers(dest='command', help='Action to perform', required=True)
 
-        # Modification commands
-        delete_cmd = ModifyCommand(
-            "delete",
-            "Delete specified Reddit comments permanently",
-            self.handle_delete
-        )
-        update_cmd = ModifyCommand(
-            "update",
-            'Replace comment content with "r/reddacted"',
-            self.handle_update
-        )
+        # Listing command
+        parser_listing = self.subparsers.add_parser('listing', help='Analyze a Reddit post and its comments')
+        parser_listing.add_argument("subreddit", help="The subreddit (e.g., news)")
+        parser_listing.add_argument("article", help="The ID of the article/post")
+        parser_listing.set_defaults(func=handle_listing)
 
-        # Register commands
-        for cmd in [listing_cmd, user_cmd, delete_cmd, update_cmd]:
-            parser = self.subparsers.add_parser(cmd.name, help=cmd.description)
-            cmd.setup_parser(parser)
-            parser.set_defaults(func=cmd.handler)
+        # User command
+        parser_user = self.subparsers.add_parser('user', help="Analyze a user's comment history")
+        parser_user.add_argument("username", help="The Reddit username")
+        parser_user.set_defaults(func=handle_user)
 
-    @staticmethod
-    def _configure_llm(args: argparse.Namespace) -> Optional[Dict[str, Any]]:
-        """Centralized LLM configuration handler"""
-        logger.debug("Configuring LLM settings")
-        if args.disable_pii:
-            return None
+        # Delete command
+        parser_delete = self.subparsers.add_parser('delete', help='Delete specified Reddit comments')
+        parser_delete.add_argument("comment_ids", help="Comma-separated list of comment IDs (e.g., abc123,def456)")
+        parser_delete.set_defaults(func=handle_delete)
 
-        if args.local_llm:
-            base_url = args.local_llm.rstrip("/v1")
-            console.print(f"[blue]Using local LLM endpoint: {base_url}[/]")
+        # Update command
+        parser_update = self.subparsers.add_parser('update', help='Replace comment content with "r/reddacted"')
+        parser_update.add_argument("comment_ids", help="Comma-separated list of comment IDs")
+        parser_update.set_defaults(func=handle_update)
 
-            try:
-                # Get available models
-                models_url = f"{base_url}/v1/models"
-                response = requests.get(models_url)
-                if response.status_code != 200:
-                    console.print(f"[red]Error: Could not fetch models: {response.status_code}[/]")
-                    return None
-                models_data = response.json()
-                available_models = [m["id"] for m in models_data.get("data", [])]
-                args.model = args.model or available_models[0]
-
-                if args.model not in available_models:
-                    console.print(f"[red]Error: Model '{args.model}' not available[/]")
-                    return None
-
-                return {
-                    "api_key": "sk-not-needed",
-                    "api_base": f"{base_url}/v1",
-                    "model": args.model,
-                    "default_headers": {"User-Agent": "Reddit-Sentiment-Analyzer"},
-                }
-
-            except Exception as e:
-                console.print(f"[red]Connection error: {str(e)}[/]")
-                return None
-
-        elif args.openai_key:
-            return {
-                "api_key": args.openai_key,
-                "api_base": args.openai_base or "https://api.openai.com/v1",
-                "model": args.model or "gpt-4",
-            }
-
-        # Prompt for configuration if none provided
-        console.print("[yellow]LLM required for PII detection[/]")
-        llm_choice = Prompt.ask("Choose LLM provider", choices=["local", "openai"], default="local")
-
-        if llm_choice == "openai":
-            args.openai_key = getpass.getpass("Enter your OpenAI API key: ")
-            return {
-                "api_key": args.openai_key,
-                "api_base": args.openai_base or "https://api.openai.com/v1",
-                "model": args.model or "gpt-4",
-            }
-        else:
-            args.local_llm = Prompt.ask(
-                "Enter local LLM endpoint URL",
-                default="http://localhost:11434"
-            )
-            return CLI._configure_llm(args)
-
-    @with_logging(logger)
-    def handle_listing(self, args: argparse.Namespace) -> None:
-        """Handle the listing command"""
-        llm_config = self._configure_llm(args)
-        limit = None if args.limit == 0 else args.limit
-
-        # Enable auth if flag is set or all env vars are present
-        auth_enabled = args.enable_auth or all(os.getenv(var) for var in REDDIT_AUTH_VARS)
-
-        sent = Sentiment(
-            auth_enabled=auth_enabled,
-            pii_enabled=not args.disable_pii,
-            pii_only=args.pii_only,
-            llm_config=llm_config,
-            sort=args.sort,
-            limit=limit,
-            skip_text=args.skip_text,
-        )
-        # Strip 'r/' prefix if present when using API
-        subreddit = args.subreddit.replace("r/", "") if auth_enabled else args.subreddit
-        sent.get_sentiment("listing", f"{subreddit}/{args.article}", output_file=args.output_file)
-
-    @with_logging(logger)
-    def handle_user(self, args: argparse.Namespace) -> None:
-        """Handle the user command"""
-        try:
-            # Prompt for username if not provided
-            if not args.username:
-                args.username = Prompt.ask("Enter Reddit username to analyze", default="spez")
-                console.print(f"[blue]Analyzing user: u/{args.username}[/]")
-
-            llm_config = self._configure_llm(args)
-            limit = None if args.limit == 0 else args.limit
-
-            # Enable auth if flag is set or all env vars are present
-            auth_enabled = args.enable_auth or all(os.getenv(var) for var in REDDIT_AUTH_VARS)
-
-            sent = Sentiment(
-                auth_enabled=auth_enabled,
-                pii_enabled=not args.disable_pii,
-                llm_config=llm_config,
-                pii_only=args.pii_only,
-                sort=args.sort,
-                limit=limit,
-                skip_text=args.skip_text,
-            )
-            sent.get_sentiment(
-                "user",
-                args.username,
-                output_file=args.output_file,
-                sort=args.sort,
-                time_filter=args.time,
-                text_match=args.text_match,
-            )
-        except Exception as e:
-            handle_exception(
-                e,
-                f"Failed to analyze user '{args.username}'\n"
-                + "Check if the user exists and is not banned/private",
-                debug=args.debug
-            )
-            raise
-
-    @with_logging(logger)
-    def handle_delete(self, args: argparse.Namespace) -> None:
-        """Handle the delete command"""
-        cmd = ModifyCommand("delete", "Delete comments", lambda x: None)
-        results = cmd.process_comments(args, "delete")
-        formatted_results = cmd.format_results(results, "delete")
-        console.print(
-            "\n",
-            Panel(formatted_results, title="[bold red]Delete Results[/]", expand=False)
-        )
-
-    @with_logging(logger)
-    def handle_update(self, args: argparse.Namespace) -> None:
-        """Handle the update command"""
-        cmd = ModifyCommand("update", "Update comments", lambda x: None)
-        results = cmd.process_comments(args, "update")
-        formatted_results = cmd.format_results(results, "update")
-        console.print(
-            "\n",
-            Panel(formatted_results, title="[bold blue]Update Results[/]", expand=False)
-        )
 
     def run(self, argv: List[str]) -> int:
-        """Run the CLI application"""
+        """Run the CLI application using the Textual UI."""
         try:
+            # Set logging level early based on --debug flag in raw argv
             if "--debug" in argv:
                 set_global_logging_level(logging.DEBUG)
+                logger.debug("Debug logging enabled.")
             else:
                 set_global_logging_level(logging.INFO)
 
+            # Parse known arguments
             args = self.parser.parse_args(argv)
-            if not args.command:
-                self.parser.print_help()
+            logger.debug(f"Parsed command args: {args}")
+
+            initial_config = {}
+
+            # 1. Load Environment Variables
+            for env_var, config_key in ENV_VARS_MAP.items():
+                value = os.getenv(env_var)
+                if value:
+                    initial_config[config_key] = value
+                    if config_key in ["reddit_username", "reddit_password", "reddit_client_id", "reddit_client_secret"]:
+                         if not initial_config.get("enable_auth_explicitly_set", False):
+                               initial_config["enable_auth"] = True
+
+
+
+            # 2. Load Optional CLI Arguments (override env vars)
+            temp_parser = argparse.ArgumentParser(add_help=False)
+            temp_parser.add_argument('--debug', action='store_true')
+            temp_parser.add_argument("--output-file", dest="output_file")
+            temp_parser.add_argument("--enable-auth", dest="enable_auth", action=argparse.BooleanOptionalAction)
+            temp_parser.add_argument("--openai-key", dest="openai_key") # Added missing line back
+            temp_parser.add_argument("--local-llm", dest="local_llm")
+            temp_parser.add_argument("--model", dest="model")
+            temp_parser.add_argument("--pii-only", dest="pii_only", action='store_true')
+            temp_parser.add_argument("--limit", dest="limit", type=int)
+            temp_parser.add_argument("--sort", dest="sort", choices=["hot", "new", "controversial", "top"])
+            temp_parser.add_argument("--time", dest="time", choices=["all", "day", "hour", "month", "week", "year"])
+            temp_parser.add_argument("--text-match", dest="text_match")
+            temp_parser.add_argument("--skip-text", dest="skip_text")
+            temp_parser.add_argument("--batch-size", dest="batch_size", type=int)
+            temp_parser.add_argument("--use-openai-api", dest="use_openai_api", action='store_true')
+
+            optional_args, _ = temp_parser.parse_known_args(argv)
+            logger.debug(f"Parsed optional CLI args for UI: {vars(optional_args)}")
+            # Update initial_config
+            for key, value in vars(optional_args).items():
+                if value is not None:
+                    initial_config[key] = value
+                    if key == "enable_auth":
+                         initial_config["enable_auth_explicitly_set"] = True
+
+
+            logger.debug(f"Initial config for UI: {initial_config}")
+
+            app = ConfigApp(initial_config=initial_config)
+            final_config = app.run() # This blocks until the user submits or quits
+
+            if final_config is None:
+                console.print("[yellow]Configuration cancelled.[/yellow]")
                 return 0
 
-            args.func(args)
+            logger.debug(f"Final config from UI: {final_config}")
+
+            # Execute Command with Final Config
+            run_config = final_config.copy()
+            run_config.update(vars(args))
+            run_config['debug'] = args.debug
+
+            logger.info(f"Executing command '{args.command}'...")
+            args.func(run_config)
+            logger.info(f"Command '{args.command}' finished.")
+
             return 0
         except Exception as e:
             command = argv[0] if argv else "unknown"
-            handle_exception(e, f"Failed to execute command '{command}'", debug="--debug" in argv)
+            is_debug = "--debug" in argv
+            handle_exception(e, f"Failed to execute command '{command}'", debug=is_debug)
             return 1
 
 def main(argv: List[str] = sys.argv[1:]) -> int:
     """Main entry point"""
+    if "--version" in argv:
+         try:
+             from reddacted.version import __version__
+             print(f"reddacted {__version__}")
+         except ImportError:
+              print("reddacted version unknown (Textual UI)")
+         return 0
+
     cli = CLI()
     return cli.run(argv)
 
