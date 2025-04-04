@@ -9,7 +9,8 @@ from rich.console import Console
 from reddacted.utils.exceptions import handle_exception
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
-from .textual_cli import ConfigApp, ENV_VARS_MAP
+from .textual_cli import ConfigApp
+from .cli_config import ENV_VARS_MAP # Import ENV_VARS_MAP from its new location
 from reddacted.utils.logging import set_global_logging_level, get_logger, with_logging
 
 set_global_logging_level(logging.INFO)
@@ -27,7 +28,9 @@ REDDIT_AUTH_VARS = [
 def handle_listing(config: Dict[str, Any]) -> None:
     """Handle the listing command using unified config."""
     logger.debug(f"Handling listing command with config: {config}")
-    limit = None if config.get("limit") == 0 else config.get("limit")
+    # Default to 20 if limit is missing, map 0 to None (unlimited)
+    limit_val = config.get("limit", 20) # Default to 20 if key is missing
+    limit = None if limit_val == 0 else limit_val
 
     auth_enabled = config.get("enable_auth", False)
 
@@ -71,7 +74,9 @@ def handle_user(config: Dict[str, Any]) -> None:
 
     console.print(f"[cyan]Analyzing user:[/cyan] u/{username}")
 
-    limit = None if config.get("limit") == 0 else config.get("limit")
+    # Default to 20 if limit is missing, map 0 to None (unlimited)
+    limit_val = config.get("limit", 20) # Default to 20 if key is missing
+    limit = None if limit_val == 0 else limit_val
     auth_enabled = config.get("enable_auth", False)
 
     llm_config = None
