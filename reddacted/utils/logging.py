@@ -8,7 +8,6 @@ T = TypeVar("T")
 LoggerType = logging.Logger
 LogLevel = Union[int, str]
 
-
 def set_global_logging_level(level: LogLevel) -> None:
     """Set the global logging level for all loggers.
 
@@ -30,6 +29,7 @@ def set_global_logging_level(level: LogLevel) -> None:
     for logger_name in root.manager.loggerDict:
         if logger_name != "httpx":  # Skip httpx as we handled it above
             logging.getLogger(logger_name).setLevel(level)
+
 
 
 def get_logger(name: str, level: LogLevel = logging.INFO) -> LoggerType:

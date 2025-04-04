@@ -146,12 +146,10 @@ class ConfigApp(App):
         Args:
             initial_config: Optional dictionary with initial values from CLI/env vars.
         """
-        logger.info_with_context("Initializing ConfigApp") # Use global logger with context
         logger.debug_with_context(f"Initial config: {initial_config}") # Use global logger with context
         
         super().__init__(*args, **kwargs)
         self.initial_config = initial_config or {}
-        logger.info_with_context("Processing initial config values") # Use global logger with context
         # Pre-process initial_config: Convert potential boolean strings/numbers to actual booleans
         for key, value in self.initial_config.items():
              if isinstance(value, str):

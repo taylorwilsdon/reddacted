@@ -104,22 +104,22 @@ class Sentiment:
             raise
         # Initialize LLM detector if config provided, independent of PII detection
         if llm_config:
-            console.print(f"[blue]Debug:[/blue] LLM Config received: {llm_config}")
+            logger.debug_with_context(f"LLM Config received: {llm_config}")
             try:
                 api_key = llm_config.get("api_key")
                 api_base = llm_config.get("api_base")
                 model = llm_config.get("model", "gpt-4o-mini")
                 
-                console.print(f"[blue]Debug:[/blue] LLM Config - API Base: {api_base}, Model: {model}")
+                logger.debug_with_context(f"LLM Config - API Base: {api_base}, Model: {model}")
                 # Initialize LLM detector if we have sufficient configuration
                 if not model:
-                    console.print("[yellow]Warning:[/yellow] No model specified - LLM analysis disabled")
+                    logger.warning_with_context("No model specified - LLM analysis disabled")
                     self.llm_detector = None
                 elif not api_base:
-                    console.print("[red]Error:[/red] Missing API base URL - required for both local and OpenAI")
+                    logger.error_with_context("Missing API base URL - required for both local and OpenAI")
                     self.llm_detector = None
                 elif api_base == "https://api.openai.com/v1" and not api_key:
-                    console.print("[red]Error:[/red] Missing API key - required for OpenAI API")
+                    logger.error_with_context("Missing API key - required for OpenAI API")
                     self.llm_detector = None
                 else:
                     self.llm_detector = LLMDetector(
@@ -127,12 +127,12 @@ class Sentiment:
                         api_base=api_base,
                         model=model,
                     )
-                    console.print("[green]Success:[/green] LLM Detector initialized")
+                    logger.info_with_context("LLM Detector initialized")
             except Exception as e:
-                console.print(f"[red]Error:[/red] Failed to initialize LLM Detector: {str(e)}")
+                logger.error_with_context(f"Failed to initialize LLM Detector: {str(e)}")
                 self.llm_detector = None
         else:
-            console.print("[yellow]Warning:[/yellow] No LLM config provided")
+            logger.warning_with_context("No LLM config provided")
 
         if auth_enabled:
             logger.debug_with_context("Authentication enabled, initializing Reddit API")
@@ -220,7 +220,7 @@ class Sentiment:
                     if self.llm_detector:
                         _llm_batch.append(clean_comment)
                         _llm_result_indices.append(len(results) - 1) # Store index of the result we just added
-                        console.print(f"[blue]Debug:[/blue] Added comment {i} to LLM batch (size: {len(_llm_batch)})")
+                        logger.debug_with_context(f"Added comment {i} to LLM batch (size: {len(_llm_batch)})")
 
                         # Process batch if full
                         if len(_llm_batch) >= 10:
@@ -247,7 +247,7 @@ class Sentiment:
                                 _llm_batch = []
                                 _llm_result_indices = []
                     else:
-                         console.print(f"[yellow]Warning:[/yellow] Skipping LLM analysis for comment {i} - detector not initialized")
+                         logger.warning_with_context(f"Skipping LLM analysis for comment {i} - detector not initialized")
 
                     progress.update(main_task, advance=1)
                 except Exception as e:
@@ -352,17 +352,17 @@ class Sentiment:
         self, comments: List[Dict[str, Any]]
     ) -> Tuple[float, List[AnalysisResult]]:
         """Centralized analysis execution"""
-        console.print("[blue]Debug:[/blue] Starting analysis flow")
-        console.print(f"[blue]Debug:[/blue] Processing {len(comments)} comments")
-        console.print(f"[blue]Debug:[/blue] LLM Detector status: {'Initialized' if self.llm_detector else 'Not initialized'}")
+        logger.debug_with_context("Starting analysis flow")
+        logger.debug_with_context(f"Processing {len(comments)} comments")
+        logger.debug_with_context(f"LLM Detector status: {'Initialized' if self.llm_detector else 'Not initialized'}")
         
         try:
             loop = asyncio.get_running_loop()
-            console.print("[blue]Debug:[/blue] Using existing event loop")
+            logger.debug_with_context("Using existing event loop")
             # If we have a running loop, use it
             future = asyncio.ensure_future(self._analyze(comments), loop=loop)
             result = loop.run_until_complete(future)
-            console.print("[green]Success:[/green] Analysis completed")
+            logger.info_with_context("Analysis completed")
             return result
         except RuntimeError:
             # No running event loop, create a new one

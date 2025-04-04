@@ -64,7 +64,6 @@ def handle_listing(config: Dict[str, Any]) -> None:
 @with_logging(logger)
 def handle_user(config: Dict[str, Any]) -> None:
     """Handle the user command using unified config."""
-    console.print(f"[blue]Debug:[/blue] Initial config: {config}")
     username = config["username"]
     if not username:
         console.print("[red]Error: Username is required for the user command.[/red]")
@@ -106,7 +105,6 @@ def handle_user(config: Dict[str, Any]) -> None:
             base_url = llm_config["api_base"].rstrip('/')
             if not base_url.endswith('/v1'):
                 llm_config["api_base"] = f"{base_url}/v1"
-        console.print(f"[blue]Debug:[/blue] Final LLM config: {llm_config}")
 
     try:
         sent = Sentiment(
@@ -284,7 +282,6 @@ class CLI:
                 logger.debug("Debug logging enabled.")
             else:
                 set_global_logging_level(logging.INFO)
-
             # Parse known arguments
             args = self.parser.parse_args(argv)
             logger.debug(f"Parsed command args: {args}")
@@ -299,7 +296,6 @@ class CLI:
                     if config_key in ["reddit_username", "reddit_password", "reddit_client_id", "reddit_client_secret"]:
                          if not initial_config.get("enable_auth_explicitly_set", False):
                                initial_config["enable_auth"] = True
-
 
 
             # 2. Load Optional CLI Arguments (override env vars)
@@ -340,12 +336,9 @@ class CLI:
 
             logger.debug(f"Final config from UI: {final_config}")
 
-            # Execute Command with Final Config
-            # Prioritize UI config, but ensure required args and debug flag are set
             run_config = final_config.copy() # Start with UI values
 
             # Add required args from initial parse if not already in UI config
-            # (Should already be there, but good practice)
             if 'username' not in run_config and hasattr(args, 'username'):
                  run_config['username'] = args.username
             if 'subreddit' not in run_config and hasattr(args, 'subreddit'):
@@ -361,9 +354,7 @@ class CLI:
             run_config['debug'] = args.debug # Set debug flag from initial parse
 
             logger.debug(f"Final run_config before execution: {run_config}") # Add debug log
-            logger.info(f"Executing command '{args.command}'...")
             args.func(run_config) # Pass the correctly merged config
-            logger.info(f"Command '{args.command}' finished.")
 
             return 0
         except Exception as e:
