@@ -11,9 +11,13 @@ from typing import List, Dict, Any, Optional, Tuple
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from rich.console import Console
 
 # Local
 from reddacted.utils.logging import get_logger, with_logging
+
+# Initialize rich console
+console = Console()
 from reddacted.utils.exceptions import handle_exception
 from reddacted.api.scraper import Scraper
 from reddacted.api.reddit import Reddit
@@ -69,6 +73,11 @@ class Sentiment:
         # Initialize necessary variables
         self.skip_text = skip_text
         self.llm_detector = None  # Initialize llm_detector early
+        # Initialize batch processing attributes
+        self._llm_batch = []
+        self._llm_batch_indices = []
+        self._pending_results = []
+        
         try:
             self.api = Scraper()
             self.score = 0
@@ -93,19 +102,37 @@ class Sentiment:
             handle_exception(e, "Failed to initialize Sentiment analyzer")
             logger.error_with_context("Failed to initialize Sentiment analyzer")
             raise
-        # Initialize LLM detector if config provided
-        if llm_config and pii_enabled:
-            logger.debug_with_context("Initializing LLM Detector")
-            self.llm_detector = LLMDetector(
-                api_key=llm_config.get("api_key"),
-                api_base=llm_config.get("api_base"),
-                model=llm_config.get("model", "gpt-4o-mini"),
-            )
-            logger.debug_with_context("LLM Detector initialized")
+        # Initialize LLM detector if config provided, independent of PII detection
+        if llm_config:
+            console.print(f"[blue]Debug:[/blue] LLM Config received: {llm_config}")
+            try:
+                api_key = llm_config.get("api_key")
+                api_base = llm_config.get("api_base")
+                model = llm_config.get("model", "gpt-4o-mini")
+                
+                console.print(f"[blue]Debug:[/blue] LLM Config - API Base: {api_base}, Model: {model}")
+                # Initialize LLM detector if we have sufficient configuration
+                if not model:
+                    console.print("[yellow]Warning:[/yellow] No model specified - LLM analysis disabled")
+                    self.llm_detector = None
+                elif not api_base:
+                    console.print("[red]Error:[/red] Missing API base URL - required for both local and OpenAI")
+                    self.llm_detector = None
+                elif api_base == "https://api.openai.com/v1" and not api_key:
+                    console.print("[red]Error:[/red] Missing API key - required for OpenAI API")
+                    self.llm_detector = None
+                else:
+                    self.llm_detector = LLMDetector(
+                        api_key=api_key,
+                        api_base=api_base,
+                        model=model,
+                    )
+                    console.print("[green]Success:[/green] LLM Detector initialized")
+            except Exception as e:
+                console.print(f"[red]Error:[/red] Failed to initialize LLM Detector: {str(e)}")
+                self.llm_detector = None
         else:
-            logger.debug_with_context(
-                "LLM Detector not initialized (llm_config not provided or PII detection disabled)"
-            )
+            console.print("[yellow]Warning:[/yellow] No LLM config provided")
 
         if auth_enabled:
             logger.debug_with_context("Authentication enabled, initializing Reddit API")
@@ -128,7 +155,10 @@ class Sentiment:
         logger.debug_with_context("Starting _analyze function")
         sentiment_analyzer = SentimentIntensityAnalyzer()
         final_score = 0
-        results = []
+        results: List[AnalysisResult] = [] # Final results list
+        _llm_batch: List[str] = [] # Batch of comments for LLM
+        _llm_result_indices: List[int] = [] # Indices in 'results' corresponding to _llm_batch items
+
         cleanup_regex = re.compile("<.*?>")
         total_comments = len(comments)
         progress = Progress(
@@ -169,87 +199,100 @@ class Sentiment:
                             clean_comment
                         )
                         progress.update(pii_task, visible=False)
-                        # Store comment for batch processing
-                        if not hasattr(self, "_llm_batch"):
-                            self._llm_batch = []
-                            self._llm_batch_indices = []
-                            self._pending_results = []
-                        self._llm_batch.append(clean_comment)
-                        self._llm_batch_indices.append(len(self._pending_results))
-                        # Create result with combined risk score
-                        result = AnalysisResult(
-                            comment_id=comment_data["id"],
-                            sentiment_score=score,
-                            sentiment_emoji=self._get_sentiment(score),
-                            pii_risk_score=pii_risk_score,  # Initial PII score
-                            pii_matches=pii_matches,
-                            text=clean_comment,
-                            upvotes=comment_data["upvotes"],
-                            downvotes=comment_data["downvotes"],
-                            permalink=comment_data["permalink"],
-                            llm_risk_score=0.0,
-                            llm_findings=None,
-                        )
-                        self._pending_results.append(result)
-                        # Process batch when full or at end
-                        if len(self._llm_batch) >= 10 or i == total_comments:
-                            batch_size = len(self._llm_batch)
-                            progress.update(llm_task, visible=True)
-                            progress.update(
-                                llm_task,
-                                description=f"[bold blue]🤖 Processing LLM batch[/] ([cyan]{batch_size}[/] items)",
-                            )
-                            batch_results = await self.llm_detector.analyze_batch(self._llm_batch)
-                            progress.update(
-                                llm_task,
-                                description=f"[bold green]✅ LLM batch complete[/] ([cyan]{batch_size}[/] items analyzed)",
-                            )
-                            progress.update(llm_task, visible=False)
-                            # Update pending results with batch results
-                            for batch_idx, (risk_score, findings) in zip(
-                                self._llm_batch_indices, batch_results
-                            ):
-                                result = self._pending_results[batch_idx]
-                                # Always set LLM results regardless of PII detection
-                                result.llm_risk_score = risk_score
-                                result.llm_findings = findings
-                                # Update PII risk score if LLM found PII
-                                if findings and findings.get("has_pii"):
-                                    result.pii_risk_score = max(result.pii_risk_score, risk_score)
-                                # Add this result to final results immediately
-                                results.append(result)
-                                logger.debug_with_context(f"Added result to {i} final results")
-                            # Clear batch
-                            self._llm_batch = []
-                            self._llm_batch_indices = []
-                            self._pending_results = []
-                    # Only append results directly if not using LLM
-                    if not self.llm_detector:
-                        results.append(
-                            AnalysisResult(
-                                comment_id=comment_data["id"],
-                                sentiment_score=score,
-                                sentiment_emoji=self._get_sentiment(score),
-                                pii_risk_score=pii_risk_score,
-                                pii_matches=pii_matches,
-                                text=clean_comment,
-                                upvotes=comment_data["upvotes"],
-                                downvotes=comment_data["downvotes"],
-                                permalink=comment_data["permalink"],
-                                llm_risk_score=0.0,
-                                llm_findings=None,
-                            )
-                        )
+                        
+                    # Create the initial result object
+                    result = AnalysisResult(
+                        comment_id=comment_data["id"],
+                        sentiment_score=score,
+                        sentiment_emoji=self._get_sentiment(score),
+                        pii_risk_score=pii_risk_score,
+                        pii_matches=pii_matches,
+                        text=clean_comment,
+                        upvotes=comment_data["upvotes"],
+                        downvotes=comment_data["downvotes"],
+                        permalink=comment_data["permalink"],
+                        llm_risk_score=0.0, # Placeholder
+                        llm_findings=None, # Placeholder
+                    )
+                    results.append(result) # Add initial result to final list
+
+                    # If LLM is enabled, add to batch for later processing
+                    if self.llm_detector:
+                        _llm_batch.append(clean_comment)
+                        _llm_result_indices.append(len(results) - 1) # Store index of the result we just added
+                        console.print(f"[blue]Debug:[/blue] Added comment {i} to LLM batch (size: {len(_llm_batch)})")
+
+                        # Process batch if full
+                        if len(_llm_batch) >= 10:
+                            batch_size = len(_llm_batch)
+                            try:
+                                progress.update(llm_task, visible=True)
+                                progress.update(llm_task, description=f"[bold blue]🤖 Processing LLM batch[/] ([cyan]{batch_size}[/] items)")
+                                batch_llm_results = await self.llm_detector.analyze_batch(_llm_batch)
+                                logger.debug_with_context(f"Successfully processed LLM batch of {batch_size} items")
+
+                                # Update results in place
+                                for result_idx, (llm_risk_score, findings) in zip(_llm_result_indices, batch_llm_results):
+                                    results[result_idx].llm_risk_score = llm_risk_score
+                                    results[result_idx].llm_findings = findings
+                                    if findings and findings.get("has_pii"):
+                                        results[result_idx].pii_risk_score = max(results[result_idx].pii_risk_score, llm_risk_score)
+                                logger.debug_with_context(f"Updated {batch_size} results with LLM data")
+
+                            except Exception as e:
+                                logger.error_with_context(f"Failed to process LLM batch: {str(e)}")
+                            finally:
+                                progress.update(llm_task, description=f"[bold green]✅ LLM batch complete[/] ([cyan]{batch_size}[/] items analyzed)", visible=False)
+                                # Clear batch lists for next batch
+                                _llm_batch = []
+                                _llm_result_indices = []
+                    else:
+                         console.print(f"[yellow]Warning:[/yellow] Skipping LLM analysis for comment {i} - detector not initialized")
+
                     progress.update(main_task, advance=1)
                 except Exception as e:
                     logger.error_with_context(f"Error processing comment {i}: {e}")
+                    # Ensure progress advances even on error
+                    progress.update(main_task, advance=1)
                     continue
+
+            # --- Process any remaining items in the LLM batch after the loop ---
+            if self.llm_detector and _llm_batch:
+                batch_size = len(_llm_batch)
+                try:
+                    progress.update(llm_task, visible=True)
+                    progress.update(llm_task, description=f"[bold blue]🤖 Processing final LLM batch[/] ([cyan]{batch_size}[/] items)")
+                    batch_llm_results = await self.llm_detector.analyze_batch(_llm_batch)
+                    logger.debug_with_context(f"Successfully processed final LLM batch of {batch_size} items")
+
+                    # Update results in place
+                    for result_idx, (llm_risk_score, findings) in zip(_llm_result_indices, batch_llm_results):
+                        results[result_idx].llm_risk_score = llm_risk_score
+                        results[result_idx].llm_findings = findings
+                        if findings and findings.get("has_pii"):
+                             results[result_idx].pii_risk_score = max(results[result_idx].pii_risk_score, llm_risk_score)
+                    logger.debug_with_context(f"Updated {batch_size} results with final LLM data")
+
+                except Exception as e:
+                    logger.error_with_context(f"Failed to process final LLM batch: {str(e)}")
+                finally:
+                     progress.update(llm_task, description=f"[bold green]✅ Final LLM batch complete[/] ([cyan]{batch_size}[/] items analyzed)", visible=False)
+                     # No need to clear batch lists here as they are local to the function call
+
+            # --- Calculate final score and return ---
             try:
-                rounded_final = round(final_score / len(comments), 4)
+                # Use len(results) which accurately reflects processed comments
+                num_processed = len(results)
+                if num_processed == 0:
+                     logger.warning("No comments were successfully processed.")
+                     return 0.0, []
+                # Calculate score based on processed comments' sentiment scores
+                final_score = sum(r.sentiment_score for r in results) # Recalculate final_score based on actual results
+                rounded_final = round(final_score / num_processed, 4) # Use num_processed
                 logger.debug_with_context(f"Final sentiment score calculated: {rounded_final}")
                 return rounded_final, results
-            except ZeroDivisionError:
-                logger.error_with_context("No comments found")
+            except ZeroDivisionError: # Should be caught by num_processed check, but keep for safety
+                logger.error_with_context("Division by zero error during final score calculation.")
                 return 0.0, []
 
     @with_logging(logger)
@@ -309,11 +352,22 @@ class Sentiment:
         self, comments: List[Dict[str, Any]]
     ) -> Tuple[float, List[AnalysisResult]]:
         """Centralized analysis execution"""
-        logger.debug_with_context("Running analysis flow")
-        if asyncio.get_event_loop().is_running():
-            future = asyncio.ensure_future(self._analyze(comments))
-            return asyncio.get_event_loop().run_until_complete(future)
-        return asyncio.run(self._analyze(comments))
+        console.print("[blue]Debug:[/blue] Starting analysis flow")
+        console.print(f"[blue]Debug:[/blue] Processing {len(comments)} comments")
+        console.print(f"[blue]Debug:[/blue] LLM Detector status: {'Initialized' if self.llm_detector else 'Not initialized'}")
+        
+        try:
+            loop = asyncio.get_running_loop()
+            console.print("[blue]Debug:[/blue] Using existing event loop")
+            # If we have a running loop, use it
+            future = asyncio.ensure_future(self._analyze(comments), loop=loop)
+            result = loop.run_until_complete(future)
+            console.print("[green]Success:[/green] Analysis completed")
+            return result
+        except RuntimeError:
+            # No running event loop, create a new one
+            logger.debug_with_context("No running loop found, creating new one")
+            return asyncio.run(self._analyze(comments))
 
     @with_logging(logger)
     def get_sentiment(

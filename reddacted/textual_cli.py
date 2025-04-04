@@ -9,6 +9,7 @@ from textual.validation import Number, Regex
 from textual.widgets import Input, Label, Pretty, Checkbox, Select, Button
 from textual import work
 
+from reddacted.utils.logging import get_logger
 from reddacted.styles import TEXTUAL_CSS
 from reddacted.api.list_models import fetch_available_models, ModelFetchError
 
@@ -27,6 +28,7 @@ ENV_VARS_MAP = {
     # Add other relevant env vars if needed
 }
 
+logger = get_logger(__name__) # Initialize logger globally
 
 class ConfigApp(App):
     # Combine shared styles with screen-specific styles
@@ -144,8 +146,12 @@ class ConfigApp(App):
         Args:
             initial_config: Optional dictionary with initial values from CLI/env vars.
         """
+        logger.info_with_context("Initializing ConfigApp") # Use global logger with context
+        logger.debug_with_context(f"Initial config: {initial_config}") # Use global logger with context
+        
         super().__init__(*args, **kwargs)
         self.initial_config = initial_config or {}
+        logger.info_with_context("Processing initial config values") # Use global logger with context
         # Pre-process initial_config: Convert potential boolean strings/numbers to actual booleans
         for key, value in self.initial_config.items():
              if isinstance(value, str):
@@ -155,6 +161,7 @@ class ConfigApp(App):
                      self.initial_config[key] = False
              elif isinstance(value, int) and key in ["enable_auth", "pii_only", "use_openai_api", "write_to_file"]: # Add boolean keys here
                  self.initial_config[key] = bool(value)
+        logger.debug_with_context(f"Processed config: {self.initial_config}") # Use global logger with context
 
 
     def compose(self) -> ComposeResult:
@@ -298,16 +305,29 @@ class ConfigApp(App):
 
     def on_mount(self) -> None:
         """Called when the app is mounted. Loads config and fetches initial models."""
-        self.load_configuration()
-
-        llm_url_input = self.query_one("#local_llm", Input)
-        openai_key_input = self.query_one("#openai_key", Input)
-        openai_checkbox = self.query_one("#openai_api_checkbox", Checkbox)
-
-        if openai_checkbox.value and openai_key_input.value:
-            self.fetch_models_worker(llm_url_input.value, openai_key_input.value)
-        elif not openai_checkbox.value and llm_url_input.value and llm_url_input.is_valid:
-             self.fetch_models_worker(llm_url_input.value)
+        logger.info_with_context("App mounting - starting configuration load") # Use global logger with context
+        
+        try:
+            self.load_configuration()
+            logger.info_with_context("Configuration loaded successfully") # Use global logger with context
+            
+            llm_url_input = self.query_one("#local_llm", Input)
+            openai_key_input = self.query_one("#openai_key", Input)
+            openai_checkbox = self.query_one("#openai_api_checkbox", Checkbox)
+            
+            logger.debug_with_context(f"LLM URL: {llm_url_input.value}, OpenAI Checkbox: {openai_checkbox.value}") # Use global logger with context
+            
+            if openai_checkbox.value and openai_key_input.value:
+                logger.info_with_context("Fetching OpenAI models") # Use global logger with context
+                self.fetch_models_worker(llm_url_input.value, openai_key_input.value)
+            elif not openai_checkbox.value and llm_url_input.value and llm_url_input.is_valid:
+                logger.info_with_context("Fetching local LLM models") # Use global logger with context
+                self.fetch_models_worker(llm_url_input.value)
+            else:
+                logger.info_with_context("Skipping model fetch - conditions not met") # Use global logger with context
+        except Exception as e:
+            logger.error_with_context(f"Error during app mount: {str(e)}", exc_info=True) # Use global logger with context
+            raise
 
     def load_configuration(self) -> None:
         """Loads configuration from file and merges initial config from CLI/env."""
@@ -398,40 +418,57 @@ class ConfigApp(App):
     @work(exclusive=True, thread=True)
     def fetch_models_worker(self, base_url: str, api_key: Optional[str] = None) -> None:
         """Worker to fetch models in the background."""
+        logger.info_with_context(f"Starting model fetch from {base_url}") # Use global logger with context
+        
         model_select = self.query_one("#model_select", Select)
         intended_model = self.initial_config.get("model", None)
+        logger.debug_with_context(f"Intended model from config: {intended_model}") # Use global logger with context
+        
         if intended_model is None and os.path.exists(self.CONFIG_FILE):
              try:
+                 logger.debug_with_context(f"Loading model from config file: {self.CONFIG_FILE}") # Use global logger with context
                  with open(self.CONFIG_FILE, "r") as f:
                      saved_config = json.load(f)
                      intended_model = saved_config.get("model", None)
-             except Exception:
+                 logger.debug_with_context(f"Loaded model from file: {intended_model}") # Use global logger with context
+             except Exception as e:
+                 logger.error_with_context(f"Error loading config file: {str(e)}") # Use global logger with context
                  pass
 
+        logger.info_with_context("Updating model select UI before fetch") # Use global logger with context
         model_select.disabled = True
         model_select.set_options([])
         model_select.prompt = "Fetching models..."
         model_select.clear()
 
         try:
+            logger.info_with_context("Fetching available models") # Use global logger with context
             available_models = fetch_available_models(base_url, api_key)
+            logger.debug_with_context(f"Fetched models: {available_models}") # Use global logger with context
+            
             options = [(model, model) for model in available_models]
             model_select.set_options(options)
             if options:
                 if intended_model and intended_model in available_models:
+                    logger.info_with_context(f"Setting to intended model: {intended_model}") # Use global logger with context
                     model_select.value = intended_model
                 else:
+                    logger.info_with_context(f"Setting to first available model: {options[0][1]}") # Use global logger with context
                     model_select.value = options[0][1]
                 model_select.prompt = "Select Model..."
             else:
-                 model_select.prompt = "No models found"
+                logger.warning_with_context("No models found") # Use global logger with context
+                model_select.prompt = "No models found"
             model_select.disabled = False
+            logger.info_with_context("Model fetch completed successfully") # Use global logger with context
         except ModelFetchError as e:
             self.app.notify(f"Error fetching models: {e}", severity="error", timeout=6)
+            logger.error_with_context(f"ModelFetchError: {e}") # Log error with context
             model_select.prompt = "Error fetching models"
             model_select.disabled = True
         except Exception as e:
             self.app.notify(f"Unexpected error fetching models: {e}", severity="error", timeout=6)
+            logger.error_with_context(f"Unexpected error fetching models: {e}", exc_info=True) # Log error with context
             model_select.prompt = "Error"
             model_select.disabled = True
     @on(Input.Changed)
@@ -680,20 +717,3 @@ class ConfigApp(App):
     def handle_quit(self, event: Button.Pressed) -> None:
         """Quit the application without returning results."""
         self.exit(result=None)
-
-
-# Remove the __main__ block if this file is only meant to be imported
-# app = ConfigApp()
-# if __name__ == "__main__":
-#     # Example of passing initial config for testing
-#     test_config = {
-#         "enable_auth": True,
-#         "reddit_username": "testuser",
-#         "limit": "50",
-#         "sort": "top"
-#     }
-#     final_config = app.run(initial_config=test_config)
-#     print("\n--- Final Configuration ---")
-#     import pprint
-#     pprint.pprint(final_config)
-#     print("--------------------------")

@@ -192,7 +192,7 @@ def show_results(
     """Display results using the Textual UI."""
     app = TextualResultsView(
         url=url,
-        comments=comments,
+        comments=comments, # Pass original comments list
         results=results,
         overall_score=overall_score,
         overall_sentiment=overall_sentiment,

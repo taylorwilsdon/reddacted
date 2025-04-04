@@ -93,7 +93,9 @@ class LLMDetector:
                     logger.debug_with_context(f"Using model: {self.model}")
                     tasks.append(task)
 
+                logger.info_with_context(f"Awaiting {len(tasks)} LLM analysis tasks...") # Added log
                 batch_responses = await asyncio.gather(*tasks)
+                logger.info_with_context("LLM analysis tasks completed.") # Added log
 
                 for response in batch_responses:
                     try:

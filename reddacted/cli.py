@@ -9,7 +9,7 @@ from rich.console import Console
 from reddacted.utils.exceptions import handle_exception
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
-from .new_cli_test import ConfigApp, ENV_VARS_MAP
+from .textual_cli import ConfigApp, ENV_VARS_MAP
 from reddacted.utils.logging import set_global_logging_level, get_logger, with_logging
 
 set_global_logging_level(logging.INFO)
@@ -64,7 +64,7 @@ def handle_listing(config: Dict[str, Any]) -> None:
 @with_logging(logger)
 def handle_user(config: Dict[str, Any]) -> None:
     """Handle the user command using unified config."""
-    logger.debug(f"Handling user command with config: {config}")
+    console.print(f"[blue]Debug:[/blue] Initial config: {config}")
     username = config["username"]
     if not username:
         console.print("[red]Error: Username is required for the user command.[/red]")
@@ -76,16 +76,37 @@ def handle_user(config: Dict[str, Any]) -> None:
     auth_enabled = config.get("enable_auth", False)
 
     llm_config = None
-    if config.get("openai_key") or config.get("local_llm"):
-         llm_config = {
-             "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
-             "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
-             "model": config.get("model"),
-         }
-         if not config.get("use_openai_api") and llm_config["api_base"]:
-             base_url = llm_config["api_base"].rstrip('/')
-             if not base_url.endswith('/v1'):
-                 llm_config["api_base"] = f"{base_url}/v1"
+    # Set up LLM configuration
+    llm_config = None
+    if config.get("model"):
+        # If model is specified but no LLM URL, default to local
+        if not config.get("local_llm") and not config.get("openai_key"):
+            config["local_llm"] = "http://localhost:11434"
+            console.print("[yellow]Warning:[/yellow] No LLM URL specified, defaulting to local")
+
+        # Construct LLM config with model parameter
+        llm_config = {
+            "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
+            "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+            "model": config.get("model"),
+        }
+        # Adjust api_base for local LLM if needed
+        if not config.get("use_openai_api") and llm_config["api_base"]:
+            base_url = llm_config["api_base"].rstrip('/')
+            if not base_url.endswith('/v1'):
+                llm_config["api_base"] = f"{base_url}/v1"
+
+    elif config.get("openai_key") or config.get("local_llm"):
+        llm_config = {
+            "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
+            "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+            "model": config.get("model"),
+        }
+        if not config.get("use_openai_api") and llm_config["api_base"]:
+            base_url = llm_config["api_base"].rstrip('/')
+            if not base_url.endswith('/v1'):
+                llm_config["api_base"] = f"{base_url}/v1"
+        console.print(f"[blue]Debug:[/blue] Final LLM config: {llm_config}")
 
     try:
         sent = Sentiment(
@@ -320,12 +341,28 @@ class CLI:
             logger.debug(f"Final config from UI: {final_config}")
 
             # Execute Command with Final Config
-            run_config = final_config.copy()
-            run_config.update(vars(args))
-            run_config['debug'] = args.debug
+            # Prioritize UI config, but ensure required args and debug flag are set
+            run_config = final_config.copy() # Start with UI values
 
+            # Add required args from initial parse if not already in UI config
+            # (Should already be there, but good practice)
+            if 'username' not in run_config and hasattr(args, 'username'):
+                 run_config['username'] = args.username
+            if 'subreddit' not in run_config and hasattr(args, 'subreddit'):
+                 run_config['subreddit'] = args.subreddit
+            if 'article' not in run_config and hasattr(args, 'article'):
+                 run_config['article'] = args.article
+            if 'comment_ids' not in run_config and hasattr(args, 'comment_ids'):
+                 run_config['comment_ids'] = args.comment_ids
+
+            # Ensure command and func are correctly set from initial parse
+            run_config['command'] = args.command
+            run_config['func'] = args.func
+            run_config['debug'] = args.debug # Set debug flag from initial parse
+
+            logger.debug(f"Final run_config before execution: {run_config}") # Add debug log
             logger.info(f"Executing command '{args.command}'...")
-            args.func(run_config)
+            args.func(run_config) # Pass the correctly merged config
             logger.info(f"Command '{args.command}' finished.")
 
             return 0
