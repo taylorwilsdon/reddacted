@@ -38,7 +38,7 @@ def handle_listing(config: Dict[str, Any]) -> None:
     if config.get("openai_key") or config.get("local_llm"):
          llm_config = {
              "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
-             "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com",
+             "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
              "model": config.get("model"),
          }
          # Adjust api_base for local LLM if needed
@@ -91,7 +91,7 @@ def handle_user(config: Dict[str, Any]) -> None:
         # Construct LLM config with model parameter
         llm_config = {
             "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
-            "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com",
+            "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
             "model": config.get("model"),
         }
         # Adjust api_base for local LLM if needed
@@ -103,7 +103,7 @@ def handle_user(config: Dict[str, Any]) -> None:
     elif config.get("openai_key") or config.get("local_llm"):
         llm_config = {
             "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
-            "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com",
+            "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
             "model": config.get("model"),
         }
         if not config.get("use_openai_api") and llm_config["api_base"]:
