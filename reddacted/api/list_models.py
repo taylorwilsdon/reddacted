@@ -10,7 +10,7 @@ def fetch_available_models(base_url: str, api_key: Optional[str] = None) -> List
     Fetches available LLM models from a given base URL (OpenAI compatible API).
 
     Args:
-        base_url: The base URL of the LLM API (e.g., http://localhost:11434 or https://api.openai.com).
+        base_url: The base URL of the LLM API (e.g., http://localhost:11434 or https://api.openai.com/v1).
         api_key: Optional API key required for authentication (e.g., OpenAI).
 
     Returns:

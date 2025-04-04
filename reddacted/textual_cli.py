@@ -1,21 +1,32 @@
+import json
 import os
-import time
-from typing import Optional, Dict, Any, TYPE_CHECKING
+import os.path
+from typing import Optional, Dict, Any # Added Dict, Any
 from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll, Horizontal, Container
 from textual.validation import Number, Regex
 from textual.widgets import Input, Label, Pretty, Checkbox, Select, Button
 from textual import work
+
 from reddacted.utils.logging import get_logger
 from reddacted.styles import TEXTUAL_CSS
 from reddacted.api.list_models import fetch_available_models, ModelFetchError
-import reddacted.cli_config as cli_config
-from reddacted.cli_config import URL_REGEX, VALID_SORT_OPTIONS, VALID_TIME_OPTIONS
 
-if TYPE_CHECKING:
-    from reddacted.cli_config import ConfigApp
-from reddacted.api.list_models import fetch_available_models, ModelFetchError
+VALID_SORT_OPTIONS = ["hot", "new", "controversial", "top"]
+VALID_TIME_OPTIONS = ["all", "day", "hour", "month", "week", "year"]
+
+URL_REGEX = r"^(http|https)://[^\s/$.?#].[^\s]*$"
+
+# Environment Variable Keys
+ENV_VARS_MAP = {
+    "REDDIT_USERNAME": "reddit_username",
+    "REDDIT_PASSWORD": "reddit_password",
+    "REDDIT_CLIENT_ID": "reddit_client_id",
+    "REDDIT_CLIENT_SECRET": "reddit_client_secret",
+    "OPENAI_API_KEY": "openai_key",
+    # Add other relevant env vars if needed
+}
 
 logger = get_logger(__name__) # Initialize logger globally
 
@@ -135,12 +146,20 @@ class ConfigApp(App):
         Args:
             initial_config: Optional dictionary with initial values from CLI/env vars.
         """
-        logger.debug_with_context(f"Initial config: {initial_config}")
+        logger.debug_with_context(f"Initial config: {initial_config}") # Use global logger with context
         
         super().__init__(*args, **kwargs)
         self.initial_config = initial_config or {}
-        self.model_fetch_worker = None # Initialize worker reference
-        logger.debug_with_context(f"Processed config: {self.initial_config}")
+        # Pre-process initial_config: Convert potential boolean strings/numbers to actual booleans
+        for key, value in self.initial_config.items():
+             if isinstance(value, str):
+                 if value.lower() in ('true', '1', 'yes'):
+                     self.initial_config[key] = True
+                 elif value.lower() in ('false', '0', 'no'):
+                     self.initial_config[key] = False
+             elif isinstance(value, int) and key in ["enable_auth", "pii_only", "use_openai_api", "write_to_file"]: # Add boolean keys here
+                 self.initial_config[key] = bool(value)
+        logger.debug_with_context(f"Processed config: {self.initial_config}") # Use global logger with context
 
 
     def compose(self) -> ComposeResult:
@@ -184,24 +203,23 @@ class ConfigApp(App):
                 yield Label("LLM URL:")
                 yield Input(
                     value="http://localhost:11434",
-                    validators=[Regex(cli_config.URL_REGEX, failure_description="Must be a valid URL (http/https)")],
+                    validators=[Regex(URL_REGEX, failure_description="Must be a valid URL (http/https)")],
                     id="local_llm",
                 )
             with Horizontal(id="limit-batch-row"):
                 with Container(classes="number-input-group"):
                     yield Label("Comment Limit (0 for unlimited):")
                     yield Input(
-                        placeholder="Default: 20", # Updated placeholder
+                        placeholder="Default: 100",
                         validators=[Number(minimum=0)],
                         id="limit",
                         type="integer",
-                        value="20", # Set initial value
                     )
                 with Container(classes="number-input-group"):
                     yield Label("Batch Size (for delete/update):")
                     yield Input(
                         placeholder="Default: 10",
-                        validators=[Number(minimum=1)], # Removed allow_blank
+                        validators=[Number(minimum=1)],
                         id="batch_size",
                         type="integer",
                     )
@@ -211,7 +229,7 @@ class ConfigApp(App):
                  with Container(classes="select-group"):
                     yield Label("Sort Order:")
                     yield Select(
-                        [(option.capitalize(), option) for option in cli_config.VALID_SORT_OPTIONS],
+                        [(option.capitalize(), option) for option in VALID_SORT_OPTIONS],
                         prompt="Select Sort...",
                         value="new",
                         id="sort",
@@ -220,7 +238,7 @@ class ConfigApp(App):
                  with Container(classes="select-group"):
                     yield Label("Time Filter:")
                     yield Select(
-                        [(option.capitalize(), option) for option in cli_config.VALID_TIME_OPTIONS],
+                        [(option.capitalize(), option) for option in VALID_TIME_OPTIONS],
                         prompt="Select Time...",
                         value="all",
                         id="time",
@@ -237,8 +255,8 @@ class ConfigApp(App):
             yield Pretty([], id="validation-summary")
 
             with Horizontal(id="button-row"):
-                yield Button("Save Config", id="save-button", variant="success")
-                yield Button("Submit", id="submit-button", variant="primary")
+                yield Button("Save Configuration", id="save-button", variant="success")
+                yield Button("Submit Configuration", id="submit-button", variant="primary")
                 yield Button("Quit", id="quit-button", variant="error")
 
 
@@ -281,48 +299,68 @@ class ConfigApp(App):
         else:
             pass
 
-    # CONFIG_FILE constant moved to cli_config.py
+    CONFIG_FILE = "config.json"
 
     def on_mount(self) -> None:
         """Called when the app is mounted. Loads config and fetches initial models."""
-        logger.info_with_context("App mounting - starting configuration load")
+        logger.info_with_context("App mounting - starting configuration load") # Use global logger with context
         
         try:
             self.load_configuration()
-            logger.info_with_context("Configuration loaded successfully")
+            logger.info_with_context("Configuration loaded successfully") # Use global logger with context
             
             llm_url_input = self.query_one("#local_llm", Input)
             openai_key_input = self.query_one("#openai_key", Input)
             openai_checkbox = self.query_one("#openai_api_checkbox", Checkbox)
             
-            logger.debug_with_context(f"LLM URL: {llm_url_input.value}, OpenAI Checkbox: {openai_checkbox.value}")
+            logger.debug_with_context(f"LLM URL: {llm_url_input.value}, OpenAI Checkbox: {openai_checkbox.value}") # Use global logger with context
             
             if openai_checkbox.value and openai_key_input.value:
-                time.sleep(1)
-                logger.info_with_context("Fetching OpenAI models")
-                self.model_fetch_worker = self.fetch_models_worker(llm_url_input.value, openai_key_input.value)
+                logger.info_with_context("Fetching OpenAI models") # Use global logger with context
+                self.fetch_models_worker(llm_url_input.value, openai_key_input.value)
             elif not openai_checkbox.value and llm_url_input.value and llm_url_input.is_valid:
-                logger.info_with_context("Fetching local LLM models")
-                self.model_fetch_worker = self.fetch_models_worker(llm_url_input.value)
+                logger.info_with_context("Fetching local LLM models") # Use global logger with context
+                self.fetch_models_worker(llm_url_input.value)
             else:
-                logger.info_with_context("Skipping model fetch - conditions not met")
+                logger.info_with_context("Skipping model fetch - conditions not met") # Use global logger with context
         except Exception as e:
-            logger.error_with_context(f"Error during app mount: {str(e)}", exc_info=True)
+            logger.error_with_context(f"Error during app mount: {str(e)}", exc_info=True) # Use global logger with context
             raise
 
     def load_configuration(self) -> None:
-        """Loads configuration using cli_config and populates UI."""
-        # Load from file using cli_config
-        file_config, load_notification = cli_config.load_config_from_file(cli_config.CONFIG_FILE)
-        if load_notification:
-            severity = "error" if "Error" in load_notification else "information"
-            title = "Config Load Error" if "Error" in load_notification else "Config Load"
-            # Revert timeout change
-            self.app.notify(load_notification, severity=severity, title=title)
+        """Loads configuration from file and merges initial config from CLI/env."""
+        config_values = {}
+        # Load from file if exists
+        if os.path.exists(self.CONFIG_FILE):
+            try:
+                with open(self.CONFIG_FILE, "r") as f:
+                    config_values = json.load(f)
+                self.app.notify("Configuration loaded from file.", title="Config Load")
+            except json.JSONDecodeError:
+                self.app.notify(f"Error decoding '{self.CONFIG_FILE}'. Using defaults.", severity="error", title="Config Load Error")
+                config_values = {}
+            except Exception as e:
+                self.app.notify(f"Error loading config file: {e}", severity="error", title="Config Load Error")
+                config_values = {}
+        else:
+             self.app.notify("No configuration file found. Using defaults.", title="Config Load")
 
-        # Merge file config with initial config (CLI/env) using cli_config
-        # self.initial_config is set in __init__
-        config_values = cli_config.merge_configs(file_config, self.initial_config)
+        # Merge initial_config (CLI/env vars) - these take precedence
+        processed_initial_config = {}
+        for key, value in self.initial_config.items():
+            if isinstance(value, str):
+                if value.lower() in ('true', '1', 'yes'):
+                    processed_initial_config[key] = True
+                elif value.lower() in ('false', '0', 'no'):
+                    processed_initial_config[key] = False
+                else:
+                    processed_initial_config[key] = value
+            elif isinstance(value, int) and key in ["enable_auth", "pii_only", "use_openai_api", "write_to_file"]:
+                 processed_initial_config[key] = bool(value)
+            else:
+                 processed_initial_config[key] = value
+
+        config_values.update(processed_initial_config)
 
         # Populate UI elements using the final merged config_values
         try:
@@ -355,16 +393,14 @@ class ConfigApp(App):
             self.query_one("#openai_key", Input).value = str(config_values.get("openai_key", ""))
             llm_input = self.query_one("#local_llm", Input)
             if openai_cb.value:
-                 llm_input.value = str(config_values.get("local_llm", "https://api.openai.com"))
+                 llm_input.value = str(config_values.get("local_llm", "https://api.openai.com/v1"))
                  llm_input.disabled = True
             else:
                  llm_input.value = str(config_values.get("local_llm", "http://localhost:11434"))
                  llm_input.disabled = False
 
 
-            # Set default value for limit to 20 if not present in config
-            self.query_one("#limit", Input).value = str(config_values.get("limit", "20"))
-            # Batch size can be empty, so load "" if not present
+            self.query_one("#limit", Input).value = str(config_values.get("limit", ""))
             self.query_one("#batch_size", Input).value = str(config_values.get("batch_size", ""))
             self.query_one("#text_match", Input).value = str(config_values.get("text_match", ""))
             self.query_one("#skip_text", Input).value = str(config_values.get("skip_text", ""))
@@ -380,57 +416,57 @@ class ConfigApp(App):
     @work(exclusive=True, thread=True)
     def fetch_models_worker(self, base_url: str, api_key: Optional[str] = None) -> None:
         """Worker to fetch models in the background."""
-        logger.info_with_context(f"Starting model fetch from {base_url}")
+        logger.info_with_context(f"Starting model fetch from {base_url}") # Use global logger with context
         
         model_select = self.query_one("#model_select", Select)
         intended_model = self.initial_config.get("model", None)
-        logger.debug_with_context(f"Intended model from config: {intended_model}")
+        logger.debug_with_context(f"Intended model from config: {intended_model}") # Use global logger with context
         
-        if intended_model is None and os.path.exists(cli_config.CONFIG_FILE):
+        if intended_model is None and os.path.exists(self.CONFIG_FILE):
              try:
-                 logger.debug_with_context(f"Loading model from config file: {cli_config.CONFIG_FILE}")
-                 with open(cli_config.CONFIG_FILE, "r") as f:
+                 logger.debug_with_context(f"Loading model from config file: {self.CONFIG_FILE}") # Use global logger with context
+                 with open(self.CONFIG_FILE, "r") as f:
                      saved_config = json.load(f)
                      intended_model = saved_config.get("model", None)
-                 logger.debug_with_context(f"Loaded model from file: {intended_model}")
+                 logger.debug_with_context(f"Loaded model from file: {intended_model}") # Use global logger with context
              except Exception as e:
-                 logger.error_with_context(f"Error loading config file: {str(e)}")
+                 logger.error_with_context(f"Error loading config file: {str(e)}") # Use global logger with context
                  pass
 
-        logger.info_with_context("Updating model select UI before fetch")
+        logger.info_with_context("Updating model select UI before fetch") # Use global logger with context
         model_select.disabled = True
         model_select.set_options([])
         model_select.prompt = "Fetching models..."
         model_select.clear()
 
         try:
-            logger.info_with_context("Fetching available models")
+            logger.info_with_context("Fetching available models") # Use global logger with context
             available_models = fetch_available_models(base_url, api_key)
-            logger.debug_with_context(f"Fetched models: {available_models}")
+            logger.debug_with_context(f"Fetched models: {available_models}") # Use global logger with context
             
             options = [(model, model) for model in available_models]
             model_select.set_options(options)
             if options:
                 if intended_model and intended_model in available_models:
-                    logger.info_with_context(f"Setting to intended model: {intended_model}")
+                    logger.info_with_context(f"Setting to intended model: {intended_model}") # Use global logger with context
                     model_select.value = intended_model
                 else:
-                    logger.info_with_context(f"Setting to first available model: {options[0][1]}")
+                    logger.info_with_context(f"Setting to first available model: {options[0][1]}") # Use global logger with context
                     model_select.value = options[0][1]
                 model_select.prompt = "Select Model..."
             else:
-                logger.warning_with_context("No models found")
+                logger.warning_with_context("No models found") # Use global logger with context
                 model_select.prompt = "No models found"
             model_select.disabled = False
-            logger.info_with_context("Model fetch completed successfully")
+            logger.info_with_context("Model fetch completed successfully") # Use global logger with context
         except ModelFetchError as e:
             self.app.notify(f"Error fetching models: {e}", severity="error", timeout=6)
-            logger.error_with_context(f"ModelFetchError: {e}")
+            logger.error_with_context(f"ModelFetchError: {e}") # Log error with context
             model_select.prompt = "Error fetching models"
             model_select.disabled = True
         except Exception as e:
             self.app.notify(f"Unexpected error fetching models: {e}", severity="error", timeout=6)
-            logger.error_with_context(f"Unexpected error fetching models: {e}", exc_info=True)
+            logger.error_with_context(f"Unexpected error fetching models: {e}", exc_info=True) # Log error with context
             model_select.prompt = "Error"
             model_select.disabled = True
     @on(Input.Changed)
@@ -477,14 +513,14 @@ class ConfigApp(App):
 
         if event.value:
             # If checkbox is checked, set the URL to OpenAI's default and disable editing
-            llm_url_input.value = "https://api.openai.com"
+            llm_url_input.value = "https://api.openai.com/v1"
             llm_url_input.disabled = True
             api_key = openai_key_input.value.strip()
             if api_key:
                 self.fetch_models_worker(llm_url_input.value, api_key)
             else:
                 model_select.set_options([])
-                model_select.clear()
+                model_select.value = None
                 model_select.prompt = "Enter API Key..."
                 model_select.disabled = True
         else:
@@ -505,6 +541,8 @@ class ConfigApp(App):
 
             llm_url_input.focus()
     
+        # _validate_all_inputs moved to be a class method
+        # Call the validation function and get the results
         is_valid, summary_messages = self._validate_all_inputs() # Call as instance method
 
         summary_widget = self.query_one("#validation-summary", Pretty)
@@ -518,10 +556,68 @@ class ConfigApp(App):
 
         return is_valid
 
-    def _validate_all_inputs(self) -> tuple[bool, list[str]]:
-        """Validate all inputs using the utility function."""
-        # Delegate validation to the cli_config module
-        return cli_config.validate_inputs(self)
+    def _validate_all_inputs(self) -> tuple[bool, list[str]]: # Corrected signature
+        """Validate all visible and required inputs."""
+        is_valid = True
+        summary_messages = []
+        for input_widget in self.query(Input):
+            if input_widget.display and not input_widget.disabled:
+                 if input_widget.validators:
+                     validation_result = input_widget.validate(input_widget.value)
+                     if validation_result is not None and not validation_result.is_valid:
+                         is_valid = False
+                         # Find label via DOM traversal instead of CSS selector
+                         label_text = input_widget.id # Default to ID
+                         try:
+                             container = input_widget.parent
+                             if container:
+                                 label_widget = container.query(Label).first()
+                                 if label_widget:
+                                     label_text = str(label_widget.renderable) # Use renderable text
+                         except Exception:
+                             pass # Keep default ID if traversal fails
+                         summary_messages.extend([f"{label_text}: {desc}" for desc in validation_result.failure_descriptions])
+                         input_widget.add_class("-invalid")
+                     else:
+                         input_widget.remove_class("-invalid")
+                 else:
+                      input_widget.remove_class("-invalid")
+
+        # Specific check for output_file if write_to_file is checked
+        output_input = self.query_one("#output_file", Input) # Define output_input locally
+        write_cb = self.query_one("#write_to_file_checkbox", Checkbox)
+        if write_cb.value and not output_input.value.strip():
+            is_valid = False
+            summary_messages.append("Output File Path: Cannot be empty when 'Write to File' is checked.")
+            output_input.add_class("-invalid")
+        elif write_cb.value:
+             output_input.remove_class("-invalid")
+
+
+        auth_cb = self.query_one("#enable_auth", Checkbox)
+        if auth_cb.value:
+            auth_fields = ["reddit_username", "reddit_password", "reddit_client_id", "reddit_client_secret"]
+            for field_id in auth_fields:
+                auth_input = self.query_one(f"#{field_id}", Input)
+                if not auth_input.value.strip():
+                    is_valid = False
+                    # Find label via DOM traversal instead of CSS selector
+                    label_text = field_id # Default to ID
+                    try:
+                        container = auth_input.parent
+                        if container:
+                            label_widget = container.query(Label).first()
+                            if label_widget:
+                                label_text = str(label_widget.renderable) # Use renderable text
+                    except Exception:
+                        pass # Keep default ID if traversal fails
+                    summary_messages.append(f"{label_text}: Cannot be empty when 'Enable Auth' is checked.")
+                    auth_input.add_class("-invalid")
+                else:
+                    auth_input.remove_class("-invalid")
+            
+            return is_valid, summary_messages
+        return is_valid, summary_messages # Ensure return happens even if auth_cb is false
 
 
     @on(Button.Pressed, "#submit-button")
@@ -571,14 +667,6 @@ class ConfigApp(App):
         config_values["sort"] = self.query_one("#sort", Select).value
         config_values["time"] = self.query_one("#time", Select).value
 
-        # Cancel the worker if it's running before exiting
-        if self.model_fetch_worker is not None and self.model_fetch_worker.is_running:
-            logger.info_with_context("Cancelling active model fetch worker before exit.")
-            try:
-                self.model_fetch_worker.cancel()
-            except Exception as e:
-                logger.error_with_context(f"Error cancelling worker: {e}")
-
         # Exit the app, returning the collected configuration
         self.exit(result=config_values)
 
@@ -613,12 +701,15 @@ class ConfigApp(App):
         config_values["sort"] = self.query_one("#sort", Select).value
         config_values["time"] = self.query_one("#time", Select).value
 
-        # --- Save to JSON file using cli_config ---
-        save_notification = cli_config.save_config_to_file(cli_config.CONFIG_FILE, config_values)
-        if save_notification:
-            severity = "error" if "Error" in save_notification else "success"
-            title = "Save Error" if "Error" in save_notification else "Save Success"
-            self.app.notify(save_notification, severity=severity, title=title)
+        # --- Save to JSON file ---
+        try:
+            with open(self.CONFIG_FILE, "w") as f:
+                json.dump(config_values, f, indent=4) # Write with indentation
+            self.app.notify(f"Configuration saved successfully to '{self.CONFIG_FILE}'.", title="Save Success")
+        except IOError as e:
+            self.app.notify(f"Error saving configuration: {e}", severity="error", title="Save Error")
+        except Exception as e: # Catch other potential errors
+             self.app.notify(f"An unexpected error occurred during save: {e}", severity="error", title="Save Error")
 
     @on(Button.Pressed, "#quit-button")
     def handle_quit(self, event: Button.Pressed) -> None:

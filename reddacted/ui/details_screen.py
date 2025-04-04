@@ -84,20 +84,9 @@ class DetailsScreen(Screen):
                     classes=f"details-has-pii-{'yes' if has_pii else 'no'}",
                 )
                 if isinstance(findings, dict):
-                    if details_raw := findings.get("details"):
+                    if details := findings.get("details"):
                         yield Label("Findings:", classes="subsection-header")
-                        # Handle case where details might be a string instead of a list
-                        details_list = []
-                        if isinstance(details_raw, str):
-                            # Split string by newlines and remove empty lines
-                            details_list = [d.strip() for d in details_raw.split('\n') if d.strip()]
-                        elif isinstance(details_raw, list):
-                            details_list = details_raw # Assume it's the correct list format
-                        else:
-                            # Log or handle unexpected type if necessary
-                            self.app.notify(f"Unexpected type for LLM findings details: {type(details_raw)}", severity="warning", title="LLM Data Warning")
-
-                        for detail in details_list:
+                        for detail in details:
                             formatted_detail = format_llm_detail(detail, self.app)
                             yield Static(
                                 "• " + formatted_detail,
