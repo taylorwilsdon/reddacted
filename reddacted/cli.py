@@ -10,7 +10,7 @@ from reddacted.utils.exceptions import handle_exception
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
 from .textual_cli import ConfigApp
-from .cli_config import ENV_VARS_MAP # Import ENV_VARS_MAP from its new location
+from .cli_config import ENV_VARS_MAP
 from reddacted.utils.logging import set_global_logging_level, get_logger, with_logging
 
 set_global_logging_level(logging.INFO)
