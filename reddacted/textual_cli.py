@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Optional, Dict, Any, TYPE_CHECKING # Added Dict, Any, TYPE_CHECKING
+from typing import Optional, Dict, Any, TYPE_CHECKING
 from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll, Horizontal, Container
@@ -10,16 +10,12 @@ from textual import work
 from reddacted.utils.logging import get_logger
 from reddacted.styles import TEXTUAL_CSS
 from reddacted.api.list_models import fetch_available_models, ModelFetchError
-# Import the new config utilities and constants
 import reddacted.cli_config as cli_config
 from reddacted.cli_config import URL_REGEX, VALID_SORT_OPTIONS, VALID_TIME_OPTIONS
 
-# Type hint for ConfigApp needed in cli_config
 if TYPE_CHECKING:
     from reddacted.cli_config import ConfigApp
 from reddacted.api.list_models import fetch_available_models, ModelFetchError
-
-# Constants moved to cli_config.py
 
 logger = get_logger(__name__) # Initialize logger globally
 
@@ -143,7 +139,7 @@ class ConfigApp(App):
         
         super().__init__(*args, **kwargs)
         self.initial_config = initial_config or {}
-        # Initial config is now processed during merge in cli_config.merge_configs
+        self.model_fetch_worker = None # Initialize worker reference
         logger.debug_with_context(f"Processed config: {self.initial_config}")
 
 
@@ -304,10 +300,10 @@ class ConfigApp(App):
             if openai_checkbox.value and openai_key_input.value:
                 time.sleep(1)
                 logger.info_with_context("Fetching OpenAI models")
-                self.fetch_models_worker(llm_url_input.value, openai_key_input.value)
+                self.model_fetch_worker = self.fetch_models_worker(llm_url_input.value, openai_key_input.value)
             elif not openai_checkbox.value and llm_url_input.value and llm_url_input.is_valid:
                 logger.info_with_context("Fetching local LLM models")
-                self.fetch_models_worker(llm_url_input.value)
+                self.model_fetch_worker = self.fetch_models_worker(llm_url_input.value)
             else:
                 logger.info_with_context("Skipping model fetch - conditions not met")
         except Exception as e:
@@ -321,6 +317,7 @@ class ConfigApp(App):
         if load_notification:
             severity = "error" if "Error" in load_notification else "information"
             title = "Config Load Error" if "Error" in load_notification else "Config Load"
+            # Revert timeout change
             self.app.notify(load_notification, severity=severity, title=title)
 
         # Merge file config with initial config (CLI/env) using cli_config
@@ -428,12 +425,12 @@ class ConfigApp(App):
             logger.info_with_context("Model fetch completed successfully")
         except ModelFetchError as e:
             self.app.notify(f"Error fetching models: {e}", severity="error", timeout=6)
-            logger.error_with_context(f"ModelFetchError: {e}") # Log error with context
+            logger.error_with_context(f"ModelFetchError: {e}")
             model_select.prompt = "Error fetching models"
             model_select.disabled = True
         except Exception as e:
             self.app.notify(f"Unexpected error fetching models: {e}", severity="error", timeout=6)
-            logger.error_with_context(f"Unexpected error fetching models: {e}", exc_info=True) # Log error with context
+            logger.error_with_context(f"Unexpected error fetching models: {e}", exc_info=True)
             model_select.prompt = "Error"
             model_select.disabled = True
     @on(Input.Changed)
@@ -508,8 +505,6 @@ class ConfigApp(App):
 
             llm_url_input.focus()
     
-        # _validate_all_inputs moved to be a class method
-        # Call the validation function and get the results
         is_valid, summary_messages = self._validate_all_inputs() # Call as instance method
 
         summary_widget = self.query_one("#validation-summary", Pretty)
@@ -575,6 +570,14 @@ class ConfigApp(App):
         # Collect Select values
         config_values["sort"] = self.query_one("#sort", Select).value
         config_values["time"] = self.query_one("#time", Select).value
+
+        # Cancel the worker if it's running before exiting
+        if self.model_fetch_worker is not None and self.model_fetch_worker.is_running:
+            logger.info_with_context("Cancelling active model fetch worker before exit.")
+            try:
+                self.model_fetch_worker.cancel()
+            except Exception as e:
+                logger.error_with_context(f"Error cancelling worker: {e}")
 
         # Exit the app, returning the collected configuration
         self.exit(result=config_values)
