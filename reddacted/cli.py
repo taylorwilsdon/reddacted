@@ -38,7 +38,7 @@ def handle_listing(config: Dict[str, Any]) -> None:
     if config.get("openai_key") or config.get("local_llm"):
          llm_config = {
              "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
-             "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+             "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com",
              "model": config.get("model"),
          }
          # Adjust api_base for local LLM if needed
@@ -91,7 +91,7 @@ def handle_user(config: Dict[str, Any]) -> None:
         # Construct LLM config with model parameter
         llm_config = {
             "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
-            "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+            "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com",
             "model": config.get("model"),
         }
         # Adjust api_base for local LLM if needed
@@ -103,7 +103,7 @@ def handle_user(config: Dict[str, Any]) -> None:
     elif config.get("openai_key") or config.get("local_llm"):
         llm_config = {
             "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
-            "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+            "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com",
             "model": config.get("model"),
         }
         if not config.get("use_openai_api") and llm_config["api_base"]:
@@ -260,11 +260,23 @@ class CLI:
         parser_listing = self.subparsers.add_parser('listing', help='Analyze a Reddit post and its comments')
         parser_listing.add_argument("subreddit", help="The subreddit (e.g., news)")
         parser_listing.add_argument("article", help="The ID of the article/post")
+        parser_listing.add_argument("--limit", dest="limit", type=int, help="Maximum items to analyze.")
+        parser_listing.add_argument("--sort", dest="sort", choices=["hot", "new", "controversial", "top"], help="Sort method for items.")
+        parser_listing.add_argument("--time", dest="time", choices=["all", "day", "hour", "month", "week", "year"], help="Time filter for items.")
+        parser_listing.add_argument("--text-match", dest="text_match", help="Search items containing text.")
+        parser_listing.add_argument("--skip-text", dest="skip_text", help="Skip items containing text pattern.")
+        parser_listing.add_argument("--pii-only", dest="pii_only", action='store_true', help="Only analyze for PII.")
         parser_listing.set_defaults(func=handle_listing)
 
         # User command
         parser_user = self.subparsers.add_parser('user', help="Analyze a user's comment history")
         parser_user.add_argument("username", help="The Reddit username")
+        parser_user.add_argument("--limit", dest="limit", type=int, help="Maximum comments to analyze.")
+        parser_user.add_argument("--sort", dest="sort", choices=["hot", "new", "controversial", "top"], help="Sort method for comments.")
+        parser_user.add_argument("--time", dest="time", choices=["all", "day", "hour", "month", "week", "year"], help="Time filter for comments.")
+        parser_user.add_argument("--text-match", dest="text_match", help="Search comments containing text.")
+        parser_user.add_argument("--skip-text", dest="skip_text", help="Skip comments containing text pattern.")
+        parser_user.add_argument("--pii-only", dest="pii_only", action='store_true', help="Only analyze for PII.")
         parser_user.set_defaults(func=handle_user)
 
         # Delete command

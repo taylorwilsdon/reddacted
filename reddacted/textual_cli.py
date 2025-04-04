@@ -1,4 +1,5 @@
 import os
+import time
 from typing import Optional, Dict, Any, TYPE_CHECKING # Added Dict, Any, TYPE_CHECKING
 from textual import on
 from textual.app import App, ComposeResult
@@ -138,12 +139,12 @@ class ConfigApp(App):
         Args:
             initial_config: Optional dictionary with initial values from CLI/env vars.
         """
-        logger.debug_with_context(f"Initial config: {initial_config}") # Use global logger with context
+        logger.debug_with_context(f"Initial config: {initial_config}")
         
         super().__init__(*args, **kwargs)
         self.initial_config = initial_config or {}
         # Initial config is now processed during merge in cli_config.merge_configs
-        logger.debug_with_context(f"Processed config: {self.initial_config}") # Use global logger with context
+        logger.debug_with_context(f"Processed config: {self.initial_config}")
 
 
     def compose(self) -> ComposeResult:
@@ -288,28 +289,29 @@ class ConfigApp(App):
 
     def on_mount(self) -> None:
         """Called when the app is mounted. Loads config and fetches initial models."""
-        logger.info_with_context("App mounting - starting configuration load") # Use global logger with context
+        logger.info_with_context("App mounting - starting configuration load")
         
         try:
             self.load_configuration()
-            logger.info_with_context("Configuration loaded successfully") # Use global logger with context
+            logger.info_with_context("Configuration loaded successfully")
             
             llm_url_input = self.query_one("#local_llm", Input)
             openai_key_input = self.query_one("#openai_key", Input)
             openai_checkbox = self.query_one("#openai_api_checkbox", Checkbox)
             
-            logger.debug_with_context(f"LLM URL: {llm_url_input.value}, OpenAI Checkbox: {openai_checkbox.value}") # Use global logger with context
+            logger.debug_with_context(f"LLM URL: {llm_url_input.value}, OpenAI Checkbox: {openai_checkbox.value}")
             
             if openai_checkbox.value and openai_key_input.value:
-                logger.info_with_context("Fetching OpenAI models") # Use global logger with context
+                time.sleep(1)
+                logger.info_with_context("Fetching OpenAI models")
                 self.fetch_models_worker(llm_url_input.value, openai_key_input.value)
             elif not openai_checkbox.value and llm_url_input.value and llm_url_input.is_valid:
-                logger.info_with_context("Fetching local LLM models") # Use global logger with context
+                logger.info_with_context("Fetching local LLM models")
                 self.fetch_models_worker(llm_url_input.value)
             else:
-                logger.info_with_context("Skipping model fetch - conditions not met") # Use global logger with context
+                logger.info_with_context("Skipping model fetch - conditions not met")
         except Exception as e:
-            logger.error_with_context(f"Error during app mount: {str(e)}", exc_info=True) # Use global logger with context
+            logger.error_with_context(f"Error during app mount: {str(e)}", exc_info=True)
             raise
 
     def load_configuration(self) -> None:
@@ -356,7 +358,7 @@ class ConfigApp(App):
             self.query_one("#openai_key", Input).value = str(config_values.get("openai_key", ""))
             llm_input = self.query_one("#local_llm", Input)
             if openai_cb.value:
-                 llm_input.value = str(config_values.get("local_llm", "https://api.openai.com/v1"))
+                 llm_input.value = str(config_values.get("local_llm", "https://api.openai.com"))
                  llm_input.disabled = True
             else:
                  llm_input.value = str(config_values.get("local_llm", "http://localhost:11434"))
@@ -381,49 +383,49 @@ class ConfigApp(App):
     @work(exclusive=True, thread=True)
     def fetch_models_worker(self, base_url: str, api_key: Optional[str] = None) -> None:
         """Worker to fetch models in the background."""
-        logger.info_with_context(f"Starting model fetch from {base_url}") # Use global logger with context
+        logger.info_with_context(f"Starting model fetch from {base_url}")
         
         model_select = self.query_one("#model_select", Select)
         intended_model = self.initial_config.get("model", None)
-        logger.debug_with_context(f"Intended model from config: {intended_model}") # Use global logger with context
+        logger.debug_with_context(f"Intended model from config: {intended_model}")
         
         if intended_model is None and os.path.exists(cli_config.CONFIG_FILE):
              try:
-                 logger.debug_with_context(f"Loading model from config file: {cli_config.CONFIG_FILE}") # Use global logger with context
+                 logger.debug_with_context(f"Loading model from config file: {cli_config.CONFIG_FILE}")
                  with open(cli_config.CONFIG_FILE, "r") as f:
                      saved_config = json.load(f)
                      intended_model = saved_config.get("model", None)
-                 logger.debug_with_context(f"Loaded model from file: {intended_model}") # Use global logger with context
+                 logger.debug_with_context(f"Loaded model from file: {intended_model}")
              except Exception as e:
-                 logger.error_with_context(f"Error loading config file: {str(e)}") # Use global logger with context
+                 logger.error_with_context(f"Error loading config file: {str(e)}")
                  pass
 
-        logger.info_with_context("Updating model select UI before fetch") # Use global logger with context
+        logger.info_with_context("Updating model select UI before fetch")
         model_select.disabled = True
         model_select.set_options([])
         model_select.prompt = "Fetching models..."
         model_select.clear()
 
         try:
-            logger.info_with_context("Fetching available models") # Use global logger with context
+            logger.info_with_context("Fetching available models")
             available_models = fetch_available_models(base_url, api_key)
-            logger.debug_with_context(f"Fetched models: {available_models}") # Use global logger with context
+            logger.debug_with_context(f"Fetched models: {available_models}")
             
             options = [(model, model) for model in available_models]
             model_select.set_options(options)
             if options:
                 if intended_model and intended_model in available_models:
-                    logger.info_with_context(f"Setting to intended model: {intended_model}") # Use global logger with context
+                    logger.info_with_context(f"Setting to intended model: {intended_model}")
                     model_select.value = intended_model
                 else:
-                    logger.info_with_context(f"Setting to first available model: {options[0][1]}") # Use global logger with context
+                    logger.info_with_context(f"Setting to first available model: {options[0][1]}")
                     model_select.value = options[0][1]
                 model_select.prompt = "Select Model..."
             else:
-                logger.warning_with_context("No models found") # Use global logger with context
+                logger.warning_with_context("No models found")
                 model_select.prompt = "No models found"
             model_select.disabled = False
-            logger.info_with_context("Model fetch completed successfully") # Use global logger with context
+            logger.info_with_context("Model fetch completed successfully")
         except ModelFetchError as e:
             self.app.notify(f"Error fetching models: {e}", severity="error", timeout=6)
             logger.error_with_context(f"ModelFetchError: {e}") # Log error with context
@@ -478,7 +480,7 @@ class ConfigApp(App):
 
         if event.value:
             # If checkbox is checked, set the URL to OpenAI's default and disable editing
-            llm_url_input.value = "https://api.openai.com/v1"
+            llm_url_input.value = "https://api.openai.com"
             llm_url_input.disabled = True
             api_key = openai_key_input.value.strip()
             if api_key:
