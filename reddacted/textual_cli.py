@@ -241,8 +241,8 @@ class ConfigApp(App):
             yield Pretty([], id="validation-summary")
 
             with Horizontal(id="button-row"):
-                yield Button("Save Configuration", id="save-button", variant="success")
-                yield Button("Submit Configuration", id="submit-button", variant="primary")
+                yield Button("Save Config", id="save-button", variant="success")
+                yield Button("Submit", id="submit-button", variant="primary")
                 yield Button("Quit", id="quit-button", variant="error")
 
 
