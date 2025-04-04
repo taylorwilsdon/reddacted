@@ -9,7 +9,8 @@ from rich.console import Console
 from reddacted.utils.exceptions import handle_exception
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
-from .textual_cli import ConfigApp, ENV_VARS_MAP
+from .textual_cli import ConfigApp
+from .cli_config import ENV_VARS_MAP # Import ENV_VARS_MAP from its new location
 from reddacted.utils.logging import set_global_logging_level, get_logger, with_logging
 
 set_global_logging_level(logging.INFO)
@@ -27,7 +28,9 @@ REDDIT_AUTH_VARS = [
 def handle_listing(config: Dict[str, Any]) -> None:
     """Handle the listing command using unified config."""
     logger.debug(f"Handling listing command with config: {config}")
-    limit = None if config.get("limit") == 0 else config.get("limit")
+    # Default to 20 if limit is missing, map 0 to None (unlimited)
+    limit_val = config.get("limit", 20) # Default to 20 if key is missing
+    limit = None if limit_val == 0 else limit_val
 
     auth_enabled = config.get("enable_auth", False)
 
@@ -71,7 +74,9 @@ def handle_user(config: Dict[str, Any]) -> None:
 
     console.print(f"[cyan]Analyzing user:[/cyan] u/{username}")
 
-    limit = None if config.get("limit") == 0 else config.get("limit")
+    # Default to 20 if limit is missing, map 0 to None (unlimited)
+    limit_val = config.get("limit", 20) # Default to 20 if key is missing
+    limit = None if limit_val == 0 else limit_val
     auth_enabled = config.get("enable_auth", False)
 
     llm_config = None
@@ -255,11 +260,23 @@ class CLI:
         parser_listing = self.subparsers.add_parser('listing', help='Analyze a Reddit post and its comments')
         parser_listing.add_argument("subreddit", help="The subreddit (e.g., news)")
         parser_listing.add_argument("article", help="The ID of the article/post")
+        parser_listing.add_argument("--limit", dest="limit", type=int, help="Maximum items to analyze.")
+        parser_listing.add_argument("--sort", dest="sort", choices=["hot", "new", "controversial", "top"], help="Sort method for items.")
+        parser_listing.add_argument("--time", dest="time", choices=["all", "day", "hour", "month", "week", "year"], help="Time filter for items.")
+        parser_listing.add_argument("--text-match", dest="text_match", help="Search items containing text.")
+        parser_listing.add_argument("--skip-text", dest="skip_text", help="Skip items containing text pattern.")
+        parser_listing.add_argument("--pii-only", dest="pii_only", action='store_true', help="Only analyze for PII.")
         parser_listing.set_defaults(func=handle_listing)
 
         # User command
         parser_user = self.subparsers.add_parser('user', help="Analyze a user's comment history")
         parser_user.add_argument("username", help="The Reddit username")
+        parser_user.add_argument("--limit", dest="limit", type=int, help="Maximum comments to analyze.")
+        parser_user.add_argument("--sort", dest="sort", choices=["hot", "new", "controversial", "top"], help="Sort method for comments.")
+        parser_user.add_argument("--time", dest="time", choices=["all", "day", "hour", "month", "week", "year"], help="Time filter for comments.")
+        parser_user.add_argument("--text-match", dest="text_match", help="Search comments containing text.")
+        parser_user.add_argument("--skip-text", dest="skip_text", help="Skip comments containing text pattern.")
+        parser_user.add_argument("--pii-only", dest="pii_only", action='store_true', help="Only analyze for PII.")
         parser_user.set_defaults(func=handle_user)
 
         # Delete command
