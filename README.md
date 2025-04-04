@@ -22,7 +22,8 @@
 </div>
 
 <div align="center">
-  <video width="800" src="https://github.com/user-attachments/assets/190c7ef4-fa9c-46a1-b8b5-7e0152c98630"></video>
+  <video width="800" src="https://github.com/user-attachments/assets/ef96ac1a-3b3b-4fb6-a912-1328b6a0d83a"></video>
+
 </div>
 
 <div align="center">
