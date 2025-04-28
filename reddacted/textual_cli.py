@@ -148,6 +148,7 @@ class ConfigApp(App):
             with Horizontal(id="boolean-options"):
                 yield Checkbox("Enable Auth", id="enable_auth")
                 yield Checkbox("PII Only", id="pii_only")
+                yield Checkbox("Use Random String", id="use_random_string")
                 yield Checkbox("Use OpenAI API", id="openai_api_checkbox")
                 yield Checkbox("Write to File", id="write_to_file_checkbox")
             with Container(id="output_file_container"):
@@ -336,7 +337,8 @@ class ConfigApp(App):
             self.call_later(self.toggle_reddit_auth_inputs, Checkbox.Changed(auth_cb, auth_cb.value))
 
             self.query_one("#pii_only", Checkbox).value = config_values.get("pii_only", False)
-
+            self.query_one("#use_random_string", Checkbox).value = config_values.get("use_random_string", False)
+            
             openai_cb = self.query_one("#openai_api_checkbox", Checkbox)
             openai_cb.value = config_values.get("use_openai_api", False)
             self.call_later(self.update_llm_url_for_openai, Checkbox.Changed(openai_cb, openai_cb.value))
@@ -537,6 +539,7 @@ class ConfigApp(App):
         config_values["write_to_file"] = self.query_one("#write_to_file_checkbox", Checkbox).value
         config_values["enable_auth"] = self.query_one("#enable_auth", Checkbox).value
         config_values["pii_only"] = self.query_one("#pii_only", Checkbox).value
+        config_values["use_random_string"] = self.query_one("#use_random_string", Checkbox).value
         config_values["use_openai_api"] = self.query_one("#openai_api_checkbox", Checkbox).value
 
         # Collect Input values
@@ -592,6 +595,7 @@ class ConfigApp(App):
         config_values["write_to_file"] = self.query_one("#write_to_file_checkbox", Checkbox).value
         config_values["enable_auth"] = self.query_one("#enable_auth", Checkbox).value
         config_values["pii_only"] = self.query_one("#pii_only", Checkbox).value
+        config_values["use_random_string"] = self.query_one("#use_random_string", Checkbox).value
         config_values["use_openai_api"] = self.query_one("#openai_api_checkbox", Checkbox).value
 
         # Collect Input values

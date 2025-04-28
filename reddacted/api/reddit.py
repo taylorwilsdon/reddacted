@@ -2,6 +2,7 @@ from types import BuiltinMethodType
 import time
 import os
 from typing import List, Dict, Any
+import uuid  # Added for random string generation
 import praw
 from reddacted.api import api
 from reddacted.utils.logging import get_logger, with_logging
@@ -25,11 +26,16 @@ class Reddit(api.API):
     reddit objects.
     """
 
-    def __init__(self):
+    def __init__(self, use_random_string=False):
         """Initialize Reddit API client. Will attempt authenticated access first,
-        falling back to read-only mode if credentials are not provided."""
+        falling back to read-only mode if credentials are not provided.
+        
+        Args:
+            use_random_string: Whether to use random UUIDs instead of standard message when updating comments.
+        """
         self.authenticated = False
         self.reddit = None  # Initialize to None by default
+        self.use_random_string = use_random_string  # Store preference for comment updates
 
         # Check for all required credentials first
         required_vars = {
@@ -109,14 +115,20 @@ class Reddit(api.API):
         return comments[:limit] if limit else comments
 
     def _process_comments(
-        self, comment_ids: list[str], action: str, batch_size: int = 10
+        self,
+        comment_ids: list[str],
+        action: str,
+        batch_size: int = 10,
+        update_content: str = None,  # Added parameter for update text
     ) -> dict[str, any]:
         """
-        Process comments in batches with rate limiting
-        :param comment_ids: List of comment IDs to process
-        :param action: Action to perform ('delete' or 'update')
-        :param batch_size: Number of comments to process per batch
-        :return: Dict with results and statistics
+        Process comments in batches with rate limiting.
+
+        :param comment_ids: List of comment IDs to process.
+        :param action: Action to perform ('delete' or 'update').
+        :param batch_size: Number of comments to process per batch.
+        :param update_content: The text to use when updating comments (only used if action='update').
+        :return: Dict with results and statistics.
         """
         logger.debug("Starting _process_comments")
         if not self.authenticated:
@@ -143,12 +155,14 @@ class Reddit(api.API):
                             results["successful_ids"].append(comment_id)
                             results["success"] += 1
                         elif action == "update":
-                            logger.debug(f"Updating comment ID {comment}")
-                            comment.edit(
-                                "This comment has been reddacted to preserve online privacy - see r/reddacted for more info"
-                            )
-                            results["successful_ids"].append(comment_id)
-                            results["success"] += 1
+                            logger.debug(f"Updating comment ID {comment} with content: '{update_content[:50]}...'")
+                            if update_content is None:
+                                # Should not happen if called via update_comments, but provides a fallback.
+                                logger.warning(f"No update_content provided for comment {comment_id}, skipping edit.")
+                            else:
+                                comment.edit(update_content)
+                                results["successful_ids"].append(comment_id)
+                                results["success"] += 1
                     except Exception as e:
                         results["failures"] += 1
                         results["failed_ids"].append(comment_id)
@@ -173,14 +187,37 @@ class Reddit(api.API):
         """
         return self._process_comments(comment_ids, "delete", batch_size)
 
-    def update_comments(self, comment_ids: list[str], batch_size: int = 10) -> dict[str, any]:
+    def update_comments(
+        self,
+        comment_ids: list[str],
+        batch_size: int = 10,
+        use_random_string: bool = None,  # Can be explicitly provided or use instance default
+    ) -> dict[str, any]:
         """
-        Update comments in batches with rate limiting to replace content with 'r/reddacted'
-        :param comment_ids: List of comment IDs to update
-        :param batch_size: Number of comments to process per batch
-        :return: Dict with results and statistics
+        Update comments in batches with rate limiting.
+
+        Replaces content either with a standard redaction message or a random UUID.
+
+        :param comment_ids: List of comment IDs to update.
+        :param batch_size: Number of comments to process per batch.
+        :param use_random_string: If True, replace content with a random UUID; otherwise, use the standard message.
+                                 If None, uses the value set during Reddit instance initialization.
+        :return: Dict with results and statistics.
         """
-        return self._process_comments(comment_ids, "update", batch_size)
+        # Use instance default if not explicitly provided
+        if use_random_string is None:
+            use_random_string = self.use_random_string
+            
+        if use_random_string:
+            content_to_write = str(uuid.uuid4())
+            logger.info(f"Updating comments with random UUIDs. Example: {content_to_write}")
+        else:
+            content_to_write = "This comment has been reddacted to preserve online privacy - see r/reddacted for more info"
+            logger.info("Updating comments with standard redaction message.")
+
+        return self._process_comments(
+            comment_ids, "update", batch_size, update_content=content_to_write
+        )
 
     @with_logging(logger)
     def search_comments(

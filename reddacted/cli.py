@@ -56,6 +56,7 @@ def handle_listing(config: Dict[str, Any]) -> None:
         sort=config.get("sort", "new"),
         limit=limit,
         skip_text=config.get("skip_text"),
+        use_random_string=config.get("use_random_string", False),
     )
     subreddit = config["subreddit"].replace("r/", "") if auth_enabled else config["subreddit"]
     target = f"{subreddit}/{config['article']}"
@@ -120,6 +121,7 @@ def handle_user(config: Dict[str, Any]) -> None:
             sort=config.get("sort", "new"),
             limit=limit,
             skip_text=config.get("skip_text"),
+            use_random_string=config.get("use_random_string", False),
         )
         sent.get_sentiment(
             "user",
@@ -201,15 +203,31 @@ def handle_update(config: Dict[str, Any]) -> None:
 
     console.print(f"[cyan]Attempting to update {len(comment_ids)} comments...[/cyan]")
 
+    # Get the use_random_string preference from config
+    use_random_string = config.get("use_random_string", False)
+    
     reddit_api = Reddit(
          username=config.get("reddit_username"),
          password=config.get("reddit_password"),
          client_id=config.get("reddit_client_id"),
-         client_secret=config.get("reddit_client_secret")
+         client_secret=config.get("reddit_client_secret"),
+         use_random_string=use_random_string
     )
 
     try:
-        result = reddit_api.update_comments(comment_ids, batch_size=batch_size)
+        # Pass the use_random_string parameter from config
+        use_random_string = config.get("use_random_string", False)
+        result = reddit_api.update_comments(
+            comment_ids,
+            batch_size=batch_size,
+            use_random_string=use_random_string
+        )
+        
+        # Log which mode was used
+        if use_random_string:
+            console.print("[cyan]Using random UUID for comment content.[/cyan]")
+        else:
+            console.print("[cyan]Using standard redaction message.[/cyan]")
 
         console.print(f"[green]Update operation finished.[/green]")
         console.print(f"  Processed: {result.get('processed', 0)}")
@@ -245,6 +263,7 @@ class CLI:
         # self.parser.add_argument("--openai-base", dest="openai_base", help="Optional OpenAI API base URL (handled by UI).") # Let UI handle this based on checkbox
         self.parser.add_argument("--model", dest="model", help="Preferred OpenAI or local LLM model (passed to UI).")
         self.parser.add_argument("--pii-only", dest="pii_only", action='store_true', help="Pre-check 'PII Only' in UI.")
+        self.parser.add_argument("--use-random-string", dest="use_random_string", action='store_true', help="Use random UUID instead of standard message when updating comments.")
         self.parser.add_argument("--limit", dest="limit", type=int, help="Maximum comments to analyze (passed to UI).")
         self.parser.add_argument("--sort", dest="sort", choices=["hot", "new", "controversial", "top"], help="Sort method for comments (passed to UI).")
         self.parser.add_argument("--time", dest="time", choices=["all", "day", "hour", "month", "week", "year"], help="Time filter for comments (passed to UI).")

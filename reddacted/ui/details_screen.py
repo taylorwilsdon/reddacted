@@ -21,14 +21,16 @@ class DetailsScreen(Screen):
         Binding("d", "delete_comment", "Delete Comment", show=True),
     ]
 
-    def __init__(self, result):
+    def __init__(self, result, use_random_string=False):
         """Initialize the details screen.
 
         Args:
             result: The AnalysisResult object containing the comment data
+            use_random_string: Whether to use random UUIDs instead of standard message
         """
         super().__init__()
         self.result = result
+        self.use_random_string = use_random_string
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the screen."""
@@ -144,11 +146,11 @@ class DetailsScreen(Screen):
 
     def action_edit_comment(self) -> None:
         """Handle editing the current comment."""
-        self.app.push_screen(CommentActionScreen(self.result.comment_id, "edit"))
+        self.app.push_screen(CommentActionScreen(self.result.comment_id, "edit", self.use_random_string))
 
     def action_delete_comment(self) -> None:
         """Handle deleting the current comment."""
-        self.app.push_screen(CommentActionScreen(self.result.comment_id, "delete"))
+        self.app.push_screen(CommentActionScreen(self.result.comment_id, "delete", self.use_random_string))
 
     def action_go_back(self) -> None:
         """Return to the results screen."""

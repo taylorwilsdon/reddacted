@@ -30,6 +30,7 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
         self.logger = get_logger(__name__)
         self.total_pii_comments = 0
         self.total_llm_pii_comments = 0
+        self.use_random_string = False  # Default to False
 
     @with_logging(logger)
     def create_progress(self) -> Progress:
@@ -124,6 +125,7 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
             results=filtered_results,
             overall_score=overall_score,
             overall_sentiment=overall_sentiment,
+            use_random_string=getattr(self, "use_random_string", False),
         )
 
     def _print_completion_message(

@@ -15,17 +15,19 @@ class CommentActionScreen(Screen):
         Binding("escape", "cancel", "Cancel", show=True),
     ]
 
-    def __init__(self, comment_id: str, action: str):
+    def __init__(self, comment_id: str, action: str, use_random_string: bool = False):
         """Initialize the action screen.
 
         Args:
             comment_id: The ID of the comment to act on
             action: Either 'edit' or 'delete'
+            use_random_string: Whether to use a random UUID instead of standard message
         """
         super().__init__()
         self.comment_id = comment_id
         self.action = action
-        self.api = Reddit()
+        self.use_random_string = use_random_string
+        self.api = Reddit(use_random_string=use_random_string)
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
@@ -54,7 +56,10 @@ class CommentActionScreen(Screen):
         status = self.query_one("#status", Static)
         try:
             if self.action == "edit":
-                result = self.api.update_comments([self.comment_id])
+                result = self.api.update_comments(
+                    [self.comment_id],
+                    use_random_string=self.use_random_string
+                )
                 action_text = "edited"
             else:  # delete
                 result = self.api.delete_comments([self.comment_id])

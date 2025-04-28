@@ -48,6 +48,7 @@ class Sentiment:
         sort="New",
         limit=100,
         skip_text=None,
+        use_random_string=False,
     ):
         """Initialize Sentiment Analysis with optional PII detection
 
@@ -136,12 +137,14 @@ class Sentiment:
 
         if auth_enabled:
             logger.debug_with_context("Authentication enabled, initializing Reddit API")
-            self.api = Reddit()
+            # Initialize Reddit with default use_random_string=False
+            self.api = Reddit(use_random_string=False)
             logger.debug_with_context("Reddit API initialized")
         else:
             logger.debug_with_context("Authentication not enabled")
         self.formatter = ResultsFormatter()
         self.formatter.pii_only = self.pii_only
+        self.formatter.use_random_string = use_random_string
         self.formatter.print_config(
             auth_enabled, pii_enabled, llm_config, self.pii_only, self.limit, self.sort
         )
