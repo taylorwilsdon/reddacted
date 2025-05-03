@@ -1,6 +1,7 @@
 from types import BuiltinMethodType
 import time
 import os
+from typing import List, Dict, Any, Optional # Added Optional
 from typing import List, Dict, Any
 import uuid  # Added for random string generation
 import praw
@@ -26,54 +27,127 @@ class Reddit(api.API):
     reddit objects.
     """
 
-    def __init__(self, use_random_string=False):
-        """Initialize Reddit API client. Will attempt authenticated access first,
-        falling back to read-only mode if credentials are not provided.
-        
+    def __init__(self, config: Optional[Dict[str, Any]] = None, use_random_string=False):
+        """Initialize Reddit API client. Prioritizes credentials from config,
+        then environment variables, falling back to read-only mode.
+
         Args:
+            config: Optional dictionary containing configuration values (including credentials).
             use_random_string: Whether to use random UUIDs instead of standard message when updating comments.
         """
         self.authenticated = False
-        self.reddit = None  # Initialize to None by default
-        self.use_random_string = use_random_string  # Store preference for comment updates
+        self.reddit = None
+        self.use_random_string = use_random_string
+        config = config or {} # Ensure config is a dict
 
-        # Check for all required credentials first
-        required_vars = {
-            "REDDIT_USERNAME": os.environ.get("REDDIT_USERNAME"),
-            "REDDIT_PASSWORD": os.environ.get("REDDIT_PASSWORD"),
-            "REDDIT_CLIENT_ID": os.environ.get("REDDIT_CLIENT_ID"),
-            "REDDIT_CLIENT_SECRET": os.environ.get("REDDIT_CLIENT_SECRET"),
-        }
+        logger.debug_with_context(f"Initializing Reddit client. Config provided: {bool(config)}, Use random string: {use_random_string}")
 
-        if None in required_vars.values():
-            missing = [k for k, v in required_vars.items() if v is None]
+        # --- Try credentials from config first ---
+        username = config.get("reddit_username")
+        password = config.get("reddit_password")
+        client_id = config.get("reddit_client_id")
+        client_secret = config.get("reddit_client_secret")
+
+        # Check if enable_auth is explicitly True in config, otherwise don't use config creds
+        auth_enabled_in_config = config.get("enable_auth", False)
+
+        if auth_enabled_in_config and all([username, password, client_id, client_secret]):
+            logger.info("Attempting authentication using credentials from configuration (auth enabled).")
+            try:
+                self.reddit = praw.Reddit(
+                    client_id=client_id,
+                    client_secret=client_secret,
+                    password=password,
+                    user_agent=f"reddacted u/{username}",
+                    username=username,
+                    check_for_async=False,
+                )
+                self.authenticated = True
+                logger.info("Successfully authenticated with Reddit API using configuration.")
+                return # Exit if successful
+            except Exception as e:
+                logger.warning(f"Authentication with config credentials failed: {e}. Falling back...")
+                # Continue to try environment variables
+        elif not auth_enabled_in_config and any([username, password, client_id, client_secret]):
+             logger.info("Credentials found in config, but 'enable_auth' is false. Skipping config auth attempt.")
+
+
+        # --- Fallback to environment variables ---
+        logger.debug("Checking environment variables for Reddit credentials.")
+        env_username = os.environ.get("REDDIT_USERNAME")
+        env_password = os.environ.get("REDDIT_PASSWORD")
+        env_client_id = os.environ.get("REDDIT_CLIENT_ID")
+        env_client_secret = os.environ.get("REDDIT_CLIENT_SECRET")
+
+        if all([env_username, env_password, env_client_id, env_client_secret]):
+            # Only use env vars if config auth wasn't explicitly enabled and successful
+            if not (auth_enabled_in_config and self.authenticated):
+                logger.info("Attempting authentication using credentials from environment variables.")
+                try:
+                    self.reddit = praw.Reddit(
+                        client_id=env_client_id,
+                        client_secret=env_client_secret,
+                        password=env_password,
+                        user_agent=f"reddacted u/{env_username}",
+                        username=env_username,
+                        check_for_async=False,
+                    )
+                    self.authenticated = True
+                    logger.info("Successfully authenticated with Reddit API using environment variables.")
+                    return # Exit if successful
+                except Exception as e:
+                    logger.warning(f"Authentication with environment variable credentials failed: {e}. Falling back...")
+                    # Continue to try read-only
+            else:
+                 logger.debug("Skipping environment variable auth attempt as config auth was enabled and successful.")
+
+        # --- Fallback to read-only mode ---
+        if not self.authenticated: # Only attempt read-only if not already authenticated
+            missing_sources = []
+            if not auth_enabled_in_config or not all([username, password, client_id, client_secret]):
+                missing_sources.append("configuration")
+            if not all([env_username, env_password, env_client_id, env_client_secret]):
+                missing_sources.append("environment variables")
+
             logger.warning(
-                f"Reddit API authentication requires environment variables: {', '.join(missing)}. "
-                "Falling back to read-only mode. Some features like comment deletion will be unavailable."
+                f"Reddit API authentication credentials not found or incomplete in { ' or '.join(missing_sources) }. "
+                "Falling back to read-only mode. Some features like comment deletion/update will be unavailable."
             )
             try:
-                # Initialize read-only client
-                self.reddit = praw.Reddit(user_agent="reddacted:read_only_client")
-                logger.info("Successfully initialized read-only Reddit client")
-            except Exception as e:
-                logger.error(f"Failed to initialize read-only client: {str(e)}")
-            return
+                # Use client_id/secret from config OR env vars if available for read-only
+                read_only_client_id = config.get("reddit_client_id") or env_client_id
+                read_only_client_secret = config.get("reddit_client_secret") or env_client_secret
 
-        logger.debug_with_context("Attempting to initialize authenticated Reddit client")
-        try:
-            # Initialize authenticated client
-            self.reddit = praw.Reddit(
-                client_id=required_vars["REDDIT_CLIENT_ID"],
-                client_secret=required_vars["REDDIT_CLIENT_SECRET"],
-                password=required_vars["REDDIT_PASSWORD"],
-                user_agent=f"reddacted u/{required_vars['REDDIT_USERNAME']}",
-                username=required_vars["REDDIT_USERNAME"],
-                check_for_async=False,
-            )
-            self.authenticated = True
-            logger.debug_with_context("Successfully authenticated with Reddit API")
-        except Exception as e:
-            handle_exception(e, "Authentication Failed")
+                if read_only_client_id and read_only_client_secret:
+                     logger.debug("Attempting read-only initialization with client_id/secret.")
+                     self.reddit = praw.Reddit(
+                         client_id=read_only_client_id,
+                         client_secret=read_only_client_secret,
+                         user_agent="reddacted:read_only_client_v3" # Updated user agent slightly
+                     )
+                     logger.info("Successfully initialized read-only Reddit client (with client ID/secret).")
+                elif read_only_client_id:
+                     logger.debug("Attempting read-only initialization with client_id only.")
+                     self.reddit = praw.Reddit(
+                         client_id=read_only_client_id,
+                         user_agent="reddacted:read_only_client_v3"
+                     )
+                     logger.info("Successfully initialized read-only Reddit client (with client ID only).")
+                else:
+                     # PRAW requires at least client_id for read-only access usually.
+                     # If neither config nor env vars provide it, initialization will likely fail here.
+                     logger.error("Cannot initialize read-only Reddit client: Missing 'client_id' in both config and environment variables.")
+                     # Optionally, raise an error or let the PRAW error propagate
+                     # raise ValueError("Missing required client_id for Reddit API access.")
+                     # For now, let PRAW handle the potential error if it occurs without client_id
+                     self.reddit = praw.Reddit(user_agent="reddacted:read_only_client_v3") # This line might fail
+                     logger.info("Attempted read-only Reddit client initialization (without client ID/secret - may fail).")
+
+
+            except Exception as e:
+                # Log the specific PRAW error if initialization fails
+                logger.error(f"Failed to initialize read-only client: {str(e)}")
+                # self.reddit remains None
 
     @with_logging(logger)
     def parse_listing(self, subreddit, article, limit=100, **kwargs):

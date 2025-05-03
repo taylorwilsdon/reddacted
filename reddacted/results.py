@@ -78,26 +78,54 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
                 raise
 
     @with_logging(logger)
-    def print_config(
-        self,
-        auth_enabled: bool,
-        pii_enabled: bool,
-        llm_config: Optional[Dict[str, Any]],
-        pii_only: bool,
-        limit: int,
-        sort: str,
-    ) -> None:
-        """Prints the active configuration."""
+    def print_config(self, config: Dict[str, Any]) -> None:
+        """Prints the active configuration using the provided config dictionary."""
         progress = self.create_progress()
+
+        # Extract values needed for panels from the config dict
+        auth_enabled = config.get("enable_auth", False)
+        pii_enabled = True # Assuming PII is always enabled for now
+        pii_only = config.get("pii_only", False)
+        limit_val = config.get("limit", 20)
+        limit = None if limit_val == 0 else limit_val
+        sort = config.get("sort", "new")
+        use_random_string = config.get("use_random_string", False) # Get from config
+
+        # Construct llm_config dict for the features panel if applicable
+        llm_config = None
+        if config.get("model"):
+            llm_config = {
+                "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
+                "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+                "model": config.get("model"),
+            }
+            # Adjust api_base for local LLM if needed (redundant with Sentiment.__init__ but safe)
+            if not config.get("use_openai_api") and llm_config.get("api_base"):
+                base_url = llm_config["api_base"].rstrip('/')
+                if not base_url.endswith('/v1'):
+                    llm_config["api_base"] = f"{base_url}/v1"
+        elif config.get("openai_key") or config.get("local_llm"):
+             llm_config = { # Handle case where URL/key provided but no model
+                "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
+                "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+                "model": None,
+            }
+             if not config.get("use_openai_api") and llm_config.get("api_base"):
+                base_url = llm_config["api_base"].rstrip('/')
+                if not base_url.endswith('/v1'):
+                    llm_config["api_base"] = f"{base_url}/v1"
+
+
         with progress:
             progress.console.print("\n[bold cyan]Active Configuration[/]")
             features_panel = self.create_features_panel(
-                auth_enabled, pii_enabled, llm_config, pii_only, limit, sort
+                auth_enabled, pii_enabled, llm_config, pii_only, limit, sort,
+                use_random_string=use_random_string # Use value from config
             )
             panels = [features_panel]
-            if auth_enabled:
-                auth_panel = self.create_auth_panel()
-                panels.append(auth_panel)
+            # Pass the full config to create_auth_panel
+            auth_panel = self.create_auth_panel(config)
+            panels.append(auth_panel)
             progress.console.print(Columns(panels))
 
     @with_logging(logger)
@@ -146,7 +174,7 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
             filename, len(comments), self.total_pii_comments, self.total_llm_pii_comments
         )
         if comment_ids:
-            actions_panel = self.create_action_panel(results)
+            actions_panel = self.create_action_panel(results, use_random_string=getattr(self, "use_random_string", False))
             progress.console.print(Group(completion_panel, actions_panel))
         else:
             progress.console.print(completion_panel)

@@ -136,8 +136,12 @@ class DetailsScreen(Screen):
 
     def on_comment_action_screen_action_completed(self, event: message.Message) -> None:
         """Handle action_completed events from CommentActionScreen."""
-        action_type = "edited" if event.action == "edit" else "deleted"
-        self.app.notify(f"Comment {self.result.comment_id} successfully {action_type}")
+        if event.action == "edit":
+            # Include random string status in notification if available
+            random_status = " with random UUID" if hasattr(event, "use_random_string") and event.use_random_string else ""
+            self.app.notify(f"Comment {self.result.comment_id} successfully edited{random_status}")
+        else:
+            self.app.notify(f"Comment {self.result.comment_id} successfully deleted")
 
         # Return to main screen by popping twice (action screen + details screen)
         self.app.pop_screen()  # Remove CommentActionScreen

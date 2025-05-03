@@ -6,6 +6,7 @@ from textual import message
 
 from rich.text import Text
 from typing import List, Optional
+import uuid  # Added for random UUID generation
 
 from reddacted.utils.analysis import AnalysisResult
 from reddacted.ui.comment_actions import CommentActionScreen
@@ -140,10 +141,16 @@ class TextualResultsView(App):
                     table.remove_row(i)
                     self.results.pop(i)
                 elif event.action == "edit":
-                    # Update the result text
-                    r.text = "r/reddacted"
-                    # Update cell in table
-                    table.update_cell(i, 2, Text("r/reddacted", style="link blue"))
+                    # Update the result text based on random string status
+                    if hasattr(event, "use_random_string") and event.use_random_string:
+                        r.text = f"[Random UUID: {uuid.uuid4()}]"
+                        # Update cell in table
+                        table.update_cell(i, 2, Text(r.text, style="link blue"))
+                    else:
+                        # Standard message
+                        r.text = "This comment has been reddacted to preserve online privacy - see r/reddacted for more info"
+                        # Update cell in table with shortened version for display
+                        table.update_cell(i, 2, Text("r/reddacted", style="link blue"))
                 break
 
     def __init__(

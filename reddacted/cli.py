@@ -48,16 +48,8 @@ def handle_listing(config: Dict[str, Any]) -> None:
                  llm_config["api_base"] = f"{base_url}/v1"
 
 
-    sent = Sentiment(
-        auth_enabled=auth_enabled,
-        pii_enabled=True,
-        pii_only=config.get("pii_only", False),
-        llm_config=llm_config,
-        sort=config.get("sort", "new"),
-        limit=limit,
-        skip_text=config.get("skip_text"),
-        use_random_string=config.get("use_random_string", False),
-    )
+    # Pass the entire config dictionary to Sentiment constructor
+    sent = Sentiment(config=config)
     subreddit = config["subreddit"].replace("r/", "") if auth_enabled else config["subreddit"]
     target = f"{subreddit}/{config['article']}"
     console.print(f"[cyan]Analyzing listing:[/cyan] {target}")
@@ -113,16 +105,8 @@ def handle_user(config: Dict[str, Any]) -> None:
                 llm_config["api_base"] = f"{base_url}/v1"
 
     try:
-        sent = Sentiment(
-            auth_enabled=auth_enabled,
-            pii_enabled=True,
-            llm_config=llm_config,
-            pii_only=config.get("pii_only", False),
-            sort=config.get("sort", "new"),
-            limit=limit,
-            skip_text=config.get("skip_text"),
-            use_random_string=config.get("use_random_string", False),
-        )
+        # Pass the entire config dictionary to Sentiment constructor
+        sent = Sentiment(config=config)
         sent.get_sentiment(
             "user",
             username,
@@ -160,12 +144,8 @@ def handle_delete(config: Dict[str, Any]) -> None:
 
     console.print(f"[cyan]Attempting to delete {len(comment_ids)} comments...[/cyan]")
 
-    reddit_api = Reddit(
-         username=config.get("reddit_username"),
-         password=config.get("reddit_password"),
-         client_id=config.get("reddit_client_id"),
-         client_secret=config.get("reddit_client_secret")
-    )
+    # Pass the entire config dictionary to the Reddit constructor
+    reddit_api = Reddit(config=config)
 
     try:
         result = reddit_api.delete_comments(comment_ids, batch_size=batch_size)
@@ -206,13 +186,8 @@ def handle_update(config: Dict[str, Any]) -> None:
     # Get the use_random_string preference from config
     use_random_string = config.get("use_random_string", False)
     
-    reddit_api = Reddit(
-         username=config.get("reddit_username"),
-         password=config.get("reddit_password"),
-         client_id=config.get("reddit_client_id"),
-         client_secret=config.get("reddit_client_secret"),
-         use_random_string=use_random_string
-    )
+    # Pass the entire config dictionary and use_random_string preference
+    reddit_api = Reddit(config=config, use_random_string=use_random_string)
 
     try:
         # Pass the use_random_string parameter from config

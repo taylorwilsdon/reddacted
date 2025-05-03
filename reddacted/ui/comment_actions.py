@@ -11,6 +11,17 @@ from reddacted.api.reddit import Reddit
 class CommentActionScreen(Screen):
     """Screen for confirming and executing comment actions."""
 
+    CSS = """
+    .random-status {
+        margin: 1 0;
+        text-align: center;
+        color: $accent;
+        background: $surface;
+        border: tall $accent;
+        padding: 0 1;
+    }
+    """
+
     BINDINGS = [
         Binding("escape", "cancel", "Cancel", show=True),
     ]
@@ -35,6 +46,12 @@ class CommentActionScreen(Screen):
         with Center():
             with Vertical():
                 yield Label(f"Are you sure you want to {action_text} comment {self.comment_id}?")
+
+                # Show random string status if editing
+                if self.action == "edit":
+                    random_status = "Using random UUID" if self.use_random_string else "Using standard message"
+                    yield Label(f"[{random_status}]", classes="random-status")
+
                 with Center():
                     yield Button("Confirm", variant="error", id="confirm")
                     yield Button("Cancel", variant="primary", id="cancel")
@@ -67,7 +84,11 @@ class CommentActionScreen(Screen):
 
             if result["success"] > 0:
                 # Notify parent to refresh
-                self.app.post_message(self.ActionCompleted(self.comment_id, self.action))
+                self.app.post_message(self.ActionCompleted(
+                    self.comment_id,
+                    self.action,
+                    use_random_string=self.use_random_string
+                ))
 
                 # Close the screen after a short delay to show success
                 def close_screen():
@@ -83,9 +104,10 @@ class CommentActionScreen(Screen):
     class ActionCompleted(message.Message):
         """Message sent when action is completed successfully."""
 
-        def __init__(self, comment_id: str, action: str):
+        def __init__(self, comment_id: str, action: str, use_random_string: bool = False):
             self.comment_id = comment_id
             self.action = action
+            self.use_random_string = use_random_string
             super().__init__()
 
         @property
