@@ -101,6 +101,9 @@ class LLMDetector:
                     try:
                         raw_response = response.choices[0].message.content.strip()
                         logger.debug_with_context(f"\n🤖 Raw LLM Response:\n{raw_response}\n")
+                        # Handle for qwen3 series thinking models
+                        if "</think>" in raw_response:
+                            raw_response = raw_response.split("</think>")[1]
                         try:
                             # First attempt direct parse, sometimes stupid LLM messes up formatting
                             analysis = json.loads(raw_response)
