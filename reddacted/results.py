@@ -1,3 +1,4 @@
+from reddacted.api.reddit import Reddit
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 

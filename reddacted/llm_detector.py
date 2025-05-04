@@ -116,7 +116,7 @@ class LLMDetector:
                                 )
                                 analysis = json.loads(json_content)
                             else:
-                                logger.debug_with_context(f"\Failed to extract json from markdown in {raw_response}\n")
+                                logger.debug_with_context(f"Failed to extract json from markdown in {raw_response}\n")
                                 raise
 
                         # Calculate risk score based on confidence and PII presence

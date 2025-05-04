@@ -1,3 +1,4 @@
+from reddacted.api.reddit import Reddit
 from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.containers import Vertical, ScrollableContainer, Horizontal
