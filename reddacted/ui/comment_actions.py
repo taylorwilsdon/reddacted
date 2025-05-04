@@ -6,21 +6,11 @@ from textual.binding import Binding
 from textual import message
 
 from reddacted.api.reddit import Reddit
+from reddacted.styles import TEXTUAL_CSS
 
 
 class CommentActionScreen(Screen):
     """Screen for confirming and executing comment actions."""
-
-    CSS = """
-    .random-status {
-        margin: 1 0;
-        text-align: center;
-        color: $accent;
-        background: $surface;
-        border: tall $accent;
-        padding: 0 1;
-    }
-    """
 
     BINDINGS = [
         Binding("escape", "cancel", "Cancel", show=True),
@@ -44,19 +34,20 @@ class CommentActionScreen(Screen):
     def compose(self) -> ComposeResult:
         """Create child widgets."""
         action_text = "edit" if self.action == "edit" else "delete"
-        with Center():
-            with Vertical():
+        # Show Reddit API status
+        api_status = "Initialized" if self.api is not None else "Not Initialized"
+
+        # Show random string status
+        random_status = "Using random UUID" if self.use_random_string else "Using standard message"
+
+        with Vertical():
+            with Center():
                 yield Label(f"Are you sure you want to {action_text} comment {self.comment_id}?")
-
-                # Show random string status if editing
-                if self.action == "edit":
-                    random_status = "Using random UUID" if self.use_random_string else "Using standard message"
-                    yield Label(f"[{random_status}]", classes="random-status")
-
-                with Center():
-                    yield Button("Confirm", variant="error", id="confirm")
-                    yield Button("Cancel", variant="primary", id="cancel")
-                yield Static("", id="status")
+                yield Label(f"[[Reddit API: {api_status}]]", classes="header-info", markup=False)
+                yield Label(f"[[{random_status}]]", classes="header-info", markup=False)
+                yield Button("Confirm", variant="error", id="confirm")
+                yield Button("Cancel", variant="primary", id="cancel")
+            yield Static("", id="status")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
