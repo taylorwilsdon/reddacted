@@ -1,11 +1,13 @@
 from types import BuiltinMethodType
 import time
 import os
+from typing import List, Dict, Any, Optional # Added Optional
 from typing import List, Dict, Any
+import uuid  # Added for random string generation
 import praw
 from reddacted.api import api
-from reddacted.utils.logging import get_logger, with_logging
-from reddacted.utils.exceptions import handle_exception
+from reddacted.utils.log_handler import get_logger, with_logging
+from reddacted.utils.log_handler import handle_exception
 
 logger = get_logger(__name__)
 
@@ -25,49 +27,129 @@ class Reddit(api.API):
     reddit objects.
     """
 
-    def __init__(self):
-        """Initialize Reddit API client. Will attempt authenticated access first,
-        falling back to read-only mode if credentials are not provided."""
+    def __init__(self, config: Optional[Dict[str, Any]] = None, use_random_string=False):
+        """Initialize Reddit API client. Prioritizes credentials from config,
+        then environment variables, falling back to read-only mode.
+
+        Args:
+            config: Optional dictionary containing configuration values (including credentials).
+            use_random_string: Whether to use random UUIDs instead of standard message when updating comments.
+        """
         self.authenticated = False
-        self.reddit = None  # Initialize to None by default
+        self.reddit = None
+        self.use_random_string = use_random_string
+        config = config or {} # Ensure config is a dict
 
-        # Check for all required credentials first
-        required_vars = {
-            "REDDIT_USERNAME": os.environ.get("REDDIT_USERNAME"),
-            "REDDIT_PASSWORD": os.environ.get("REDDIT_PASSWORD"),
-            "REDDIT_CLIENT_ID": os.environ.get("REDDIT_CLIENT_ID"),
-            "REDDIT_CLIENT_SECRET": os.environ.get("REDDIT_CLIENT_SECRET"),
-        }
+        logger.debug_with_context(f"Initializing Reddit client. Config provided: {bool(config)}, Use random string: {use_random_string}")
 
-        if None in required_vars.values():
-            missing = [k for k, v in required_vars.items() if v is None]
-            logger.warning(
-                f"Reddit API authentication requires environment variables: {', '.join(missing)}. "
-                "Falling back to read-only mode. Some features like comment deletion will be unavailable."
+        # --- Try credentials from config first ---
+        username = config.get("reddit_username")
+        password = config.get("reddit_password")
+        client_id = config.get("reddit_client_id")
+        client_secret = config.get("reddit_client_secret")
+
+        # Check if enable_auth is explicitly True in config, otherwise don't use config creds
+        auth_enabled_in_config = config.get("enable_auth", False)
+
+        if auth_enabled_in_config and all([username, password, client_id, client_secret]):
+            logger.info_with_context("Attempting authentication using credentials from configuration (auth enabled).")
+            try:
+                self.reddit = praw.Reddit(
+                    client_id=client_id,
+                    client_secret=client_secret,
+                    password=password,
+                    user_agent=f"reddacted u/{username}",
+                    username=username,
+                    check_for_async=False,
+                )
+                logger.info_with_context("Successfully authenticated with Reddit API using configuration.")
+                logger.debug_with_context(f"Granted scopes (config auth): {self.reddit.auth.scopes()}") # Log scopes
+                self.authenticated = True
+                return # Exit if successful
+            except Exception as e:
+                logger.warning_with_context(f"Authentication with config credentials failed: {e}. Falling back...")
+                # Continue to try environment variables
+        elif not auth_enabled_in_config and any([username, password, client_id, client_secret]):
+             logger.info_with_context("Credentials found in config, but 'enable_auth' is false. Skipping config auth attempt.")
+
+
+        # --- Fallback to environment variables ---
+        logger.debug_with_context("Checking environment variables for Reddit credentials.")
+        env_username = os.environ.get("REDDIT_USERNAME")
+        env_password = os.environ.get("REDDIT_PASSWORD")
+        env_client_id = os.environ.get("REDDIT_CLIENT_ID")
+        env_client_secret = os.environ.get("REDDIT_CLIENT_SECRET")
+
+        if all([env_username, env_password, env_client_id, env_client_secret]):
+            # Only use env vars if config auth wasn't explicitly enabled and successful
+            if not (auth_enabled_in_config and self.authenticated):
+                logger.info_with_context("Attempting authentication using credentials from environment variables.")
+                try:
+                    self.reddit = praw.Reddit(
+                        client_id=env_client_id,
+                        client_secret=env_client_secret,
+                        password=env_password,
+                        user_agent=f"reddacted u/{env_username}",
+                        username=env_username,
+                        check_for_async=False,
+                    )
+                    logger.info_with_context("Successfully authenticated with Reddit API using environment variables.")
+                    logger.debug_with_context(f"Granted scopes (env auth): {self.reddit.auth.scopes()}") # Log scopes
+                    self.authenticated = True
+                    return # Exit if successful
+                except Exception as e:
+                    logger.warning_with_context(f"Authentication with environment variable credentials failed: {e}. Falling back...")
+                    # Continue to try read-only
+            else:
+                 logger.debug_with_context("Skipping environment variable auth attempt as config auth was enabled and successful.")
+
+        # --- Fallback to read-only mode ---
+        if not self.authenticated: # Only attempt read-only if not already authenticated
+            missing_sources = []
+            if not auth_enabled_in_config or not all([username, password, client_id, client_secret]):
+                missing_sources.append("configuration")
+            if not all([env_username, env_password, env_client_id, env_client_secret]):
+                missing_sources.append("environment variables")
+
+            logger.warning_with_context(
+                f"Reddit API authentication credentials not found or incomplete in { ' or '.join(missing_sources) }. "
+                "Falling back to read-only mode. Some features like comment deletion/update will be unavailable."
             )
             try:
-                # Initialize read-only client
-                self.reddit = praw.Reddit(user_agent="reddacted:read_only_client")
-                logger.info("Successfully initialized read-only Reddit client")
-            except Exception as e:
-                logger.error(f"Failed to initialize read-only client: {str(e)}")
-            return
+                # Use client_id/secret from config OR env vars if available for read-only
+                read_only_client_id = config.get("reddit_client_id") or env_client_id
+                read_only_client_secret = config.get("reddit_client_secret") or env_client_secret
 
-        logger.debug_with_context("Attempting to initialize authenticated Reddit client")
-        try:
-            # Initialize authenticated client
-            self.reddit = praw.Reddit(
-                client_id=required_vars["REDDIT_CLIENT_ID"],
-                client_secret=required_vars["REDDIT_CLIENT_SECRET"],
-                password=required_vars["REDDIT_PASSWORD"],
-                user_agent=f"reddacted u/{required_vars['REDDIT_USERNAME']}",
-                username=required_vars["REDDIT_USERNAME"],
-                check_for_async=False,
-            )
-            self.authenticated = True
-            logger.debug_with_context("Successfully authenticated with Reddit API")
-        except Exception as e:
-            handle_exception(e, "Authentication Failed")
+                if read_only_client_id and read_only_client_secret:
+                     logger.debug_with_context("Attempting read-only initialization with client_id/secret.")
+                     self.reddit = praw.Reddit(
+                         client_id=read_only_client_id,
+                         client_secret=read_only_client_secret,
+                         user_agent="reddacted:read_only_client_v3" # Updated user agent slightly
+                     )
+                     logger.info_with_context("Successfully initialized read-only Reddit client (with client ID/secret).")
+                elif read_only_client_id:
+                     logger.debug_with_context("Attempting read-only initialization with client_id only.")
+                     self.reddit = praw.Reddit(
+                         client_id=read_only_client_id,
+                         user_agent="reddacted:read_only_client_v3"
+                     )
+                     logger.info_with_context("Successfully initialized read-only Reddit client (with client ID only).")
+                else:
+                     # PRAW requires at least client_id for read-only access usually.
+                     # If neither config nor env vars provide it, initialization will likely fail here.
+                     logger.error_with_context("Cannot initialize read-only Reddit client: Missing 'client_id' in both config and environment variables.")
+                     # Optionally, raise an error or let the PRAW error propagate
+                     # raise ValueError("Missing required client_id for Reddit API access.")
+                     # For now, let PRAW handle the potential error if it occurs without client_id
+                     self.reddit = praw.Reddit(user_agent="reddacted:read_only_client_v3") # This line might fail
+                     logger.info_with_context("Attempted read-only Reddit client initialization (without client ID/secret - may fail).")
+
+
+            except Exception as e:
+                # Log the specific PRAW error if initialization fails
+                logger.error_with_context(f"Failed to initialize read-only client: {str(e)}")
+                # self.reddit remains None
 
     @with_logging(logger)
     def parse_listing(self, subreddit, article, limit=100, **kwargs):
@@ -79,11 +161,11 @@ class Reddit(api.API):
         :return: a list of comments from an article
         """
         if self.reddit is None:
-            logger.error("Reddit client initialization failed - cannot fetch comments")
+            logger.error_with_context("Reddit client initialization failed - cannot fetch comments")
             return []
 
         mode = "authenticated" if self.authenticated else "read-only"
-        logger.info(f"Fetching comments for article '{article}' in {mode} mode")
+        logger.info_with_context(f"Fetching comments for article '{article}' in {mode} mode")
         logger.debug_with_context(
             f"Parsing listing for subreddit={subreddit}, article={article}, limit={limit}"
         )
@@ -109,16 +191,22 @@ class Reddit(api.API):
         return comments[:limit] if limit else comments
 
     def _process_comments(
-        self, comment_ids: list[str], action: str, batch_size: int = 10
+        self,
+        comment_ids: list[str],
+        action: str,
+        batch_size: int = 10,
+        update_content: str = None,  # Added parameter for update text
     ) -> dict[str, any]:
         """
-        Process comments in batches with rate limiting
-        :param comment_ids: List of comment IDs to process
-        :param action: Action to perform ('delete' or 'update')
-        :param batch_size: Number of comments to process per batch
-        :return: Dict with results and statistics
+        Process comments in batches with rate limiting.
+
+        :param comment_ids: List of comment IDs to process.
+        :param action: Action to perform ('delete' or 'update').
+        :param batch_size: Number of comments to process per batch.
+        :param update_content: The text to use when updating comments (only used if action='update').
+        :return: Dict with results and statistics.
         """
-        logger.debug("Starting _process_comments")
+        logger.debug_with_context("Starting _process_comments")
         if not self.authenticated:
             raise AuthenticationRequiredError(f"Full authentication required for comment {action}")
 
@@ -138,17 +226,19 @@ class Reddit(api.API):
                     try:
                         comment = self.reddit.comment(id=comment_id)
                         if action == "delete":
-                            logger.debug(f"Deleting comment ID {comment}")
+                            logger.debug_with_context(f"Deleting comment ID {comment.id}") # Use comment_id for clarity
                             comment.delete()
                             results["successful_ids"].append(comment_id)
                             results["success"] += 1
                         elif action == "update":
-                            logger.debug(f"Updating comment ID {comment}")
-                            comment.edit(
-                                "This comment has been reddacted to preserve online privacy - see r/reddacted for more info"
-                            )
-                            results["successful_ids"].append(comment_id)
-                            results["success"] += 1
+                            logger.debug_with_context(f"Updating comment ID {comment.id} with content: '{update_content[:50]}...'") # Use comment_id
+                            if update_content is None:
+                                # Should not happen if called via update_comments, but provides a fallback.
+                                logger.warning_with_context(f"No update_content provided for comment {comment_id}, skipping edit.")
+                            else:
+                                comment.edit(update_content)
+                                results["successful_ids"].append(comment_id)
+                                results["success"] += 1
                     except Exception as e:
                         results["failures"] += 1
                         results["failed_ids"].append(comment_id)
@@ -173,14 +263,37 @@ class Reddit(api.API):
         """
         return self._process_comments(comment_ids, "delete", batch_size)
 
-    def update_comments(self, comment_ids: list[str], batch_size: int = 10) -> dict[str, any]:
+    def update_comments(
+        self,
+        comment_ids: list[str],
+        batch_size: int = 10,
+        use_random_string: bool = None,  # Can be explicitly provided or use instance default
+    ) -> dict[str, any]:
         """
-        Update comments in batches with rate limiting to replace content with 'r/reddacted'
-        :param comment_ids: List of comment IDs to update
-        :param batch_size: Number of comments to process per batch
-        :return: Dict with results and statistics
+        Update comments in batches with rate limiting.
+
+        Replaces content either with a standard redaction message or a random UUID.
+
+        :param comment_ids: List of comment IDs to update.
+        :param batch_size: Number of comments to process per batch.
+        :param use_random_string: If True, replace content with a random UUID; otherwise, use the standard message.
+                                 If None, uses the value set during Reddit instance initialization.
+        :return: Dict with results and statistics.
         """
-        return self._process_comments(comment_ids, "update", batch_size)
+        # Use instance default if not explicitly provided
+        if use_random_string is None:
+            use_random_string = self.use_random_string
+            
+        if use_random_string:
+            content_to_write = str(uuid.uuid4())
+            logger.info_with_context(f"Updating comments with random UUIDs. Example: {content_to_write}")
+        else:
+            content_to_write = "This comment has been reddacted to preserve online privacy - see r/reddacted for more info"
+            logger.info_with_context("Updating comments with standard redaction message.")
+
+        return self._process_comments(
+            comment_ids, "update", batch_size, update_content=content_to_write
+        )
 
     @with_logging(logger)
     def search_comments(
@@ -244,12 +357,12 @@ class Reddit(api.API):
         :raises: prawcore.exceptions.Forbidden if user is private/banned
         """
         if self.reddit is None:
-            logger.error("Reddit client initialization failed - cannot fetch comments")
+            logger.error_with_context("Reddit client initialization failed - cannot fetch comments")
             return []
 
         mode = "authenticated" if self.authenticated else "read-only"
-        logger.info(f"Fetching comments for user '{username}' in {mode} mode")
-        logger.debug(f"Using sort method: {sort}")
+        logger.info_with_context(f"Fetching comments for user '{username}' in {mode} mode")
+        logger.debug_with_context(f"Using sort method: {sort}")
         try:
             redditor = self.reddit.redditor(username)
             comments = []

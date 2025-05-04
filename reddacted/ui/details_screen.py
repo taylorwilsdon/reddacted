@@ -1,3 +1,4 @@
+from reddacted.api.reddit import Reddit
 from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.containers import Vertical, ScrollableContainer, Horizontal
@@ -21,14 +22,18 @@ class DetailsScreen(Screen):
         Binding("d", "delete_comment", "Delete Comment", show=True),
     ]
 
-    def __init__(self, result):
+    def __init__(self, result, reddit_api: 'Reddit', use_random_string=False):
         """Initialize the details screen.
 
         Args:
             result: The AnalysisResult object containing the comment data
+            reddit_api: The authenticated Reddit API instance.
+            use_random_string: Whether to use random UUIDs instead of standard message
         """
         super().__init__()
         self.result = result
+        self.reddit_api = reddit_api
+        self.use_random_string = use_random_string
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the screen."""
@@ -134,8 +139,12 @@ class DetailsScreen(Screen):
 
     def on_comment_action_screen_action_completed(self, event: message.Message) -> None:
         """Handle action_completed events from CommentActionScreen."""
-        action_type = "edited" if event.action == "edit" else "deleted"
-        self.app.notify(f"Comment {self.result.comment_id} successfully {action_type}")
+        if event.action == "edit":
+            # Include random string status in notification if available
+            random_status = " with random UUID" if hasattr(event, "use_random_string") and event.use_random_string else ""
+            self.app.notify(f"Comment {self.result.comment_id} successfully edited{random_status}")
+        else:
+            self.app.notify(f"Comment {self.result.comment_id} successfully deleted")
 
         # Return to main screen by popping twice (action screen + details screen)
         self.app.pop_screen()  # Remove CommentActionScreen
@@ -144,11 +153,11 @@ class DetailsScreen(Screen):
 
     def action_edit_comment(self) -> None:
         """Handle editing the current comment."""
-        self.app.push_screen(CommentActionScreen(self.result.comment_id, "edit"))
+        self.app.push_screen(CommentActionScreen(self.result.comment_id, "edit", self.reddit_api, self.use_random_string)) # Pass reddit_api
 
     def action_delete_comment(self) -> None:
         """Handle deleting the current comment."""
-        self.app.push_screen(CommentActionScreen(self.result.comment_id, "delete"))
+        self.app.push_screen(CommentActionScreen(self.result.comment_id, "delete", self.reddit_api, self.use_random_string)) # Pass reddit_api
 
     def action_go_back(self) -> None:
         """Return to the results screen."""

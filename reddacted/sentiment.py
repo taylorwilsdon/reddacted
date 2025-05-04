@@ -14,11 +14,11 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.console import Console
 
 # Local
-from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.log_handler import get_logger, with_logging
 
 # Initialize rich console
 console = Console()
-from reddacted.utils.exceptions import handle_exception
+from reddacted.utils.log_handler import handle_exception
 from reddacted.api.scraper import Scraper
 from reddacted.api.reddit import Reddit
 from reddacted.pii_detector import PIIDetector
@@ -39,29 +39,25 @@ NEUTRAL_SENTIMENT = "😐"
 class Sentiment:
     """Performs the LLM PII & sentiment analysis on a given set of Reddit Objects."""
 
-    def __init__(
-        self,
-        auth_enabled=False,
-        pii_enabled=True,
-        llm_config=None,
-        pii_only=False,
-        sort="New",
-        limit=100,
-        skip_text=None,
-    ):
-        """Initialize Sentiment Analysis with optional PII detection
+    def __init__(self, config: Dict[str, Any]):
+        """Initialize Sentiment Analysis using a configuration dictionary.
 
         Args:
-            auth_enabled (bool): Enable Reddit API authentication
-            pii_enabled (bool): Enable PII detection
-            llm_config (dict): Configuration for LLM-based analysis
-            pii_only (bool): Only show comments with PII detected
-            debug (bool): Enable debug logging
-            limit (int): Maximum number of comments to analyze
-            skip_text (str): Text pattern to skip during analysis
+            config (Dict[str, Any]): Dictionary containing all configuration settings.
         """
-        # Set up logging
-        logger.debug_with_context("Initializing Sentiment Analyzer")
+        logger.debug_with_context(f"Initializing Sentiment Analyzer with config: {config}")
+
+        # Extract values from config, providing defaults
+        self.auth_enabled = config.get("enable_auth", False)
+        self.pii_enabled = True # Assuming PII is always enabled for now, adjust if needed
+        self.llm_config = None # Will be constructed below if needed
+        self.pii_only = config.get("pii_only", False)
+        self.sort = config.get("sort", "new")
+        # Default limit to 20 if missing, map 0 to None (unlimited)
+        limit_val = config.get("limit", 20)
+        self.limit = None if limit_val == 0 else limit_val
+        self.skip_text = config.get("skip_text")
+        self.use_random_string = config.get("use_random_string", False)
 
         # Download required NLTK data if not already present
         try:
@@ -71,49 +67,76 @@ class Sentiment:
             nltk.download("vader_lexicon", quiet=True)
 
         # Initialize necessary variables
-        self.skip_text = skip_text
         self.llm_detector = None  # Initialize llm_detector early
         # Initialize batch processing attributes
         self._llm_batch = []
         self._llm_batch_indices = []
         self._pending_results = []
-        
+
         try:
-            self.api = Scraper()
+            self.api = Scraper() # Default to Scraper
             self.score = 0
             self.sentiment = NEUTRAL_SENTIMENT
             self.headers = _COMMENT_ANALYSIS_HEADERS
-            self.auth_enabled = auth_enabled
-            self.pii_enabled = pii_enabled
-            self.pii_detector = PIIDetector() if pii_enabled else None
-            self.pii_only = pii_only
-            self.sort = sort
-            self.limit = limit
+            self.pii_detector = PIIDetector() if self.pii_enabled else None
             logger.debug_with_context(
-                "Initialized with configuration: "
-                f"pii_enabled={pii_enabled}, "
-                f"pii_only={pii_only}, "
-                f"sort={sort}, "
-                f"limit={limit}"
+                "Initialized base attributes with configuration: "
+                f"auth_enabled={self.auth_enabled}, "
+                f"pii_enabled={self.pii_enabled}, "
+                f"pii_only={self.pii_only}, "
+                f"sort={self.sort}, "
+                f"limit={self.limit}"
             )
 
-            logger.debug_with_context("Sentiment analyzer initialized")
+            logger.debug_with_context("Base sentiment analyzer initialized")
         except Exception as e:
-            handle_exception(e, "Failed to initialize Sentiment analyzer")
-            logger.error_with_context("Failed to initialize Sentiment analyzer")
+            handle_exception(e, "Failed to initialize base Sentiment analyzer")
+            logger.error_with_context("Failed to initialize base Sentiment analyzer")
             raise
-        # Initialize LLM detector if config provided, independent of PII detection
-        if llm_config:
-            logger.debug_with_context(f"LLM Config received: {llm_config}")
+
+        # Construct LLM config dictionary if applicable
+        if config.get("model"):
+            # If model is specified but no LLM URL, default to local
+            if not config.get("local_llm") and not config.get("openai_key"):
+                config["local_llm"] = "http://localhost:11434" # Modify config directly or use a local var
+                logger.warning_with_context("No LLM URL specified, defaulting to local")
+
+            self.llm_config = {
+                "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
+                "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+                "model": config.get("model"),
+            }
+            # Adjust api_base for local LLM if needed
+            if not config.get("use_openai_api") and self.llm_config["api_base"]:
+                base_url = self.llm_config["api_base"].rstrip('/')
+                if not base_url.endswith('/v1'):
+                    self.llm_config["api_base"] = f"{base_url}/v1"
+        elif config.get("openai_key") or config.get("local_llm"):
+             # Handle case where URL/key is provided but no model selected yet
+             self.llm_config = {
+                "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
+                "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+                "model": None, # Explicitly set model to None
+            }
+             if not config.get("use_openai_api") and self.llm_config["api_base"]:
+                base_url = self.llm_config["api_base"].rstrip('/')
+                if not base_url.endswith('/v1'):
+                    self.llm_config["api_base"] = f"{base_url}/v1"
+             logger.warning_with_context("LLM URL/Key provided, but no model selected. LLM analysis may be limited.")
+
+
+        # Initialize LLM detector if config was constructed
+        if self.llm_config:
+            logger.debug_with_context(f"Constructed LLM Config: {self.llm_config}")
             try:
-                api_key = llm_config.get("api_key")
-                api_base = llm_config.get("api_base")
-                model = llm_config.get("model", "gpt-4o-mini")
-                
+                api_key = self.llm_config.get("api_key")
+                api_base = self.llm_config.get("api_base")
+                model = self.llm_config.get("model") # Already extracted
+
                 logger.debug_with_context(f"LLM Config - API Base: {api_base}, Model: {model}")
                 # Initialize LLM detector if we have sufficient configuration
                 if not model:
-                    logger.warning_with_context("No model specified - LLM analysis disabled")
+                    logger.warning_with_context("No model specified in config - LLM analysis disabled")
                     self.llm_detector = None
                 elif not api_base:
                     logger.error_with_context("Missing API base URL - required for both local and OpenAI")
@@ -132,19 +155,23 @@ class Sentiment:
                 logger.error_with_context(f"Failed to initialize LLM Detector: {str(e)}")
                 self.llm_detector = None
         else:
-            logger.warning_with_context("No LLM config provided")
+            logger.info_with_context("No LLM config provided or model missing, LLM analysis disabled.")
 
-        if auth_enabled:
-            logger.debug_with_context("Authentication enabled, initializing Reddit API")
-            self.api = Reddit()
+        # Initialize Reddit API if auth is enabled, passing the config
+        if self.auth_enabled:
+            logger.debug_with_context("Authentication enabled, initializing Reddit API with config")
+            # Pass the full config dictionary and the specific use_random_string preference
+            self.api = Reddit(config=config, use_random_string=self.use_random_string)
             logger.debug_with_context("Reddit API initialized")
         else:
-            logger.debug_with_context("Authentication not enabled")
+            logger.debug_with_context("Authentication not enabled, using default Scraper API")
+            # self.api remains the Scraper instance initialized earlier
+
         self.formatter = ResultsFormatter()
         self.formatter.pii_only = self.pii_only
-        self.formatter.print_config(
-            auth_enabled, pii_enabled, llm_config, self.pii_only, self.limit, self.sort
-        )
+        self.formatter.use_random_string = self.use_random_string # Use instance variable
+        # Pass the entire config dictionary to print_config
+        self.formatter.print_config(config)
 
     @with_logging(logger)
     async def _analyze(self, comments):
@@ -386,5 +413,5 @@ class Sentiment:
             )
         else:
             self.formatter.print_comments(
-                comments, identifier, self.results, self.score, self.sentiment
+                comments, identifier, self.results, self.score, self.sentiment, self.api # Pass self.api
             )

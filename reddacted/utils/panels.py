@@ -10,7 +10,7 @@ from rich.table import Table
 
 from reddacted.utils.analysis import AnalysisResult
 from reddacted.utils.base import BaseFormatter
-from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.log_handler import get_logger, with_logging
 from reddacted.utils.tables import TableFormatter
 from reddacted.utils.report import format_llm_detail
 
@@ -20,7 +20,7 @@ class PanelFormatter(BaseFormatter):
 
     def __init__(self):
         super().__init__()
-        self.logger = get_logger(__name__)
+        # Logger not currently used in this class
         self.table_formatter = TableFormatter()
 
     def create_features_panel(
@@ -31,6 +31,7 @@ class PanelFormatter(BaseFormatter):
         pii_only: bool,
         limit: int,
         sort: str,
+        use_random_string: bool = False,
     ) -> Panel:
         """Creates a panel displaying the features configuration."""
         # Create a table with two columns
@@ -47,12 +48,15 @@ class PanelFormatter(BaseFormatter):
             (
                 "🤖 LLM Analysis",
                 (
-                    Text(llm_config["model"], style="green")
+                    Text(llm_config["model"], style="green") # Display model name if available
+                    if llm_config and llm_config.get("model")
+                    else Text("Not Selected", style="yellow") # Indicate if URL/Key provided but no model
                     if llm_config
-                    else self._format_status(False)
+                    else self._format_status(False) # Disabled if no LLM config at all
                 ),
             ),
             ("🎯 PII-Only Filter", self._format_status(pii_only, "Active", "Inactive")),
+            ("🎲 Random String", self._format_status(use_random_string, "Enabled", "Disabled")),
             ("📊 Comment Limit", Text(f"{limit}" if limit else "Unlimited", style="cyan")),
             ("📑 Sort Preference", Text(f"{sort}" if sort else "New", style="cyan")),
         ]
@@ -76,14 +80,66 @@ class PanelFormatter(BaseFormatter):
             expand=True,
         )
 
-    def create_auth_panel(self) -> Panel:
-        """Creates a panel displaying the authentication environment variables."""
-        auth_vars = [
-            ("REDDIT_USERNAME", os.environ.get("REDDIT_USERNAME", "[red]Not Set[/]")),
-            ("REDDIT_CLIENT_ID", os.environ.get("REDDIT_CLIENT_ID", "[red]Not Set[/]")),
-        ]
-        auth_texts = [Text(f"{k}: {v}") for k, v in auth_vars]
-        return Panel(Group(*auth_texts), title="[bold]Auth Environment[/]", border_style="yellow")
+    def create_auth_panel(self, config: Dict[str, Any]) -> Panel:
+        """Creates a panel displaying the authentication status and values based on config and environment."""
+        auth_enabled = config.get("enable_auth", False)
+        auth_texts = []
+
+        # Determine status based on config first, then environment
+        username_config = config.get("reddit_username")
+        client_id_config = config.get("reddit_client_id")
+        username_env = os.environ.get("REDDIT_USERNAME")
+        client_id_env = os.environ.get("REDDIT_CLIENT_ID")
+
+        # --- Username Status ---
+        username_value = None
+        username_style = "red"
+        username_source = ""
+
+        if auth_enabled and username_config:
+            username_value = username_config
+            username_style = "green"
+            username_source = " (Config)"
+        elif username_env:
+            username_value = username_env
+            username_style = "blue"
+            username_source = " (Env Var)"
+
+        if username_value:
+             auth_texts.append(
+                 Text.assemble("REDDIT_USERNAME: ", (username_value, username_style), username_source)
+             )
+        else:
+             auth_texts.append(Text("REDDIT_USERNAME: Not Set", style="red"))
+
+
+        # --- Client ID Status ---
+        client_id_value = None
+        client_id_style = "red"
+        client_id_source = ""
+
+        if auth_enabled and client_id_config:
+            client_id_value = client_id_config
+            client_id_style = "green"
+            client_id_source = " (Config)"
+        elif client_id_env:
+            client_id_value = client_id_env
+            client_id_style = "blue"
+            client_id_source = " (Env Var)"
+
+        if client_id_value:
+             # Display only first/last few chars of client_id for brevity/security if desired
+             # display_client_id = f"{client_id_value[:4]}...{client_id_value[-4:]}" if len(client_id_value) > 8 else client_id_value
+             display_client_id = client_id_value # Show full ID for now
+             auth_texts.append(
+                 Text.assemble("REDDIT_CLIENT_ID: ", (display_client_id, client_id_style), client_id_source)
+             )
+        else:
+             auth_texts.append(Text("REDDIT_CLIENT_ID: Not Set", style="red"))
+
+        # Note: We don't display password or secret for security
+
+        return Panel(Group(*auth_texts), title="[bold]Auth Status[/]", border_style="yellow")
 
     def create_stats_panel(
         self, url: str, total_comments: int, score: float, sentiment: str
@@ -245,7 +301,7 @@ class PanelFormatter(BaseFormatter):
             summary_table, title="[bold]Output Review[/]", border_style="green", padding=(1, 4)
         )
 
-    def create_action_panel(self, filtered_results: List[AnalysisResult]) -> Panel:
+    def create_action_panel(self, filtered_results: List[AnalysisResult], use_random_string: bool = False) -> Panel:
         """Creates a panel displaying actions for high-risk comments."""
         high_risk_comments = [
             r
@@ -261,7 +317,9 @@ class PanelFormatter(BaseFormatter):
                     style="italic red",
                 ),
                 Text(
-                    f"\nReddact (edit) comments:\nreddacted update {' '.join(comment_ids)}",
+                    f"\nReddact (edit) comments:" +
+                    (f"\nreddacted update {' '.join(comment_ids)} --use-random-string" if use_random_string else
+                     f"\nreddacted update {' '.join(comment_ids)}"),
                     style="italic blue",
                 ),
             )

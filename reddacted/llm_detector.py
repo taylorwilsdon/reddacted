@@ -2,8 +2,8 @@ import json
 import asyncio
 from typing import Tuple, Dict, Any, List, Optional
 import openai
-from reddacted.utils.logging import get_logger, with_logging
-from reddacted.utils.exceptions import handle_exception
+from reddacted.utils.log_handler import get_logger, with_logging
+from reddacted.utils.log_handler import handle_exception
 
 logger = get_logger(__name__)
 
@@ -84,7 +84,7 @@ class LLMDetector:
                     task = client.chat.completions.create(
                         model=self.model,
                         messages=[
-                            {"role": "system", "content": "You are a privacy analysis assistant."},
+                            {"role": "system", "content": "/no-think You are a privacy analysis assistant."},
                             {"role": "user", "content": self.DEFAULT_PROMPT.format(text=text)},
                         ],
                         temperature=0.1,
@@ -93,25 +93,30 @@ class LLMDetector:
                     logger.debug_with_context(f"Using model: {self.model}")
                     tasks.append(task)
 
-                logger.info_with_context(f"Awaiting {len(tasks)} LLM analysis tasks...") # Added log
+                logger.info_with_context(f"Awaiting {len(tasks)} LLM analysis tasks...")
                 batch_responses = await asyncio.gather(*tasks)
-                logger.info_with_context("LLM analysis tasks completed.") # Added log
+                logger.info_with_context("LLM analysis tasks completed.")
 
                 for response in batch_responses:
                     try:
                         raw_response = response.choices[0].message.content.strip()
                         logger.debug_with_context(f"\n🤖 Raw LLM Response:\n{raw_response}\n")
+                        # Handle for qwen3 series thinking models
+                        if "</think>" in raw_response:
+                            raw_response = raw_response.split("</think>")[1]
                         try:
                             # First attempt direct parse, sometimes stupid LLM messes up formatting
                             analysis = json.loads(raw_response)
                         except json.JSONDecodeError:
                             # If that fails, try to extract JSON from markdown blocks
                             if "```json" in raw_response:
+                                logger.debug_with_context(f"\nAttempting to extract json from markdown in {raw_response}\n")
                                 json_content = (
                                     raw_response.split("```json")[1].split("```")[0].strip()
                                 )
                                 analysis = json.loads(json_content)
                             else:
+                                logger.debug_with_context(f"Failed to extract json from markdown in {raw_response}\n")
                                 raise
 
                         # Calculate risk score based on confidence and PII presence

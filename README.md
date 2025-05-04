@@ -148,7 +148,8 @@ reddacted user spez \
 
 # Bulk comment management
 reddacted delete abc123,def456 --batch-size 5  # Delete comments
-reddacted update abc123,def456                 # Replace with r/reddacted
+reddacted update abc123,def456                 # Replace with standard redaction message
+reddacted update abc123,def456 --use-random-string  # Replace with random UUID
 ```
 
 ### Available Commands
@@ -174,6 +175,7 @@ reddacted update abc123,def456                 # Replace with r/reddacted
 | `--text-match` | Search for comments containing specific text |
 | `--skip-text` | Skip comments containing specific text pattern |
 | `--batch-size` | Comments per batch for delete/update (default: 10) |
+| `--use-random-string` | Use random UUID instead of standard message when updating comments |
 
 ### LLM Configuration
 

@@ -6,15 +6,15 @@ from typing import Dict, Any, List, Optional, Callable
 
 
 from rich.console import Console
-from reddacted.utils.exceptions import handle_exception
+from reddacted.utils.log_handler import handle_exception
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
 from .textual_cli import ConfigApp
 from .cli_config import ENV_VARS_MAP
-from reddacted.utils.logging import set_global_logging_level, get_logger, with_logging
+from reddacted.utils.log_handler import setup_logging, set_global_logging_level, get_logger, with_logging
 
-set_global_logging_level(logging.INFO)
-logger = get_logger(__name__)
+# Logging is now set up in CLI.run()
+logger = get_logger(__name__) # Logger instance can be created before setup
 console = Console(highlight=True)
 
 REDDIT_AUTH_VARS = [
@@ -27,7 +27,7 @@ REDDIT_AUTH_VARS = [
 @with_logging(logger)
 def handle_listing(config: Dict[str, Any]) -> None:
     """Handle the listing command using unified config."""
-    logger.debug(f"Handling listing command with config: {config}")
+    logger.debug_with_context(f"Handling listing command with config: {config}")
     # Default to 20 if limit is missing, map 0 to None (unlimited)
     limit_val = config.get("limit", 20) # Default to 20 if key is missing
     limit = None if limit_val == 0 else limit_val
@@ -48,15 +48,8 @@ def handle_listing(config: Dict[str, Any]) -> None:
                  llm_config["api_base"] = f"{base_url}/v1"
 
 
-    sent = Sentiment(
-        auth_enabled=auth_enabled,
-        pii_enabled=True,
-        pii_only=config.get("pii_only", False),
-        llm_config=llm_config,
-        sort=config.get("sort", "new"),
-        limit=limit,
-        skip_text=config.get("skip_text"),
-    )
+    # Pass the entire config dictionary to Sentiment constructor
+    sent = Sentiment(config=config)
     subreddit = config["subreddit"].replace("r/", "") if auth_enabled else config["subreddit"]
     target = f"{subreddit}/{config['article']}"
     console.print(f"[cyan]Analyzing listing:[/cyan] {target}")
@@ -112,15 +105,8 @@ def handle_user(config: Dict[str, Any]) -> None:
                 llm_config["api_base"] = f"{base_url}/v1"
 
     try:
-        sent = Sentiment(
-            auth_enabled=auth_enabled,
-            pii_enabled=True,
-            llm_config=llm_config,
-            pii_only=config.get("pii_only", False),
-            sort=config.get("sort", "new"),
-            limit=limit,
-            skip_text=config.get("skip_text"),
-        )
+        # Pass the entire config dictionary to Sentiment constructor
+        sent = Sentiment(config=config)
         sent.get_sentiment(
             "user",
             username,
@@ -143,7 +129,7 @@ def handle_user(config: Dict[str, Any]) -> None:
 @with_logging(logger)
 def handle_delete(config: Dict[str, Any]) -> None:
     """Handle the delete command using unified config."""
-    logger.debug(f"Handling delete command with config: {config}")
+    logger.debug_with_context(f"Handling delete command with config: {config}")
     if not config.get("enable_auth"):
         console.print("[red]Error: Reddit API authentication must be enabled to delete comments.[/red]")
         return
@@ -158,12 +144,8 @@ def handle_delete(config: Dict[str, Any]) -> None:
 
     console.print(f"[cyan]Attempting to delete {len(comment_ids)} comments...[/cyan]")
 
-    reddit_api = Reddit(
-         username=config.get("reddit_username"),
-         password=config.get("reddit_password"),
-         client_id=config.get("reddit_client_id"),
-         client_secret=config.get("reddit_client_secret")
-    )
+    # Pass the entire config dictionary to the Reddit constructor
+    reddit_api = Reddit(config=config)
 
     try:
         result = reddit_api.delete_comments(comment_ids, batch_size=batch_size)
@@ -186,7 +168,7 @@ def handle_delete(config: Dict[str, Any]) -> None:
 @with_logging(logger)
 def handle_update(config: Dict[str, Any]) -> None:
     """Handle the update command using unified config."""
-    logger.debug(f"Handling update command with config: {config}")
+    logger.debug_with_context(f"Handling update command with config: {config}")
     if not config.get("enable_auth"):
         console.print("[red]Error: Reddit API authentication must be enabled to update comments.[/red]")
         return
@@ -201,15 +183,26 @@ def handle_update(config: Dict[str, Any]) -> None:
 
     console.print(f"[cyan]Attempting to update {len(comment_ids)} comments...[/cyan]")
 
-    reddit_api = Reddit(
-         username=config.get("reddit_username"),
-         password=config.get("reddit_password"),
-         client_id=config.get("reddit_client_id"),
-         client_secret=config.get("reddit_client_secret")
-    )
+    # Get the use_random_string preference from config
+    use_random_string = config.get("use_random_string", False)
+    
+    # Pass the entire config dictionary and use_random_string preference
+    reddit_api = Reddit(config=config, use_random_string=use_random_string)
 
     try:
-        result = reddit_api.update_comments(comment_ids, batch_size=batch_size)
+        # Pass the use_random_string parameter from config
+        use_random_string = config.get("use_random_string", False)
+        result = reddit_api.update_comments(
+            comment_ids,
+            batch_size=batch_size,
+            use_random_string=use_random_string
+        )
+        
+        # Log which mode was used
+        if use_random_string:
+            console.print("[cyan]Using random UUID for comment content.[/cyan]")
+        else:
+            console.print("[cyan]Using standard redaction message.[/cyan]")
 
         console.print(f"[green]Update operation finished.[/green]")
         console.print(f"  Processed: {result.get('processed', 0)}")
@@ -245,6 +238,7 @@ class CLI:
         # self.parser.add_argument("--openai-base", dest="openai_base", help="Optional OpenAI API base URL (handled by UI).") # Let UI handle this based on checkbox
         self.parser.add_argument("--model", dest="model", help="Preferred OpenAI or local LLM model (passed to UI).")
         self.parser.add_argument("--pii-only", dest="pii_only", action='store_true', help="Pre-check 'PII Only' in UI.")
+        self.parser.add_argument("--use-random-string", dest="use_random_string", action='store_true', help="Use random UUID instead of standard message when updating comments.")
         self.parser.add_argument("--limit", dest="limit", type=int, help="Maximum comments to analyze (passed to UI).")
         self.parser.add_argument("--sort", dest="sort", choices=["hot", "new", "controversial", "top"], help="Sort method for comments (passed to UI).")
         self.parser.add_argument("--time", dest="time", choices=["all", "day", "hour", "month", "week", "year"], help="Time filter for comments (passed to UI).")
@@ -293,16 +287,19 @@ class CLI:
     def run(self, argv: List[str]) -> int:
         """Run the CLI application using the Textual UI."""
         try:
-            # Set logging level early based on --debug flag in raw argv
-            if "--debug" in argv:
-                set_global_logging_level(logging.DEBUG)
-                logger.debug("Debug logging enabled.")
-            else:
-                set_global_logging_level(logging.INFO)
-            # Parse known arguments
-            args = self.parser.parse_args(argv)
-            logger.debug(f"Parsed command args: {args}")
+            # 1. Initial Logging Setup (File + Console) based on --debug flag
+            debug_mode = "--debug" in argv
+            initial_log_level = logging.DEBUG if debug_mode else logging.INFO
+            setup_logging(initial_log_level)
+            logger.info_with_context(f"Initial logging level set to: {logging.getLevelName(initial_log_level)}")
+            if debug_mode:
+                logger.debug_with_context("Debug logging enabled via --debug flag.")
 
+            # 2. Parse known arguments (needed for command dispatch)
+            args = self.parser.parse_args(argv)
+            logger.debug_with_context(f"Parsed command args: {args}")
+
+            # 3. Prepare initial config for UI (Env Vars -> CLI Opts)
             initial_config = {}
 
             # 1. Load Environment Variables
@@ -333,7 +330,7 @@ class CLI:
             temp_parser.add_argument("--use-openai-api", dest="use_openai_api", action='store_true')
 
             optional_args, _ = temp_parser.parse_known_args(argv)
-            logger.debug(f"Parsed optional CLI args for UI: {vars(optional_args)}")
+            logger.debug_with_context(f"Parsed optional CLI args for UI: {vars(optional_args)}")
             # Update initial_config
             for key, value in vars(optional_args).items():
                 if value is not None:
@@ -342,7 +339,9 @@ class CLI:
                          initial_config["enable_auth_explicitly_set"] = True
 
 
-            logger.debug(f"Initial config for UI: {initial_config}")
+            # Pass the initial debug mode state to the UI config
+            initial_config["debug_logging"] = debug_mode
+            logger.debug_with_context(f"Initial config for UI: {initial_config}")
 
             app = ConfigApp(initial_config=initial_config)
             final_config = app.run() # This blocks until the user submits or quits
@@ -351,8 +350,15 @@ class CLI:
                 console.print("[yellow]Configuration cancelled.[/yellow]")
                 return 0
 
-            logger.debug(f"Final config from UI: {final_config}")
+            logger.debug_with_context(f"Final config from UI: {final_config}")
 
+            # 5. Set final logging level based on UI config
+            ui_debug_mode = final_config.get("debug_logging", False)
+            final_log_level = logging.DEBUG if ui_debug_mode else logging.INFO
+            set_global_logging_level(final_log_level)
+            logger.info_with_context(f"Logging level set to {logging.getLevelName(final_log_level)} based on final config.")
+
+            # 6. Prepare final run_config by merging UI config and required args
             run_config = final_config.copy() # Start with UI values
 
             # Add required args from initial parse if not already in UI config
@@ -368,20 +374,32 @@ class CLI:
             # Ensure command and func are correctly set from initial parse
             run_config['command'] = args.command
             run_config['func'] = args.func
-            run_config['debug'] = args.debug # Set debug flag from initial parse
+            run_config['debug'] = ui_debug_mode # Use the final debug state
 
-            logger.debug(f"Final run_config before execution: {run_config}") # Add debug log
+            logger.debug_with_context(f"Final run_config before execution: {run_config}") # Add debug log
+
+            # 7. Execute the command
             args.func(run_config) # Pass the correctly merged config
 
             return 0
         except Exception as e:
+            # Determine debug status based on final config if available, else initial flag
+            final_debug_status = False
+            if 'final_config' in locals() and final_config is not None:
+                final_debug_status = final_config.get("debug_logging", False)
+            elif 'debug_mode' in locals(): # Fallback if UI was cancelled early
+                final_debug_status = debug_mode
+
             command = argv[0] if argv else "unknown"
-            is_debug = "--debug" in argv
-            handle_exception(e, f"Failed to execute command '{command}'", debug=is_debug)
+            # Use logger here instead of handle_exception directly for consistency?
+            # For now, keep handle_exception but use the determined debug status
+            # handle_exception below will log the error appropriately based on debug status
+            handle_exception(e, f"Failed to execute command '{command}'", debug=final_debug_status)
             return 1
 
 def main(argv: List[str] = sys.argv[1:]) -> int:
     """Main entry point"""
+    # Handle --version before setting up logging or parsing fully
     if "--version" in argv:
          try:
              from reddacted.version import __version__

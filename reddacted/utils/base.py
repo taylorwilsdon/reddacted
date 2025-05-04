@@ -1,14 +1,15 @@
 from typing import List, Dict, Any, Optional
 from rich.text import Text
 
-from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.log_handler import get_logger, with_logging
 
 
 class BaseFormatter:
     """Base class for formatters with shared utilities."""
 
     def __init__(self):
-        self.logger = get_logger(__name__)
+        # Logger not currently used in this base class
+        pass
 
     def _get_risk_style(self, score: float) -> str:
         """Determines text style based on risk score."""

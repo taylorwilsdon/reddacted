@@ -1,3 +1,4 @@
+from reddacted.api.reddit import Reddit
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.widgets import DataTable, Header, Footer, Static
@@ -6,6 +7,7 @@ from textual import message
 
 from rich.text import Text
 from typing import List, Optional
+import uuid  # Added for random UUID generation
 
 from reddacted.utils.analysis import AnalysisResult
 from reddacted.ui.comment_actions import CommentActionScreen
@@ -121,12 +123,12 @@ class TextualResultsView(App):
     def action_edit_comment(self) -> None:
         """Handle editing the selected comment."""
         if comment_id := self._get_selected_comment_id():
-            self.push_screen(CommentActionScreen(comment_id, "edit"))
+            self.push_screen(CommentActionScreen(comment_id, "edit", self.reddit_api, self.use_random_string))
 
     def action_delete_comment(self) -> None:
         """Handle deleting the selected comment."""
         if comment_id := self._get_selected_comment_id():
-            self.push_screen(CommentActionScreen(comment_id, "delete"))
+            self.push_screen(CommentActionScreen(comment_id, "delete", self.reddit_api, self.use_random_string))
 
     def on_action_completed(self, event: message.Message) -> None:
         """Handle completion of comment actions."""
@@ -140,10 +142,16 @@ class TextualResultsView(App):
                     table.remove_row(i)
                     self.results.pop(i)
                 elif event.action == "edit":
-                    # Update the result text
-                    r.text = "r/reddacted"
-                    # Update cell in table
-                    table.update_cell(i, 2, Text("r/reddacted", style="link blue"))
+                    # Update the result text based on random string status
+                    if hasattr(event, "use_random_string") and event.use_random_string:
+                        r.text = f"[Random UUID: {uuid.uuid4()}]"
+                        # Update cell in table
+                        table.update_cell(i, 2, Text(r.text, style="link blue"))
+                    else:
+                        # Standard message
+                        r.text = "This comment has been reddacted to preserve online privacy - see r/reddacted for more info"
+                        # Update cell in table with shortened version for display
+                        table.update_cell(i, 2, Text("r/reddacted", style="link blue"))
                 break
 
     def __init__(
@@ -153,6 +161,8 @@ class TextualResultsView(App):
         results: List[AnalysisResult],
         overall_score: float,
         overall_sentiment: str,
+        reddit_api: 'Reddit', # Added reddit_api
+        use_random_string: bool = False,
     ):
         super().__init__()
         self.url = url
@@ -160,6 +170,8 @@ class TextualResultsView(App):
         self.results = results
         self.overall_score = overall_score
         self.overall_sentiment = overall_sentiment
+        self.reddit_api = reddit_api # Store the api instance
+        self.use_random_string = use_random_string
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
@@ -175,7 +187,7 @@ class TextualResultsView(App):
         if comment_id := self._get_selected_comment_id():
             result = next((r for r in self.results if r.comment_id == comment_id), None)
             if result:
-                self.push_screen(DetailsScreen(result))
+                self.push_screen(DetailsScreen(result, self.reddit_api, self.use_random_string)) # Pass reddit_api
             else:
                 self.notify(f"No result found for comment ID: {comment_id}")
         else:
@@ -188,6 +200,8 @@ def show_results(
     results: List[AnalysisResult],
     overall_score: float,
     overall_sentiment: str,
+    reddit_api: 'Reddit', # Added reddit_api
+    use_random_string: bool = False,
 ) -> None:
     """Display results using the Textual UI."""
     app = TextualResultsView(
@@ -196,5 +210,7 @@ def show_results(
         results=results,
         overall_score=overall_score,
         overall_sentiment=overall_sentiment,
+        reddit_api=reddit_api, # Pass reddit_api
+        use_random_string=use_random_string,
     )
     app.run()

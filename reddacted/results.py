@@ -1,3 +1,4 @@
+from reddacted.api.reddit import Reddit
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -7,7 +8,7 @@ from rich.columns import Columns
 from rich.console import Group
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
-from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.log_handler import get_logger, with_logging
 from reddacted.utils.report import (
     generate_analysis_report,
     should_show_result,
@@ -27,9 +28,10 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
     def __init__(self):
         TableFormatter.__init__(self)
         PanelFormatter.__init__(self)
-        self.logger = get_logger(__name__)
+        # Use module-level logger instance
         self.total_pii_comments = 0
         self.total_llm_pii_comments = 0
+        self.use_random_string = False  # Default to False
 
     @with_logging(logger)
     def create_progress(self) -> Progress:
@@ -73,30 +75,58 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
                 self.total_llm_pii_comments = stats["total_llm_pii_comments"]
                 self._print_completion_message(filename, comments, results, progress)
             except Exception as e:
-                self.logger.exception("Failed to generate output file: %s", e)
+                logger.exception("Failed to generate output file: %s", e) # Use module logger
                 raise
 
     @with_logging(logger)
-    def print_config(
-        self,
-        auth_enabled: bool,
-        pii_enabled: bool,
-        llm_config: Optional[Dict[str, Any]],
-        pii_only: bool,
-        limit: int,
-        sort: str,
-    ) -> None:
-        """Prints the active configuration."""
+    def print_config(self, config: Dict[str, Any]) -> None:
+        """Prints the active configuration using the provided config dictionary."""
         progress = self.create_progress()
+
+        # Extract values needed for panels from the config dict
+        auth_enabled = config.get("enable_auth", False)
+        pii_enabled = True # Assuming PII is always enabled for now
+        pii_only = config.get("pii_only", False)
+        limit_val = config.get("limit", 20)
+        limit = None if limit_val == 0 else limit_val
+        sort = config.get("sort", "new")
+        use_random_string = config.get("use_random_string", False) # Get from config
+
+        # Construct llm_config dict for the features panel if applicable
+        llm_config = None
+        if config.get("model"):
+            llm_config = {
+                "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
+                "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+                "model": config.get("model"),
+            }
+            # Adjust api_base for local LLM if needed (redundant with Sentiment.__init__ but safe)
+            if not config.get("use_openai_api") and llm_config.get("api_base"):
+                base_url = llm_config["api_base"].rstrip('/')
+                if not base_url.endswith('/v1'):
+                    llm_config["api_base"] = f"{base_url}/v1"
+        elif config.get("openai_key") or config.get("local_llm"):
+             llm_config = { # Handle case where URL/key provided but no model
+                "api_key": config.get("openai_key") if config.get("use_openai_api") else "sk-not-needed",
+                "api_base": config.get("local_llm") if not config.get("use_openai_api") else "https://api.openai.com/v1",
+                "model": None,
+            }
+             if not config.get("use_openai_api") and llm_config.get("api_base"):
+                base_url = llm_config["api_base"].rstrip('/')
+                if not base_url.endswith('/v1'):
+                    llm_config["api_base"] = f"{base_url}/v1"
+
+
         with progress:
             progress.console.print("\n[bold cyan]Active Configuration[/]")
             features_panel = self.create_features_panel(
-                auth_enabled, pii_enabled, llm_config, pii_only, limit, sort
+                auth_enabled, pii_enabled, llm_config, pii_only, limit, sort,
+                use_random_string=use_random_string # Use value from config
             )
             panels = [features_panel]
-            if auth_enabled:
-                auth_panel = self.create_auth_panel()
-                panels.append(auth_panel)
+            # Pass the full config to create_auth_panel
+            auth_panel = self.create_auth_panel(config)
+            panels.append(auth_panel)
             progress.console.print(Columns(panels))
 
     @with_logging(logger)
@@ -107,13 +137,14 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
         results: List[AnalysisResult],
         overall_score: float,
         overall_sentiment: str,
+        reddit_api: 'Reddit', # Added reddit_api
     ) -> None:
         """Prints out analysis of user comments using Textual UI."""
         filtered_results = [
             r for r in results if should_show_result(r, getattr(self, "pii_only", False))
         ]
         if not filtered_results and getattr(self, "pii_only", False):
-            self.logger.info("No comments with high PII risk found.")
+            logger.info_with_context("No comments with high PII risk found.") # Use module logger with context
             print("No comments with high PII risk found.")
             return
 
@@ -124,6 +155,8 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
             results=filtered_results,
             overall_score=overall_score,
             overall_sentiment=overall_sentiment,
+            reddit_api=reddit_api, # Pass reddit_api
+            use_random_string=getattr(self, "use_random_string", False),
         )
 
     def _print_completion_message(
@@ -144,7 +177,7 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
             filename, len(comments), self.total_pii_comments, self.total_llm_pii_comments
         )
         if comment_ids:
-            actions_panel = self.create_action_panel(results)
+            actions_panel = self.create_action_panel(results, use_random_string=getattr(self, "use_random_string", False))
             progress.console.print(Group(completion_panel, actions_panel))
         else:
             progress.console.print(completion_panel)
