@@ -27,7 +27,7 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
     def __init__(self):
         TableFormatter.__init__(self)
         PanelFormatter.__init__(self)
-        self.logger = get_logger(__name__)
+        # Use module-level logger instance
         self.total_pii_comments = 0
         self.total_llm_pii_comments = 0
         self.use_random_string = False  # Default to False
@@ -74,7 +74,7 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
                 self.total_llm_pii_comments = stats["total_llm_pii_comments"]
                 self._print_completion_message(filename, comments, results, progress)
             except Exception as e:
-                self.logger.exception("Failed to generate output file: %s", e)
+                logger.exception("Failed to generate output file: %s", e) # Use module logger
                 raise
 
     @with_logging(logger)
@@ -142,7 +142,7 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
             r for r in results if should_show_result(r, getattr(self, "pii_only", False))
         ]
         if not filtered_results and getattr(self, "pii_only", False):
-            self.logger.info("No comments with high PII risk found.")
+            logger.info_with_context("No comments with high PII risk found.") # Use module logger with context
             print("No comments with high PII risk found.")
             return
 

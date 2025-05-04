@@ -8,8 +8,40 @@ T = TypeVar("T")
 LoggerType = logging.Logger
 LogLevel = Union[int, str]
 
+def setup_logging(initial_level: LogLevel = logging.INFO) -> None:
+    """Configure root logger with file and console handlers."""
+    root_logger = logging.getLogger()
+    # Set root to DEBUG to capture everything, handlers control output level
+    root_logger.setLevel(logging.DEBUG)
+
+    # Prevent duplicate handlers if called multiple times
+    if root_logger.hasHandlers():
+        root_logger.handlers.clear()
+
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s:%(lineno)d - %(message)s')
+
+    # File Handler (writes to reddacted.log in current directory)
+    try:
+        file_handler = logging.FileHandler('reddacted.log', mode='a')
+        file_handler.setLevel(initial_level) # Set initial level
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+    except Exception as e:
+        # Fallback or notify if file logging fails
+        sys.stderr.write(f"Error setting up file logger: {e}\n")
+
+    # Console Handler (stderr)
+    console_handler = logging.StreamHandler(sys.stderr)
+    console_handler.setLevel(logging.INFO) # Console always shows INFO+
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
+
+    # Set initial level for httpx (less noisy)
+    logging.getLogger("httpx").setLevel(logging.WARNING if initial_level > logging.DEBUG else logging.DEBUG)
+
+
 def set_global_logging_level(level: LogLevel) -> None:
-    """Set the global logging level for all loggers.
+    """Set the global logging level for root logger and handlers.
 
     Args:
         level: The logging level to set globally. Can be an integer level or string name.
@@ -18,49 +50,53 @@ def set_global_logging_level(level: LogLevel) -> None:
         This affects all existing loggers in the hierarchy.
         Some third-party loggers may be set to specific levels for noise reduction.
     """
-    root = logging.getLogger()
-    root.setLevel(level)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level) # Set root level first
 
-    # Set specific levels for noisy third-party loggers when not in debug mode
-    if level > logging.DEBUG:
-        logging.getLogger("httpx").setLevel(logging.WARNING)
+    # Adjust handler levels
+    for handler in root_logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            handler.setLevel(level) # File handler matches global level
+        elif isinstance(handler, logging.StreamHandler):
+            # Console handler is INFO unless global level is DEBUG
+            handler.setLevel(max(level, logging.INFO))
 
-    # Set level for all other loggers
-    for logger_name in root.manager.loggerDict:
-        if logger_name != "httpx":  # Skip httpx as we handled it above
-            logging.getLogger(logger_name).setLevel(level)
+    # Adjust specific noisy loggers
+    httpx_level = logging.WARNING if level > logging.DEBUG else logging.DEBUG
+    logging.getLogger("httpx").setLevel(httpx_level)
 
 
-
-def get_logger(name: str, level: LogLevel = logging.INFO) -> LoggerType:
+def get_logger(name: str) -> LoggerType:
     """Get or create a logger with consistent formatting and contextual logging methods.
 
     Args:
         name: The name of the logger, typically __name__
-        level: The logging level to set, defaults to INFO
+        name: The name of the logger, typically __name__
 
     Returns:
         A Logger instance with additional contextual logging methods
 
     Example:
-        >>> logger = get_logger(__name__)
+        >>> logger = get_logger(__name__) # Level is now controlled globally
         >>> logger.info_with_context("Starting process")
     """
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    # Level is inherited from root logger and its handlers
 
-    def make_log_method(log_level: int) -> Callable[[str, Optional[Callable]], None]:
-        def log_method(msg: str, func: Optional[Callable] = None) -> None:
-            log_with_context(logger, log_level, msg, func)
+    # Check if methods already exist to avoid adding them multiple times
+    if not hasattr(logger, "debug_with_context"):
+        def make_log_method(log_level: int) -> Callable[[str, Optional[Callable]], None]:
+            def log_method(msg: str, func: Optional[Callable] = None) -> None:
+                log_with_context(logger, log_level, msg, func)
 
-        return log_method
+            return log_method
 
-    # Add typed convenience methods
-    setattr(logger, "debug_with_context", make_log_method(logging.DEBUG))
-    setattr(logger, "info_with_context", make_log_method(logging.INFO))
-    setattr(logger, "warning_with_context", make_log_method(logging.WARNING))
-    setattr(logger, "error_with_context", make_log_method(logging.ERROR))
-    setattr(logger, "critical_with_context", make_log_method(logging.CRITICAL))
+        # Add typed convenience methods
+        setattr(logger, "debug_with_context", make_log_method(logging.DEBUG))
+        setattr(logger, "info_with_context", make_log_method(logging.INFO))
+        setattr(logger, "warning_with_context", make_log_method(logging.WARNING))
+        setattr(logger, "error_with_context", make_log_method(logging.ERROR))
+        setattr(logger, "critical_with_context", make_log_method(logging.CRITICAL))
 
     return logger
 

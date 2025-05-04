@@ -1,7 +1,8 @@
 import sys
 import inspect
 import traceback
-import logging
+# Use our custom logger setup
+from reddacted.utils.logging import get_logger
 from typing import Optional, Type
 from rich.console import Console
 from rich.panel import Panel
@@ -9,7 +10,7 @@ from rich.text import Text
 from rich.traceback import Traceback
 
 console = Console()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__) # Use custom get_logger
 
 
 def format_exception(exc: Exception, include_trace: bool = False) -> str:
@@ -96,7 +97,8 @@ def handle_exception(exc: Exception, context: Optional[str] = None, debug: bool 
         debug: Whether to include full traceback
     """
     # Log the full exception for debugging
-    logger.error(f"Error in {context or 'unknown context'}", exc_info=exc if debug else False)
+    # Log with context and appropriate exc_info based on debug flag
+    logger.error_with_context(f"Error in {context or 'unknown context'}", exc_info=exc if debug else False)
 
     # Format the error message
     error_msg = format_exception(exc, include_trace=debug)

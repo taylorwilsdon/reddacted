@@ -20,7 +20,7 @@ class PanelFormatter(BaseFormatter):
 
     def __init__(self):
         super().__init__()
-        self.logger = get_logger(__name__)
+        # Logger not currently used in this class
         self.table_formatter = TableFormatter()
 
     def create_features_panel(

@@ -13,8 +13,6 @@ from reddacted.api.list_models import fetch_available_models, ModelFetchError
 import reddacted.cli_config as cli_config
 from reddacted.cli_config import URL_REGEX, VALID_SORT_OPTIONS, VALID_TIME_OPTIONS
 
-if TYPE_CHECKING:
-    from reddacted.cli_config import ConfigApp
 from reddacted.api.list_models import fetch_available_models, ModelFetchError
 
 logger = get_logger(__name__) # Initialize logger globally
@@ -151,6 +149,7 @@ class ConfigApp(App):
                 yield Checkbox("Use Random String", id="use_random_string")
                 yield Checkbox("Use OpenAI API", id="openai_api_checkbox")
                 yield Checkbox("Write to File", id="write_to_file_checkbox")
+                yield Checkbox("Enable Debug Logging", id="debug_logging") # New checkbox
             with Container(id="output_file_container"):
                 yield Label("Output File Path:")
                 yield Input(placeholder="e.g., /path/to/results.txt", id="output_file")
@@ -341,8 +340,8 @@ class ConfigApp(App):
             
             openai_cb = self.query_one("#openai_api_checkbox", Checkbox)
             openai_cb.value = config_values.get("use_openai_api", False)
-            self.call_later(self.update_llm_url_for_openai, Checkbox.Changed(openai_cb, openai_cb.value))
 
+            self.query_one("#debug_logging", Checkbox).value = config_values.get("debug_logging", False) # Load debug state
 
             # Populate Inputs
             if write_cb.value:
@@ -541,6 +540,7 @@ class ConfigApp(App):
         config_values["pii_only"] = self.query_one("#pii_only", Checkbox).value
         config_values["use_random_string"] = self.query_one("#use_random_string", Checkbox).value
         config_values["use_openai_api"] = self.query_one("#openai_api_checkbox", Checkbox).value
+        config_values["debug_logging"] = self.query_one("#debug_logging", Checkbox).value # Collect debug state
 
         # Collect Input values
         config_values["output_file"] = self.query_one("#output_file", Input).value if config_values["write_to_file"] else None
@@ -597,6 +597,7 @@ class ConfigApp(App):
         config_values["pii_only"] = self.query_one("#pii_only", Checkbox).value
         config_values["use_random_string"] = self.query_one("#use_random_string", Checkbox).value
         config_values["use_openai_api"] = self.query_one("#openai_api_checkbox", Checkbox).value
+        config_values["debug_logging"] = self.query_one("#debug_logging", Checkbox).value # Save debug state
 
         # Collect Input values
         config_values["output_file"] = self.query_one("#output_file", Input).value

@@ -8,7 +8,8 @@ class BaseFormatter:
     """Base class for formatters with shared utilities."""
 
     def __init__(self):
-        self.logger = get_logger(__name__)
+        # Logger not currently used in this base class
+        pass
 
     def _get_risk_style(self, score: float) -> str:
         """Determines text style based on risk score."""
