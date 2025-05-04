@@ -43,8 +43,8 @@ class CommentActionScreen(Screen):
         with Vertical():
             with Center():
                 yield Label(f"Are you sure you want to {action_text} comment {self.comment_id}?")
-                yield Label(f"[[Reddit API: {api_status}]]", classes="header-info", markup=False)
-                yield Label(f"[[{random_status}]]", classes="header-info", markup=False)
+                yield Label(f"Reddit API: {api_status}", classes="header-info", markup=False)
+                yield Label(f"{random_status}", classes="header-info", markup=False)
                 yield Button("Confirm", variant="error", id="confirm")
                 yield Button("Cancel", variant="primary", id="cancel")
             yield Static("", id="status")
