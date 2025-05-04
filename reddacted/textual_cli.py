@@ -3,6 +3,7 @@ import time
 from typing import Optional, Dict, Any, TYPE_CHECKING
 from textual import on
 from textual.app import App, ComposeResult
+from textual.timer import Timer # Added Timer import
 from textual.containers import VerticalScroll, Horizontal, Container
 from textual.validation import Number, Regex
 from textual.widgets import Input, Label, Pretty, Checkbox, Select, Button
@@ -138,6 +139,7 @@ class ConfigApp(App):
         super().__init__(*args, **kwargs)
         self.initial_config = initial_config or {}
         self.model_fetch_worker = None # Initialize worker reference
+        self._debounce_timer: Optional[Timer] = None # Timer for debouncing input changes
         logger.debug_with_context(f"Processed config: {self.initial_config}")
 
 
@@ -317,7 +319,6 @@ class ConfigApp(App):
         if load_notification:
             severity = "error" if "Error" in load_notification else "information"
             title = "Config Load Error" if "Error" in load_notification else "Config Load"
-            # Revert timeout change
             self.app.notify(load_notification, severity=severity, title=title)
 
         # Merge file config with initial config (CLI/env) using cli_config
@@ -436,38 +437,94 @@ class ConfigApp(App):
             model_select.disabled = True
     @on(Input.Changed)
     def on_input_changed(self, event: Input.Changed) -> None:
-        """Handle changes in LLM URL or OpenAI Key inputs."""
-        self.show_invalid_reasons(event)
+        """Debounce changes in LLM URL or OpenAI Key inputs before fetching models."""
+        self.show_invalid_reasons(event) # Keep this general validation display
 
-        openai_checkbox = self.query_one("#openai_api_checkbox", Checkbox)
-        llm_url_input = self.query_one("#local_llm", Input)
-        openai_key_input = self.query_one("#openai_key", Input)
-        model_select = self.query_one("#model_select", Select)
+        # Cancel any existing debounce timer
+        if self._debounce_timer:
+            self._debounce_timer.stop()
+            logger.debug_with_context("Debounce timer stopped.")
 
-        # Trigger fetch if OpenAI checkbox is checked AND API key is changed/provided
-        if openai_checkbox.value and event.input.id == "openai_key":
-            api_key = event.value.strip()
-            if api_key:
-                self.fetch_models_worker(llm_url_input.value, api_key)
-            else:
-                model_select.set_options([])
-                model_select.clear()
-                model_select.prompt = "Enter API Key..."
-                model_select.disabled = True
-        elif not openai_checkbox.value and event.input.id == "local_llm":
-            url = event.value.strip()
-            if url and event.validation_result and event.validation_result.is_valid:
-                 self.fetch_models_worker(url)
-            elif not url:
-                 model_select.set_options([])
-                 model_select.clear()
-                 model_select.prompt = "Enter URL..."
-                 model_select.disabled = True
-            else:
-                 model_select.set_options([])
-                 model_select.clear()
-                 model_select.prompt = "Invalid URL"
-                 model_select.disabled = True
+        # Check if the change is relevant to model fetching
+        if event.input.id in ["local_llm", "openai_key"]:
+            # Define the action to be performed after the debounce delay
+            def _trigger_fetch():
+                logger.debug_with_context(f"Debounce timer finished for '{event.input.id}'. Proceeding with fetch logic.")
+                openai_checkbox = self.query_one("#openai_api_checkbox", Checkbox)
+                llm_url_input = self.query_one("#local_llm", Input)
+                openai_key_input = self.query_one("#openai_key", Input)
+                model_select = self.query_one("#model_select", Select)
+
+                # Re-evaluate the state *after* the debounce delay
+                # Use event.input to refer to the specific input that triggered the change
+                current_input_widget = event.input
+                current_value = current_input_widget.value.strip()
+
+                # Trigger fetch if OpenAI checkbox is checked AND API key is changed/provided
+                if openai_checkbox.value and event.input.id == "openai_key":
+                    api_key = current_value
+                    if api_key: # Check if key is non-empty *now*
+                        logger.debug_with_context(f"Input '{event.input.id}' is valid after debounce. Triggering model fetch (OpenAI).")
+                        # Cancel any previous fetch worker if it's still running
+                        if self.model_fetch_worker and self.model_fetch_worker.is_running:
+                            logger.info_with_context("Cancelling previous model fetch worker.")
+                            self.model_fetch_worker.cancel()
+                        # Disable select while fetching and set prompt
+                        model_select.disabled = True
+                        model_select.set_options([]) # Clear existing options
+                        model_select.prompt = "Fetching models..."
+                        # Start the worker (passing URL and key as per original logic)
+                        # Note: Preserving the original behavior of passing llm_url_input.value
+                        self.model_fetch_worker = self.fetch_models_worker(llm_url_input.value, api_key)
+                    else:
+                        logger.debug_with_context(f"Input '{event.input.id}' is empty after debounce. Not fetching models.")
+                        model_select.set_options([])
+                        model_select.clear()
+                        model_select.prompt = "Enter API Key..."
+                        model_select.disabled = True
+                # Trigger fetch if OpenAI checkbox is NOT checked AND local LLM URL is changed
+                elif not openai_checkbox.value and event.input.id == "local_llm":
+                    url = current_value
+                    # Check validity *now* by re-validating the current value
+                    validation_result = current_input_widget.validate(url)
+                    is_valid_now = validation_result is None or validation_result.is_valid
+
+                    if url and is_valid_now:
+                        logger.debug_with_context(f"Input '{event.input.id}' is valid after debounce. Triggering model fetch (Local LLM).")
+                         # Cancel any previous fetch worker if it's still running
+                        if self.model_fetch_worker and self.model_fetch_worker.is_running:
+                            logger.info_with_context("Cancelling previous model fetch worker.")
+                            self.model_fetch_worker.cancel()
+                        # Disable select while fetching and set prompt
+                        model_select.disabled = True
+                        model_select.set_options([]) # Clear existing options
+                        model_select.prompt = "Fetching models..."
+                        # Start the worker
+                        self.model_fetch_worker = self.fetch_models_worker(url)
+                    elif not url:
+                        logger.debug_with_context(f"Input '{event.input.id}' is empty after debounce. Not fetching models.")
+                        model_select.set_options([])
+                        model_select.clear()
+                        model_select.prompt = "Enter URL..."
+                        model_select.disabled = True
+                    else: # URL is present but invalid
+                        logger.debug_with_context(f"Input '{event.input.id}' is invalid after debounce. Not fetching models.")
+                        model_select.set_options([])
+                        model_select.clear()
+                        model_select.prompt = "Invalid URL"
+                        model_select.disabled = True
+
+                self._debounce_timer = None # Clear the timer reference
+
+            # Schedule the fetch action after a delay (e.g., 1.0 second)
+            logger.debug_with_context(f"Input '{event.input.id}' changed. Starting 1.0s debounce timer.")
+            self._debounce_timer = self.set_timer(1.0, _trigger_fetch, name=f"debounce_{event.input.id}")
+        else:
+             # If the input change is not for the debounced fields, clear any pending timer
+             if self._debounce_timer:
+                 self._debounce_timer.stop()
+                 self._debounce_timer = None
+                 logger.debug_with_context("Input changed for non-debounced field, clearing timer.")
 
     @on(Checkbox.Changed, "#openai_api_checkbox")
     def update_llm_url_for_openai(self, event: Checkbox.Changed) -> None:
