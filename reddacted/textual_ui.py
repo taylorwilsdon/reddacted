@@ -122,12 +122,12 @@ class TextualResultsView(App):
     def action_edit_comment(self) -> None:
         """Handle editing the selected comment."""
         if comment_id := self._get_selected_comment_id():
-            self.push_screen(CommentActionScreen(comment_id, "edit", self.use_random_string))
+            self.push_screen(CommentActionScreen(comment_id, "edit", self.reddit_api, self.use_random_string))
 
     def action_delete_comment(self) -> None:
         """Handle deleting the selected comment."""
         if comment_id := self._get_selected_comment_id():
-            self.push_screen(CommentActionScreen(comment_id, "delete", self.use_random_string))
+            self.push_screen(CommentActionScreen(comment_id, "delete", self.reddit_api, self.use_random_string))
 
     def on_action_completed(self, event: message.Message) -> None:
         """Handle completion of comment actions."""
