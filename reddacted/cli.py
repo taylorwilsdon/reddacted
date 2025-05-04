@@ -6,12 +6,12 @@ from typing import Dict, Any, List, Optional, Callable
 
 
 from rich.console import Console
-from reddacted.utils.exceptions import handle_exception
+from reddacted.utils.log_handler import handle_exception
 from reddacted.sentiment import Sentiment
 from reddacted.api.reddit import Reddit
 from .textual_cli import ConfigApp
 from .cli_config import ENV_VARS_MAP
-from reddacted.utils.logging import setup_logging, set_global_logging_level, get_logger, with_logging
+from reddacted.utils.log_handler import setup_logging, set_global_logging_level, get_logger, with_logging
 
 # Logging is now set up in CLI.run()
 logger = get_logger(__name__) # Logger instance can be created before setup

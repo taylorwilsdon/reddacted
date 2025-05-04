@@ -7,7 +7,7 @@ from textual.containers import VerticalScroll, Horizontal, Container
 from textual.validation import Number, Regex
 from textual.widgets import Input, Label, Pretty, Checkbox, Select, Button
 from textual import work
-from reddacted.utils.logging import get_logger
+from reddacted.utils.log_handler import get_logger
 from reddacted.styles import TEXTUAL_CSS
 from reddacted.api.list_models import fetch_available_models, ModelFetchError
 import reddacted.cli_config as cli_config

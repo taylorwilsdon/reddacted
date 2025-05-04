@@ -2,7 +2,7 @@ from typing import Optional
 
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
-from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.log_handler import get_logger, with_logging
 from reddacted.utils.base import BaseFormatter
 
 logger = get_logger(__name__) # Define logger at module level

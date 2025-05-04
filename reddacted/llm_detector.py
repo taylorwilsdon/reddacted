@@ -2,8 +2,8 @@ import json
 import asyncio
 from typing import Tuple, Dict, Any, List, Optional
 import openai
-from reddacted.utils.logging import get_logger, with_logging
-from reddacted.utils.exceptions import handle_exception
+from reddacted.utils.log_handler import get_logger, with_logging
+from reddacted.utils.log_handler import handle_exception
 
 logger = get_logger(__name__)
 
@@ -84,7 +84,7 @@ class LLMDetector:
                     task = client.chat.completions.create(
                         model=self.model,
                         messages=[
-                            {"role": "system", "content": "You are a privacy analysis assistant."},
+                            {"role": "system", "content": "/no-think You are a privacy analysis assistant."},
                             {"role": "user", "content": self.DEFAULT_PROMPT.format(text=text)},
                         ],
                         temperature=0.1,
@@ -93,9 +93,9 @@ class LLMDetector:
                     logger.debug_with_context(f"Using model: {self.model}")
                     tasks.append(task)
 
-                logger.info_with_context(f"Awaiting {len(tasks)} LLM analysis tasks...") # Added log
+                logger.info_with_context(f"Awaiting {len(tasks)} LLM analysis tasks...")
                 batch_responses = await asyncio.gather(*tasks)
-                logger.info_with_context("LLM analysis tasks completed.") # Added log
+                logger.info_with_context("LLM analysis tasks completed.")
 
                 for response in batch_responses:
                     try:

@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 from rich.text import Text
 
-from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.log_handler import get_logger, with_logging
 
 
 class BaseFormatter:

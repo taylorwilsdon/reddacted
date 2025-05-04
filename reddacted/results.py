@@ -7,7 +7,7 @@ from rich.columns import Columns
 from rich.console import Group
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
-from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.log_handler import get_logger, with_logging
 from reddacted.utils.report import (
     generate_analysis_report,
     should_show_result,

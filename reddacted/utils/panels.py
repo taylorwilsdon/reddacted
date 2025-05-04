@@ -10,7 +10,7 @@ from rich.table import Table
 
 from reddacted.utils.analysis import AnalysisResult
 from reddacted.utils.base import BaseFormatter
-from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.log_handler import get_logger, with_logging
 from reddacted.utils.tables import TableFormatter
 from reddacted.utils.report import format_llm_detail
 
@@ -48,9 +48,11 @@ class PanelFormatter(BaseFormatter):
             (
                 "🤖 LLM Analysis",
                 (
-                    Text(llm_config["model"], style="green")
+                    Text(llm_config["model"], style="green") # Display model name if available
+                    if llm_config and llm_config.get("model")
+                    else Text("Not Selected", style="yellow") # Indicate if URL/Key provided but no model
                     if llm_config
-                    else self._format_status(False)
+                    else self._format_status(False) # Disabled if no LLM config at all
                 ),
             ),
             ("🎯 PII-Only Filter", self._format_status(pii_only, "Active", "Inactive")),

@@ -2,8 +2,8 @@ import re
 from dataclasses import dataclass
 from typing import List, Tuple
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
-from reddacted.utils.logging import get_logger, with_logging
-from reddacted.utils.exceptions import handle_exception
+from reddacted.utils.log_handler import get_logger, with_logging
+from reddacted.utils.log_handler import handle_exception
 
 logger = get_logger(__name__)
 

@@ -14,11 +14,11 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.console import Console
 
 # Local
-from reddacted.utils.logging import get_logger, with_logging
+from reddacted.utils.log_handler import get_logger, with_logging
 
 # Initialize rich console
 console = Console()
-from reddacted.utils.exceptions import handle_exception
+from reddacted.utils.log_handler import handle_exception
 from reddacted.api.scraper import Scraper
 from reddacted.api.reddit import Reddit
 from reddacted.pii_detector import PIIDetector

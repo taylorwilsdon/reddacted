@@ -1,8 +1,8 @@
 from types import BuiltinMethodType
 import requests
 from reddacted.api import api
-from reddacted.utils.logging import get_logger, with_logging
-from reddacted.utils.exceptions import handle_exception
+from reddacted.utils.log_handler import get_logger, with_logging
+from reddacted.utils.log_handler import handle_exception
 
 logger = get_logger(__name__)
 
