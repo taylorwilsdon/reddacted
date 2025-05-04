@@ -413,5 +413,5 @@ class Sentiment:
             )
         else:
             self.formatter.print_comments(
-                comments, identifier, self.results, self.score, self.sentiment
+                comments, identifier, self.results, self.score, self.sentiment, self.api # Pass self.api
             )

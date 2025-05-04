@@ -136,6 +136,7 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
         results: List[AnalysisResult],
         overall_score: float,
         overall_sentiment: str,
+        reddit_api: 'Reddit', # Added reddit_api
     ) -> None:
         """Prints out analysis of user comments using Textual UI."""
         filtered_results = [
@@ -153,6 +154,7 @@ class ResultsFormatter(TableFormatter, PanelFormatter):
             results=filtered_results,
             overall_score=overall_score,
             overall_sentiment=overall_sentiment,
+            reddit_api=reddit_api, # Pass reddit_api
             use_random_string=getattr(self, "use_random_string", False),
         )
 

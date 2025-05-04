@@ -26,19 +26,20 @@ class CommentActionScreen(Screen):
         Binding("escape", "cancel", "Cancel", show=True),
     ]
 
-    def __init__(self, comment_id: str, action: str, use_random_string: bool = False):
+    def __init__(self, comment_id: str, action: str, reddit_api: Reddit, use_random_string: bool = False):
         """Initialize the action screen.
 
         Args:
             comment_id: The ID of the comment to act on
             action: Either 'edit' or 'delete'
+            reddit_api: The authenticated Reddit API instance.
             use_random_string: Whether to use a random UUID instead of standard message
         """
         super().__init__()
         self.comment_id = comment_id
         self.action = action
-        self.use_random_string = use_random_string
-        self.api = Reddit(use_random_string=use_random_string)
+        self.use_random_string = use_random_string # Keep this for logic within the screen
+        self.api = reddit_api # Use the passed authenticated instance
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""

@@ -110,11 +110,13 @@ class LLMDetector:
                         except json.JSONDecodeError:
                             # If that fails, try to extract JSON from markdown blocks
                             if "```json" in raw_response:
+                                logger.debug_with_context(f"\nAttempting to extract json from markdown in {raw_response}\n")
                                 json_content = (
                                     raw_response.split("```json")[1].split("```")[0].strip()
                                 )
                                 analysis = json.loads(json_content)
                             else:
+                                logger.debug_with_context(f"\Failed to extract json from markdown in {raw_response}\n")
                                 raise
 
                         # Calculate risk score based on confidence and PII presence

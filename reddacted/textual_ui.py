@@ -160,6 +160,7 @@ class TextualResultsView(App):
         results: List[AnalysisResult],
         overall_score: float,
         overall_sentiment: str,
+        reddit_api: 'Reddit', # Added reddit_api
         use_random_string: bool = False,
     ):
         super().__init__()
@@ -168,6 +169,7 @@ class TextualResultsView(App):
         self.results = results
         self.overall_score = overall_score
         self.overall_sentiment = overall_sentiment
+        self.reddit_api = reddit_api # Store the api instance
         self.use_random_string = use_random_string
 
     def compose(self) -> ComposeResult:
@@ -184,7 +186,7 @@ class TextualResultsView(App):
         if comment_id := self._get_selected_comment_id():
             result = next((r for r in self.results if r.comment_id == comment_id), None)
             if result:
-                self.push_screen(DetailsScreen(result, self.use_random_string))
+                self.push_screen(DetailsScreen(result, self.reddit_api, self.use_random_string)) # Pass reddit_api
             else:
                 self.notify(f"No result found for comment ID: {comment_id}")
         else:
@@ -197,6 +199,7 @@ def show_results(
     results: List[AnalysisResult],
     overall_score: float,
     overall_sentiment: str,
+    reddit_api: 'Reddit', # Added reddit_api
     use_random_string: bool = False,
 ) -> None:
     """Display results using the Textual UI."""
@@ -206,6 +209,7 @@ def show_results(
         results=results,
         overall_score=overall_score,
         overall_sentiment=overall_sentiment,
+        reddit_api=reddit_api, # Pass reddit_api
         use_random_string=use_random_string,
     )
     app.run()

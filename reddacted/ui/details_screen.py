@@ -21,15 +21,17 @@ class DetailsScreen(Screen):
         Binding("d", "delete_comment", "Delete Comment", show=True),
     ]
 
-    def __init__(self, result, use_random_string=False):
+    def __init__(self, result, reddit_api: 'Reddit', use_random_string=False): # Added reddit_api
         """Initialize the details screen.
 
         Args:
             result: The AnalysisResult object containing the comment data
+            reddit_api: The authenticated Reddit API instance.
             use_random_string: Whether to use random UUIDs instead of standard message
         """
         super().__init__()
         self.result = result
+        self.reddit_api = reddit_api # Store the api instance
         self.use_random_string = use_random_string
 
     def compose(self) -> ComposeResult:
@@ -150,11 +152,11 @@ class DetailsScreen(Screen):
 
     def action_edit_comment(self) -> None:
         """Handle editing the current comment."""
-        self.app.push_screen(CommentActionScreen(self.result.comment_id, "edit", self.use_random_string))
+        self.app.push_screen(CommentActionScreen(self.result.comment_id, "edit", self.reddit_api, self.use_random_string)) # Pass reddit_api
 
     def action_delete_comment(self) -> None:
         """Handle deleting the current comment."""
-        self.app.push_screen(CommentActionScreen(self.result.comment_id, "delete", self.use_random_string))
+        self.app.push_screen(CommentActionScreen(self.result.comment_id, "delete", self.reddit_api, self.use_random_string)) # Pass reddit_api
 
     def action_go_back(self) -> None:
         """Return to the results screen."""

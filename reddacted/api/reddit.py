@@ -62,8 +62,9 @@ class Reddit(api.API):
                     username=username,
                     check_for_async=False,
                 )
-                self.authenticated = True
                 logger.info_with_context("Successfully authenticated with Reddit API using configuration.")
+                logger.debug_with_context(f"Granted scopes (config auth): {self.reddit.auth.scopes()}") # Log scopes
+                self.authenticated = True
                 return # Exit if successful
             except Exception as e:
                 logger.warning_with_context(f"Authentication with config credentials failed: {e}. Falling back...")
@@ -92,8 +93,9 @@ class Reddit(api.API):
                         username=env_username,
                         check_for_async=False,
                     )
-                    self.authenticated = True
                     logger.info_with_context("Successfully authenticated with Reddit API using environment variables.")
+                    logger.debug_with_context(f"Granted scopes (env auth): {self.reddit.auth.scopes()}") # Log scopes
+                    self.authenticated = True
                     return # Exit if successful
                 except Exception as e:
                     logger.warning_with_context(f"Authentication with environment variable credentials failed: {e}. Falling back...")
