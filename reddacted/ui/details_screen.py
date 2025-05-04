@@ -21,7 +21,7 @@ class DetailsScreen(Screen):
         Binding("d", "delete_comment", "Delete Comment", show=True),
     ]
 
-    def __init__(self, result, reddit_api: 'Reddit', use_random_string=False): # Added reddit_api
+    def __init__(self, result, reddit_api: 'Reddit', use_random_string=False):
         """Initialize the details screen.
 
         Args:
@@ -31,7 +31,7 @@ class DetailsScreen(Screen):
         """
         super().__init__()
         self.result = result
-        self.reddit_api = reddit_api # Store the api instance
+        self.reddit_api = reddit_api
         self.use_random_string = use_random_string
 
     def compose(self) -> ComposeResult:
