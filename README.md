@@ -28,30 +28,28 @@
 
 ## ✨ Key Features
 
-<div align="center">
 <table>
   <tr>
-    <td align="center"><h3>🛡️</h3></td>
-    <td><b>PII Detection</b><br>Analyze the content of comments to identify anything that might reveal PII that you may not want correlated with your anonymous username</td>
+    <td align="center">🛡️<br/><b>PII Detection</b></td>
+    <td>Analyze the content of comments to identify anything that might reveal PII that you may not want correlated with your anonymous username</td>
   </tr>
   <tr>
-    <td align="center"><h3>🤫</h3></td>
-    <td><b>Sentiment Analysis</b><br>Understand the emotional tone of your Reddit history, combined with upvote/downvote counts & privacy risks to choose which posts to reddact</td>
+    <td align="center">🤫<br/><b>Sentiment Analysis</b></td>
+    <td>Understand the emotional tone of your Reddit history, combined with upvote/downvote counts & privacy risks to choose which posts to reddact</td>
   </tr>
   <tr>
-    <td align="center"><h3>🔒</h3></td>
-    <td><b>Zero-Trust Architecture</b><br>Client-side execution only, no data leaves your machine unless you choose to use a hosted API. Fully compatible with all OpenAI compatible endpoints</td>
+    <td align="center">🔒<br/><b>Zero-Trust Architecture</b></td>
+    <td>Client-side execution only, no data leaves your machine unless you choose to use a hosted API. Fully compatible with all OpenAI compatible endpoints</td>
   </tr>
   <tr>
-    <td align="center"><h3>⚡</h3></td>
-    <td><b>Self-Host Ready</b><br>Use any model via Ollama, llama.cpp, vLLM or other platform capable of exposing an OpenAI-compatible endpoint. LiteLLM works just dandy.</td>
+    <td align="center">⚡<br/><b>Self-Host Ready</b></td>
+    <td>Use any model via Ollama, llama.cpp, vLLM or other platform capable of exposing an OpenAI-compatible endpoint. LiteLLM works just dandy.</td>
   </tr>
   <tr>
-    <td align="center"><h3>📊</h3></td>
-    <td><b>Smart Cleanup</b><br>Preserve valuable contributions while removing risky content - clean up your online footprint without blowing away everything</td>
+    <td align="center">📊<br/><b>Smart Cleanup</b></td>
+    <td>Preserve valuable contributions while removing risky content - clean up your online footprint without blowing away everything</td>
   </tr>
 </table>
-</div>
 
 ## 🔐 Can I trust this with my data?
 
@@ -199,9 +197,9 @@ Surprisingly good. Good enough that I run it against my own stuff in delete mode
     <h3>📊 AI Detection</h3>
     <p>Doesn't need a crazy smart model, don't waste your money on r1 or o1.</p>
     <ul>
-      <li>Cheap & light models like gpt-4o-mini, gpt-3.5-turbo, qwen2.5:3b or 7b and Mistral are all plenty</li>
+      <li>Cheap & light models like qwen3:8b, gpt-4.1-nano, qwen2.5:7b, Mistral SSmall or gemma3:14b are all plenty</li>
       <li>Don't use something too dumb or it will be inconsistent, a 0.5b model will produce unreliable results</li>
-      <li>Works well with cheap models like qwen2.5:3b (potato can run this) and gpt-4o-mini (~15¢ per million tokens)</li>
+      <li>Works fine with cheap models like qwen2.5:3b (potato can run this) and gpt-4o-mini (~15¢ per million tokens), but gets better with 7b and up</li>
     </ul>
   </div>
   
