@@ -26,10 +26,6 @@
 
 </div>
 
-<div align="center">
-  <img width="800" alt="reddacted results" src="https://github.com/user-attachments/assets/338fa47e-88da-4844-9728-ace17983cd83">
-</div>
-
 ## ✨ Key Features
 
 <div align="center">
@@ -404,33 +400,3 @@ Want to contribute? Great! Feel free to:
 <div align="center">
   <p>Join our subreddit: <a href="https://reddit.com/r/reddacted">r/reddacted</a></p>
 </div>
-
-<style>
-.note {
-  background-color: #f8f9fa;
-  border-left: 4px solid #1976d2;
-  padding: 15px;
-  margin: 20px 0;
-  border-radius: 4px;
-}
-
-.detection-methods, .auth-steps, .exceptions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin: 20px 0;
-}
-
-.method, .step, .exception {
-  background-color: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.method h3, .step h3, .exception h3 {
-  margin-top: 0;
-  border-bottom: 1px solid #e0e0e0;
-  padding-bottom: 10px;
-}
-</style>
