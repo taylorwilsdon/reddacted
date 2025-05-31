@@ -9,7 +9,7 @@
 ![GitHub License](https://img.shields.io/github/license/taylorwilsdon/reddacted)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/taylorwilsdon/reddacted)
 ![PyPI - Version](https://img.shields.io/pypi/v/reddacted)
-![PyPI Downloads](https://img.shields.io/pypi/dm/reddacted?style=flat&logo=pypi&logoColor=white&label=Downloads&labelColor=005da7&color=blue)
+[![PyPI Downloads](https://static.pepy.tech/badge/reddacted)](https://pepy.tech/projects/reddacted)
 
 <p><i>Local LLM powered, highly performant privacy analysis leveraging AI, sentiment analysis & PII detection<br>to provide insights into your true privacy with bulk remediation</i></p>
 
