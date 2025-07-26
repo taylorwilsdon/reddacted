@@ -8,7 +8,7 @@ package = true
 
 [project]
 name = "reddacted"
-version = "0.2.5"
+dynamic = ["version"]
 description = "Analyze Reddit comments for PII and other sensitive information using local or OpenAI API compatible LLMs and perform sentiment analysis, edit and remove comments."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -38,7 +38,8 @@ dependencies = [
     "openai>=1.3.7",
     "rich>=13.7.0",
     "textual==2.1.2",
-    "urllib3==2.3.0"
+    "urllib3==2.3.0",
+    "pytest-asyncio>=1.1.0",
 ]
 
 [project.urls]
@@ -63,6 +64,9 @@ reddacted = "reddacted.cli:main"
 
 [tool.setuptools]
 packages = ["reddacted", "reddacted.ui", "reddacted.api", "reddacted.utils"]
+
+[tool.setuptools.dynamic]
+version = {attr = "reddacted.version.__version__"}
 
 [tool.black]
 line-length = 100
