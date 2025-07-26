@@ -58,14 +58,17 @@
 </div>
 
 ```bash
-reddacted user yourusername --local-llm "http://localhost:11434"
+# Run with local LLM - you'll be guided through configuration
+reddacted user yourusername
 ```
 
 - ✅ Client-side execution only, no tracking or external calls
 - ✅ Session-based authentication if you choose - it is optional unless you want to delete
 - ✅ Keep your nonsense comments with lots of upvotes and good vibes without unintentionally doxing yourself
+- ✅ All configuration stored locally in `config.json`
 
 ```bash
+# Quick analysis with custom limit
 reddacted user taylorwilsdon --limit 3
 ```
 
@@ -105,45 +108,62 @@ pip install -e ".[dev]"  # Installs with development dependencies
 
 ## 🚀 Usage
 
+reddacted now features a guided configuration flow that makes setup easy. Simply run any command and you'll be prompted to configure your settings through an interactive interface:
+
 ```bash
-# Most basic possible quick start - this will walk you through selecting your LLM in the command line
+# Most basic possible quick start - launches the guided configuration flow
 reddacted user spez
 
-# Analyze a user's recent comments with local LLM specified
-reddacted user spez \
-  --limit 5 \
-  --local-llm "http://localhost:11434" \
-  --model "qwen2.5:3b" \
-  --sort new
+# The guided flow will prompt you to:
+# - Choose between OpenAI or local LLM
+# - Enter your API key or local LLM URL
+# - Select your model from available options
+# - Configure authentication settings
+# - Set analysis preferences (limit, sort, time filter, etc.)
+# - Save your configuration for future use
+```
 
-# Analyze controversial comments with OpenAI
-export OPENAI_API_KEY="your-api-key"
-reddacted user spez \
-  --sort controversial \
-  --time month \
-  --model "gpt-4" \
-  --limit 10 \
-  --pii-only
+### Configuration Options
 
-# Analyze a specific subreddit post with PII filter disabled
-reddacted listing r/privacy abc123 \
-  --local-llm "http://localhost:11434" \
-  --model "qwen2.5:3b" \
-  --disable-pii \
-  --sort new
+The interactive configuration flow includes:
 
-# Search for specific content (requires auth)
-reddacted user spez \
-  --enable-auth \
-  --text-match "python" \
-  --skip-text "deleted" \
-  --sort top \
-  --time all
+- **LLM Settings**: Choose between OpenAI API or local LLM endpoint (like Ollama)
+- **Authentication**: Enable Reddit API authentication if needed
+- **Analysis Options**: Set comment limits, sort order, time filters
+- **Output Options**: Configure file output, PII filtering preferences
+- **Advanced Settings**: Text matching patterns, batch sizes for bulk operations
+
+Your configuration is automatically saved to `config.json` for reuse.
+
+### Example Commands
+
+Once configured, you can run commands like:
+
+```bash
+# Analyze a user's recent comments (uses saved config)
+reddacted user spez
+
+# Analyze a specific subreddit post
+reddacted listing r/privacy abc123
 
 # Bulk comment management
-reddacted delete abc123,def456 --batch-size 5  # Delete comments
-reddacted update abc123,def456                 # Replace with standard redaction message
-reddacted update abc123,def456 --use-random-string  # Replace with random UUID
+reddacted delete abc123,def456  # Delete comments
+reddacted update abc123,def456  # Replace with standard redaction message
+```
+
+### Override Configuration
+
+You can still override saved settings with command-line arguments:
+
+```bash
+# Override the saved limit
+reddacted user spez --limit 50
+
+# Use a different model temporarily
+reddacted user spez --model "gpt-4-turbo"
+
+# Enable authentication for this run only
+reddacted user spez --enable-auth
 ```
 
 ### Available Commands
@@ -173,19 +193,38 @@ reddacted update abc123,def456 --use-random-string  # Replace with random UUID
 
 ### LLM Configuration
 
-| Argument | Description |
-|----------|-------------|
-| `--local-llm URL` | Local LLM endpoint (OpenAI compatible) |
-| `--openai-key KEY` | OpenAI API key |
-| `--openai-base URL` | Custom OpenAI API base URL |
-| `--model NAME` | Model to use (default: gpt-4 for OpenAI) |
+The guided configuration flow will help you set up your LLM preferences. You can choose between:
+
+1. **Local LLM** (Ollama, vLLM, etc.):
+   - Default endpoint: `http://localhost:11434`
+   - Automatically fetches available models
+   - No API key required
+
+2. **OpenAI API**:
+   - Enter your OpenAI API key
+   - Select from available OpenAI models
+   - Supports custom API base URLs
+
+Configuration values are saved to `config.json` and can be overridden with command-line flags:
+
+| Flag | Description |
+|------|-------------|
+| `--local-llm URL` | Override local LLM endpoint |
+| `--openai-key KEY` | Override OpenAI API key |
+| `--model NAME` | Override model selection |
 
 <div class="note">
-<b>Note:</b> For cloud-based analysis using OpenAI, you can either use the <code>--openai-key</code> flag or set the environment variable:
+<b>Note:</b> Environment variables are also supported:
 
 ```bash
 export OPENAI_API_KEY="your-api-key"
+export REDDIT_USERNAME="your-username"
+export REDDIT_PASSWORD="your-password"
+export REDDIT_CLIENT_ID="your-client-id"
+export REDDIT_CLIENT_SECRET="your-client-secret"
 ```
+
+These will be automatically loaded if present.
 </div>
 
 ## ❓ How accurate is the PII detection, really?
